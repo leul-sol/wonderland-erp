@@ -1,0 +1,23 @@
+# S0 §9 D7 — standard API error codes
+
+codes:
+  - VALIDATION_ERROR
+  - UNAUTHENTICATED
+  - INVALID_SERVICE_KEY
+  - FORBIDDEN
+  - NOT_FOUND
+  - IDEMPOTENCY_KEY_CONFLICT
+  - UNBALANCED_JOURNAL
+  - INSUFFICIENT_STOCK
+  - INVALID_STATE_TRANSITION
+  - UNPROCESSABLE
+  - RATE_LIMITED
+  - INTERNAL_ERROR
+  - SERVICE_UNAVAILABLE
+
+envelope:
+  shape:
+    error:
+      code: string
+      message: string
+      details: object

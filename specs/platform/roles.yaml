@@ -1,0 +1,52 @@
+# S0 §7.2 — Role → system access (summary labels: full, read, —, custom)
+
+roles:
+  - slug: super_admin
+    display_name: Super Administrator
+    access: { S1: full, S2: full, S3: full, S4: full }
+
+  - slug: general_manager
+    display_name: General Manager
+    access: { S1: read, S2: read, S3: "PO tier 3 + read", S4: "full read + top journal approval" }
+
+  - slug: finance_manager
+    display_name: Finance Manager
+    access: { S1: none, S2: none, S3: "PO tier 2", S4: full }
+
+  - slug: accountant
+    display_name: Accountant
+    access: { S1: none, S2: none, S3: none, S4: "GL, journals, reports" }
+
+  - slug: hr_manager
+    display_name: HR Manager
+    access: { S1: none, S2: "HR + Leave full", S3: none, S4: none }
+
+  - slug: payroll_officer
+    display_name: Payroll Officer
+    access: { S1: none, S2: "Payroll full", S3: none, S4: none }
+
+  - slug: department_head
+    display_name: Department Head
+    access: { S1: none, S2: "leave approval + dept read", S3: "PO tier 1", S4: none }
+
+  - slug: inventory_manager
+    display_name: Inventory Manager
+    access: { S1: none, S2: none, S3: "Inventory full", S4: none }
+
+  - slug: restaurant_manager
+    display_name: Restaurant Manager
+    access: { S1: none, S2: none, S3: "Restaurant + F&B full", S4: none }
+
+  - slug: receptionist
+    display_name: Receptionist
+    access: { S1: none, S2: none, S3: "Hotel + Rooms full", S4: none }
+
+  - slug: cashier
+    display_name: Cashier
+    access: { S1: none, S2: none, S3: "Restaurant + Hotel transactions", S4: none }
+
+  - slug: report_viewer
+    display_name: Report Viewer
+    access: { S1: read, S2: read, S3: read, S4: "dashboards + reports" }
+
+permission_naming: "S{n}.{domain}.{resource}.{action}"

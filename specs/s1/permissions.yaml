@@ -1,0 +1,38 @@
+# S1 §6.1 — Identity permission catalog (seed into wh_s1_db.permissions)
+
+domain: identity
+prefix: S1.identity
+
+permissions:
+  - action: users.read
+    default_roles: [super_admin, general_manager, report_viewer]
+  - action: users.create
+    default_roles: [super_admin]
+  - action: users.update
+    default_roles: [super_admin]
+  - action: users.delete
+    default_roles: [super_admin]
+  - action: users.deactivate
+    default_roles: [super_admin]
+  - action: users.force_logout
+    default_roles: [super_admin]
+  - action: users.reset_password
+    default_roles: [super_admin]
+  - action: users.assign_role
+    default_roles: [super_admin]
+  - action: roles.read
+    default_roles: [super_admin, general_manager, report_viewer]
+  - action: roles.create
+    default_roles: [super_admin]
+  - action: roles.update
+    default_roles: [super_admin]
+  - action: roles.delete
+    default_roles: [super_admin]
+  - action: roles.sync_permissions
+    default_roles: [super_admin]
+  - action: permissions.read
+    default_roles: [super_admin, general_manager, report_viewer]
+  - action: audit_logs.read
+    default_roles: [super_admin, general_manager, report_viewer]
+
+# Authenticated-only (no specific permission): /auth/logout, /auth/me, /auth/change-password

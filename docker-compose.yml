@@ -1,0 +1,108 @@
+services:
+  wh-gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      s1-identity:
+        condition: service_healthy
+    networks:
+      - wh-internal
+
+  s1-identity:
+    build:
+      context: ./s1-identity-access
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: WH-S1-Identity-Access
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://s1-identity:9001
+      DB_CONNECTION: mysql
+      DB_HOST: wh-mysql
+      DB_PORT: 3306
+      DB_DATABASE: wh_s1_db
+      DB_USERNAME: wh_app
+      DB_PASSWORD: wh_app_secret
+      REDIS_HOST: wh-redis
+      REDIS_PORT: 6379
+      REDIS_BUS_HOST: wh-redis-bus
+      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+    volumes:
+      - ./s1-identity-access:/var/www/html
+    networks:
+      - wh-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+
+  wh-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: wh_s1_db
+    volumes:
+      - wh-mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - wh-internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  wh-redis:
+    image: redis:7-alpine
+    networks:
+      - wh-internal
+
+  wh-redis-bus:
+    image: redis:7-alpine
+    networks:
+      - wh-internal
+
+  s1-workers:
+    build:
+      context: ./s1-identity-access
+      dockerfile: Dockerfile
+    command: >
+      sh -c "php artisan events:consume-s2 &
+      while true; do php artisan outbox:publish; sleep 10; done"
+    environment:
+      APP_NAME: WH-S1-Identity-Access
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: wh-mysql
+      DB_PORT: 3306
+      DB_DATABASE: wh_s1_db
+      DB_USERNAME: wh_app
+      DB_PASSWORD: wh_app_secret
+      REDIS_HOST: wh-redis
+      REDIS_PORT: 6379
+      REDIS_BUS_HOST: wh-redis-bus
+      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+    volumes:
+      - ./s1-identity-access:/var/www/html
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+      wh-redis-bus:
+        condition: service_started
+      s1-identity:
+        condition: service_healthy
+    networks:
+      - wh-internal
+
+networks:
+  wh-internal:
+    driver: bridge
+
+volumes:
+  wh-mysql-data:

@@ -1,0 +1,39 @@
+# Dependencies
+**/vendor/
+**/node_modules/
+
+# Laravel
+**/.env
+**/.env.backup
+**/.phpunit.result.cache
+**/Homestead.json
+**/Homestead.yaml
+**/auth.json
+**/storage/*.key
+**/storage/logs/*
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*
+!**/storage/**/.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker / secrets
+gateway/certs/*
+!gateway/certs/.gitkeep
+secrets/
+*.pem
+
+# Build
+**/public/hot
+**/public/storage
+
+# Testing
+**/coverage/
+.phpunit.cache

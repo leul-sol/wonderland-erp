@@ -1,0 +1,21 @@
+# Contract / integration test stack (S0 D12) — expand as S2–S4 are added
+
+services:
+  wh-mysql-test:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: wh_s1_db
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - wh-test
+
+  wh-redis-test:
+    image: redis:7-alpine
+    networks:
+      - wh-test
+
+networks:
+  wh-test:
+    driver: bridge

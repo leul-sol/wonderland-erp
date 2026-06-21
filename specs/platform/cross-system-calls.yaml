@@ -1,0 +1,71 @@
+# Authoritative cross-system synchronous API surface (S0 §5.3)
+
+calls:
+  - id: jwt-verify
+    caller: [S2, S3, S4]
+    callee: S1
+    method: POST
+    path: /api/v1/auth/verify
+    auth: service_key
+    idempotent: false
+
+  - id: journal-post
+    caller: [S2, S3]
+    callee: S4
+    method: POST
+    path: /api/v1/journal-entries
+    auth: service_key
+    idempotent: true
+
+  - id: staff-meal-deduction
+    caller: S3
+    callee: S2
+    method: POST
+    path: /api/v1/employees/{id}/deductions
+    auth: service_key
+    idempotent: true
+    note: ID12
+
+  - id: s4-read-s1
+    caller: S4
+    callee: S1
+    method: GET
+    paths:
+      - /api/v1/users
+      - /api/v1/roles
+      - /api/v1/audit-logs
+    auth: service_key
+    cached_by_s4: true
+
+  - id: s4-read-s2
+    caller: S4
+    callee: S2
+    method: GET
+    paths:
+      - /api/v1/employees
+      - /api/v1/payroll-runs
+      - /api/v1/leave-requests
+      - /api/v1/attendance-records
+    auth: service_key
+    cache_ttl_seconds: 300
+
+  - id: s4-read-s3
+    caller: S4
+    callee: S3
+    method: GET
+    paths:
+      - /api/v1/rooms
+      - /api/v1/reservations
+      - /api/v1/orders
+      - /api/v1/items
+      - /api/v1/purchase-orders
+    auth: service_key
+    cache_ttl_seconds: 60
+
+gateway:
+  external_pattern: "https://api.wonderlandhotel.com/s{n}/api/v1/..."
+  upstreams:
+    S1: s1-identity:9001
+    S2: s2-workforce:9002
+    S3: s3-hospitality:9003
+    S4: s4-finance-bi:9004

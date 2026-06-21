@@ -1,0 +1,36 @@
+name: S1 CI
+
+on:
+  push:
+    paths:
+      - 's1-identity-access/**'
+      - 'specs/**'
+      - '.github/workflows/s1-ci.yml'
+  pull_request:
+    paths:
+      - 's1-identity-access/**'
+      - 'specs/**'
+      - '.github/workflows/s1-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s1-identity-access
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath, openssl
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: vendor/bin/phpunit

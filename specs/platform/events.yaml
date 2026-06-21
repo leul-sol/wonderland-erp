@@ -1,0 +1,70 @@
+# Cross-system event bus (S0 §5.2)
+# Channel format: wh.events.{system}.{entity}.{action}
+
+events:
+  - channel: wh.events.s2.employee.created
+    emitted_by: S2
+    consumed_by: [S1]
+    listener: CreateLinkedUserAccount
+
+  - channel: wh.events.s2.employee.updated
+    emitted_by: S2
+    consumed_by: [S1]
+    listener: SyncLinkedUserAccount
+
+  - channel: wh.events.s2.employee.archived
+    emitted_by: S2
+    consumed_by: [S1]
+    listener: DeactivateLinkedUserAccount
+
+  - channel: wh.events.s1.permission.changed
+    emitted_by: S1
+    consumed_by: [S4]
+
+  - channel: wh.events.s2.payroll_run.approved
+    emitted_by: S2
+    consumed_by: [S4]
+
+  - channel: wh.events.s2.severance.calculated
+    emitted_by: S2
+    consumed_by: [S4]
+
+  - channel: wh.events.s2.leave.approved
+    emitted_by: S2
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.goods.received
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.purchase_order.approved
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.order.finalized
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.employee_consumption_period.closed
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.guest.checked_in
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.guest.checked_out
+    emitted_by: S3
+    consumed_by: [S4]
+
+  - channel: wh.events.s3.folio.settled
+    emitted_by: S3
+    consumed_by: [S4]
+
+outbox:
+  systems_with_outbox: [S1, S2, S3]
+  publish_interval_seconds: 10
+  retry_backoff_seconds: [10, 60, 300, 1800, 7200]
+
+envelope:
+  required_fields: [event, version, occurred_at, source_system, request_id, payload]
