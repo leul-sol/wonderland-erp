@@ -23,6 +23,11 @@ class EnsureSeeded extends Command
         }
 
         if (DB::table('room_types')->exists()) {
+            if (Schema::hasTable('inventory_items') && ! DB::table('inventory_items')->exists()) {
+                $this->warn('No inventory catalog found. Running inventory seeder...');
+                $this->call(\Database\Seeders\InventorySeeder::class);
+            }
+
             $this->comment('Room catalog already present — skipping seed.');
 
             return self::SUCCESS;

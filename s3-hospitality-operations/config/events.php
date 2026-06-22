@@ -14,5 +14,8 @@ return [
         'guest_checked_in' => 'wh.events.s3.guest.checked_in',
         'guest_checked_out' => 'wh.events.s3.guest.checked_out',
         'folio_settled' => 'wh.events.s3.folio.settled',
+        'goods_received' => 'wh.events.s3.goods.received',
+        'purchase_order_approved' => 'wh.events.s3.purchase_order.approved',
+        'order_finalized' => 'wh.events.s3.order.finalized',
     ],
 ];

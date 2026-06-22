@@ -4,6 +4,8 @@ namespace Tests\Concerns;
 
 trait MocksS3Auth
 {
+    private bool $s3AuthMocked = false;
+
     /**
      * @param  list<string>  $permissions
      * @return array<string, string>
@@ -19,18 +21,30 @@ trait MocksS3Auth
             'S3.hospitality.folios.read',
             'S3.hospitality.folios.charge',
             'S3.hospitality.folios.settle',
+            'S3.hospitality.items.read',
+            'S3.hospitality.purchase_orders.read',
+            'S3.hospitality.purchase_orders.create',
+            'S3.hospitality.purchase_orders.approve',
+            'S3.hospitality.purchase_orders.receive',
+            'S3.hospitality.menu_items.read',
+            'S3.hospitality.orders.read',
+            'S3.hospitality.orders.create',
+            'S3.hospitality.orders.finalize',
         ];
 
-        $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($permissions, $defaults) {
-            $mock->shouldReceive('verify')->andReturn([
-                'valid' => true,
-                'user' => [
-                    'sub' => 1,
-                    'permissions' => $permissions === [] ? $defaults : $permissions,
-                    'roles' => ['receptionist'],
-                ],
-            ]);
-        });
+        if (! $this->s3AuthMocked) {
+            $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($permissions, $defaults) {
+                $mock->shouldReceive('verify')->andReturn([
+                    'valid' => true,
+                    'user' => [
+                        'sub' => 1,
+                        'permissions' => $permissions === [] ? $defaults : $permissions,
+                        'roles' => ['restaurant_manager'],
+                    ],
+                ]);
+            });
+            $this->s3AuthMocked = true;
+        }
 
         return ['Authorization' => 'Bearer test-token'];
     }

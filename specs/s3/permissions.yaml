@@ -19,3 +19,21 @@ permissions:
     default_roles: [super_admin, receptionist, cashier]
   - action: S3.hospitality.folios.settle
     default_roles: [super_admin, cashier]
+  - action: S3.hospitality.items.read
+    default_roles: [super_admin, general_manager, inventory_manager, restaurant_manager, cashier, report_viewer]
+  - action: S3.hospitality.purchase_orders.read
+    default_roles: [super_admin, general_manager, finance_manager, inventory_manager, report_viewer]
+  - action: S3.hospitality.purchase_orders.create
+    default_roles: [super_admin, inventory_manager]
+  - action: S3.hospitality.purchase_orders.approve
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S3.hospitality.purchase_orders.receive
+    default_roles: [super_admin, inventory_manager]
+  - action: S3.hospitality.menu_items.read
+    default_roles: [super_admin, restaurant_manager, cashier, receptionist, report_viewer]
+  - action: S3.hospitality.orders.read
+    default_roles: [super_admin, restaurant_manager, cashier, receptionist, report_viewer]
+  - action: S3.hospitality.orders.create
+    default_roles: [super_admin, restaurant_manager, cashier]
+  - action: S3.hospitality.orders.finalize
+    default_roles: [super_admin, restaurant_manager, cashier]

@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Concerns\RespondsWithApiErrors;
+use App\Http\Controllers\Concerns\SerializesHospitalityResources;
+use App\Http\Requests\AddOrderLineRequest;
+use App\Http\Requests\StoreOrderRequest;
+use App\Models\RestaurantOrder;
+use App\Services\OrderService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class OrderController extends Controller
+{
+    use RespondsWithApiErrors;
+    use SerializesHospitalityResources;
+
+    public function __construct(private readonly OrderService $orders)
+    {
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = RestaurantOrder::query()->with(['lines.menuItem', 'folio'])->orderByDesc('id');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->json([
+            'data' => $query->get()->map(fn ($order) => $this->orderPayload($order))->values(),
+        ]);
+    }
+
+    public function store(StoreOrderRequest $request): JsonResponse
+    {
+        try {
+            $order = $this->orders->create($request->validated('folio_id'));
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->orderPayload($order)], 201);
+    }
+
+    public function show(RestaurantOrder $order): JsonResponse
+    {
+        return response()->json(['data' => $this->orderPayload($order)]);
+    }
+
+    public function addLine(AddOrderLineRequest $request, RestaurantOrder $order): JsonResponse
+    {
+        try {
+            $this->orders->addLine(
+                $order,
+                (int) $request->validated('menu_item_id'),
+                (int) $request->validated('quantity'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->orderPayload($order->fresh(['lines.menuItem', 'folio']))], 201);
+    }
+
+    public function finalize(RestaurantOrder $order): JsonResponse
+    {
+        try {
+            $order = $this->orders->finalize($order);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            return $this->error('INTEGRATION_ERROR', $e->getMessage(), 502);
+        }
+
+        return response()->json(['data' => $this->orderPayload($order)]);
+    }
+}

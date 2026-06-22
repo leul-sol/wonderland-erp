@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\Folio;
+use App\Models\InventoryItem;
+use App\Models\MenuItem;
+use App\Models\PurchaseOrder;
 use App\Models\Reservation;
+use App\Models\RestaurantOrder;
 use App\Models\Room;
 
 trait SerializesHospitalityResources
@@ -71,6 +75,93 @@ trait SerializesHospitalityResources
                 'payment_method' => $line->payment_method,
                 's4_journal_entry_id' => $line->s4_journal_entry_id,
                 'posted_at' => $line->posted_at?->toIso8601String(),
+            ])->values()->all(),
+        ];
+    }
+
+    protected function inventoryItemPayload(InventoryItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'sku' => $item->sku,
+            'name' => $item->name,
+            'unit' => $item->unit,
+            'unit_cost' => (string) $item->unit_cost,
+            'quantity_on_hand' => (string) $item->quantity_on_hand,
+            'reorder_level' => (string) $item->reorder_level,
+            'is_active' => $item->is_active,
+        ];
+    }
+
+    protected function menuItemPayload(MenuItem $item): array
+    {
+        $item->loadMissing('ingredients');
+
+        return [
+            'id' => $item->id,
+            'code' => $item->code,
+            'name' => $item->name,
+            'price' => (string) $item->price,
+            'category' => $item->category,
+            'is_active' => $item->is_active,
+            'ingredients' => $item->ingredients->map(fn ($ingredient) => [
+                'inventory_item_id' => $ingredient->id,
+                'sku' => $ingredient->sku,
+                'name' => $ingredient->name,
+                'quantity' => (string) $ingredient->pivot->quantity,
+            ])->values()->all(),
+        ];
+    }
+
+    protected function purchaseOrderPayload(PurchaseOrder $po): array
+    {
+        $po->loadMissing('lines.inventoryItem');
+
+        return [
+            'id' => $po->id,
+            'po_number' => $po->po_number,
+            'vendor_name' => $po->vendor_name,
+            'status' => $po->status,
+            'total_amount' => (string) $po->total_amount,
+            'approved_by' => $po->approved_by,
+            'approved_at' => $po->approved_at?->toIso8601String(),
+            'received_at' => $po->received_at?->toIso8601String(),
+            's4_journal_entry_id' => $po->s4_journal_entry_id,
+            'lines' => $po->lines->map(fn ($line) => [
+                'id' => $line->id,
+                'inventory_item_id' => $line->inventory_item_id,
+                'sku' => $line->inventoryItem?->sku,
+                'name' => $line->inventoryItem?->name,
+                'quantity' => (string) $line->quantity,
+                'unit_cost' => (string) $line->unit_cost,
+                'line_total' => (string) $line->line_total,
+            ])->values()->all(),
+        ];
+    }
+
+    protected function orderPayload(RestaurantOrder $order): array
+    {
+        $order->loadMissing(['lines.menuItem', 'folio']);
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'folio_id' => $order->folio_id,
+            'status' => $order->status,
+            'payment_context' => $order->payment_context,
+            'subtotal' => (string) $order->subtotal,
+            'cogs_total' => (string) $order->cogs_total,
+            'revenue_journal_entry_id' => $order->revenue_journal_entry_id,
+            'cogs_journal_entry_id' => $order->cogs_journal_entry_id,
+            'finalized_at' => $order->finalized_at?->toIso8601String(),
+            'lines' => $order->lines->map(fn ($line) => [
+                'id' => $line->id,
+                'menu_item_id' => $line->menu_item_id,
+                'menu_item_code' => $line->menuItem?->code,
+                'menu_item_name' => $line->menuItem?->name,
+                'quantity' => $line->quantity,
+                'unit_price' => (string) $line->unit_price,
+                'line_total' => (string) $line->line_total,
             ])->values()->all(),
         ];
     }

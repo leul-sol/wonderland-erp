@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\FolioController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\InventoryItemController;
+use App\Http\Controllers\MenuItemController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RoomController;
 use Illuminate\Support\Facades\Route;
@@ -31,4 +35,34 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S3.hospitality.folios.charge');
     Route::post('/folios/{folio}/settle', [FolioController::class, 'settle'])
         ->middleware('permission:S3.hospitality.folios.settle');
+
+    Route::get('/items', [InventoryItemController::class, 'index'])
+        ->middleware('permission:S3.hospitality.items.read');
+    Route::get('/items/{item}', [InventoryItemController::class, 'show'])
+        ->middleware('permission:S3.hospitality.items.read');
+
+    Route::get('/menu-items', [MenuItemController::class, 'index'])
+        ->middleware('permission:S3.hospitality.menu_items.read');
+
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
+        ->middleware('permission:S3.hospitality.purchase_orders.read');
+    Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])
+        ->middleware('permission:S3.hospitality.purchase_orders.create');
+    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
+        ->middleware('permission:S3.hospitality.purchase_orders.read');
+    Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
+        ->middleware('permission:S3.hospitality.purchase_orders.approve');
+    Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])
+        ->middleware('permission:S3.hospitality.purchase_orders.receive');
+
+    Route::get('/orders', [OrderController::class, 'index'])
+        ->middleware('permission:S3.hospitality.orders.read');
+    Route::post('/orders', [OrderController::class, 'store'])
+        ->middleware('permission:S3.hospitality.orders.create');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])
+        ->middleware('permission:S3.hospitality.orders.read');
+    Route::post('/orders/{order}/lines', [OrderController::class, 'addLine'])
+        ->middleware('permission:S3.hospitality.orders.create');
+    Route::post('/orders/{order}/finalize', [OrderController::class, 'finalize'])
+        ->middleware('permission:S3.hospitality.orders.finalize');
 });
