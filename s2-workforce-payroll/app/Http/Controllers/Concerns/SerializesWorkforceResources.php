@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\Employee;
+use App\Models\LeaveRequest;
 use App\Models\PayrollRun;
 
 trait SerializesWorkforceResources
@@ -54,6 +55,35 @@ trait SerializesWorkforceResources
                 'income_tax' => (string) $line->income_tax,
                 'net_pay' => (string) $line->net_pay,
             ])->values()->all(),
+        ];
+    }
+
+    protected function leaveRequestPayload(LeaveRequest $request): array
+    {
+        $request->loadMissing('employee.department');
+
+        return [
+            'id' => $request->id,
+            'request_number' => $request->request_number,
+            'employee_id' => $request->employee_id,
+            'employee' => $request->employee ? [
+                'id' => $request->employee->id,
+                'employee_number' => $request->employee->employee_number,
+                'full_name' => $request->employee->full_name,
+                'department' => $request->employee->department ? [
+                    'id' => $request->employee->department->id,
+                    'name' => $request->employee->department->name,
+                ] : null,
+            ] : null,
+            'leave_type' => $request->leave_type,
+            'start_date' => $request->start_date?->toDateString(),
+            'end_date' => $request->end_date?->toDateString(),
+            'days_requested' => $request->days_requested,
+            'reason' => $request->reason,
+            'status' => $request->status,
+            'approved_at' => $request->approved_at?->toIso8601String(),
+            'approved_by' => $request->approved_by,
+            'rejection_reason' => $request->rejection_reason,
         ];
     }
 }

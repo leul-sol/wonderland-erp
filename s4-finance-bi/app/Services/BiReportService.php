@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\JournalEntry;
+use App\Models\JournalLine;
 use Illuminate\Support\Facades\DB;
 
 class BiReportService
@@ -136,6 +137,173 @@ class BiReportService
                 'approved_payroll_runs' => $payroll['approved_payroll_runs'],
             ],
             'revenue_by_source' => $revenueBySource['lines'],
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    public function occupancyReport(): array
+    {
+        $snapshot = $this->hospitalitySnapshot();
+
+        return [
+            'report' => 'occupancy',
+            'rooms' => $snapshot['rooms'],
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    public function reservationPipeline(): array
+    {
+        $reservations = $this->s3->reservations();
+
+        return [
+            'report' => 'reservation_pipeline',
+            'lines' => collect($reservations)->map(fn ($r) => [
+                'id' => $r['id'] ?? null,
+                'guest_name' => $r['guest_name'] ?? null,
+                'status' => $r['status'] ?? null,
+                'check_in_date' => $r['check_in_date'] ?? null,
+                'check_out_date' => $r['check_out_date'] ?? null,
+            ])->values()->all(),
+        ];
+    }
+
+    public function fbSalesReport(): array
+    {
+        $orders = collect($this->s3->orders())->where('status', 'finalized');
+
+        return [
+            'report' => 'fb_sales',
+            'order_count' => $orders->count(),
+            'total_revenue' => number_format($orders->sum(fn ($o) => (float) ($o['subtotal'] ?? 0)), 2, '.', ''),
+            'lines' => $orders->values()->all(),
+        ];
+    }
+
+    public function inventoryStatus(): array
+    {
+        $items = $this->s3->items();
+
+        return [
+            'report' => 'inventory_status',
+            'item_count' => count($items),
+            'lines' => $items,
+        ];
+    }
+
+    public function purchaseOrderStatus(): array
+    {
+        $orders = $this->s3->purchaseOrders();
+
+        return [
+            'report' => 'purchase_order_status',
+            'lines' => $orders,
+            'by_status' => collect($orders)->groupBy('status')->map->count()->all(),
+        ];
+    }
+
+    public function folioOutstanding(): array
+    {
+        $reservations = collect($this->s3->reservations())->where('status', 'checked_in');
+
+        return [
+            'report' => 'folio_outstanding',
+            'checked_in_guests' => $reservations->count(),
+            'lines' => $reservations->map(fn ($r) => [
+                'reservation_id' => $r['id'] ?? null,
+                'guest_name' => $r['guest_name'] ?? null,
+                'folio_id' => $r['folio_id'] ?? null,
+            ])->values()->all(),
+        ];
+    }
+
+    public function roomRevenueMix(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $range = $this->reports->resolveDateRange($fiscalPeriodId, $from, $to);
+
+        $amount = JournalLine::query()
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->join('accounts', 'accounts.id', '=', 'journal_lines.account_id')
+            ->where('journal_entries.status', 'posted')
+            ->where('accounts.code', '4001')
+            ->whereDate('journal_entries.entry_date', '>=', $range['from'])
+            ->whereDate('journal_entries.entry_date', '<=', $range['to'])
+            ->sum('journal_lines.credit');
+
+        return [
+            'report' => 'room_revenue_mix',
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'room_revenue' => number_format((float) $amount, 2, '.', ''),
+        ];
+    }
+
+    public function headcountByDepartment(): array
+    {
+        $employees = collect($this->s2->employees())->where('status', 'active');
+
+        return [
+            'report' => 'headcount_by_department',
+            'total' => $employees->count(),
+            'lines' => $employees->groupBy(fn ($e) => $e['department']['name'] ?? 'Unassigned')
+                ->map(fn ($group, $dept) => ['department' => $dept, 'count' => $group->count()])
+                ->values()->all(),
+        ];
+    }
+
+    public function leaveSummary(): array
+    {
+        $requests = $this->s2->leaveRequests();
+
+        return [
+            'report' => 'leave_summary',
+            'total_requests' => count($requests),
+            'by_status' => collect($requests)->groupBy('status')->map->count()->all(),
+            'lines' => $requests,
+        ];
+    }
+
+    public function payrollCostTrend(): array
+    {
+        $runs = collect($this->s2->payrollRuns())->where('status', 'approved');
+
+        return [
+            'report' => 'payroll_cost_trend',
+            'lines' => $runs->map(fn ($run) => [
+                'id' => $run['id'] ?? null,
+                'period_start' => $run['period_start'] ?? null,
+                'period_end' => $run['period_end'] ?? null,
+                'total_gross' => $run['total_gross'] ?? null,
+                'total_net' => $run['total_net'] ?? null,
+            ])->values()->all(),
+        ];
+    }
+
+    public function budgetVariance(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $income = $this->reports->incomeStatement($fiscalPeriodId, $from, $to);
+        $actual = (float) $income['net_income'];
+
+        return [
+            'report' => 'budget_variance',
+            'actual_net_income' => $income['net_income'],
+            'budget_net_income' => '0.00',
+            'variance' => number_format($actual, 2, '.', ''),
+            'note' => 'Budget targets not configured; variance equals actual.',
+        ];
+    }
+
+    public function kpiScorecard(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $executive = $this->reports->executiveDashboard($fiscalPeriodId, $from, $to);
+        $hospitality = $this->hospitalitySnapshot();
+        $payroll = $this->payrollSnapshot();
+
+        return [
+            'report' => 'kpi_scorecard',
+            'finance' => $executive['kpis'],
+            'occupancy_rate' => $hospitality['rooms']['occupancy_rate'],
+            'active_employees' => $payroll['active_employees'],
             'generated_at' => now()->toIso8601String(),
         ];
     }

@@ -31,7 +31,6 @@ class PayrollFlowTest extends TestCase
     {
         $response = $this->postJson('/api/v1/employees', [
             'full_name' => 'Dawit Haile',
-            'department_id' => 1,
             'job_title' => 'Accountant',
             'base_salary' => 15000,
             'default_role' => 'accountant',

@@ -15,5 +15,6 @@ return [
         'employee_updated' => 'wh.events.s2.employee.updated',
         'employee_archived' => 'wh.events.s2.employee.archived',
         'payroll_run_approved' => 'wh.events.s2.payroll_run.approved',
+        'leave_approved' => 'wh.events.s2.leave.approved',
     ],
 ];

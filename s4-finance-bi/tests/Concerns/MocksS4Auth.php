@@ -14,6 +14,8 @@ trait MocksS4Auth
     {
         $defaults = [
             'S4.finance.accounts.read',
+            'S4.finance.accounts.create',
+            'S4.finance.accounts.update',
             'S4.finance.journal_entries.read',
             'S4.finance.journal_entries.create',
             'S4.finance.journal_entries.approve',
@@ -23,6 +25,7 @@ trait MocksS4Auth
             'S4.finance.payables.read',
             'S4.finance.payables.settle',
             'S4.finance.fiscal_periods.read',
+            'S4.finance.fiscal_periods.create',
             'S4.finance.fiscal_periods.close',
             'S4.finance.fiscal_periods.lock',
             'S4.finance.reports.read',

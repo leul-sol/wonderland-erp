@@ -1,0 +1,30 @@
+<?php
+
+return [
+    'reports' => [
+        ['slug' => 'trial_balance', 'name' => 'Trial Balance', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'income_statement', 'name' => 'Income Statement', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'balance_sheet', 'name' => 'Balance Sheet', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'cash_flow', 'name' => 'Cash Flow Statement', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'gl_detail', 'name' => 'General Ledger Detail', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'ar_aging', 'name' => 'AR Aging', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'ap_aging', 'name' => 'AP Aging', 'category' => 'finance', 'module' => 'report'],
+        ['slug' => 'revenue_by_source', 'name' => 'Revenue by Source Module', 'category' => 'finance', 'module' => 'bi'],
+        ['slug' => 'hospitality_snapshot', 'name' => 'Hospitality Snapshot', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'occupancy', 'name' => 'Room Occupancy', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'reservation_pipeline', 'name' => 'Reservation Pipeline', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'fb_sales', 'name' => 'F&B Sales', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'inventory_status', 'name' => 'Inventory Status', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'purchase_order_status', 'name' => 'Purchase Order Status', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'folio_outstanding', 'name' => 'Outstanding Folios', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'room_revenue_mix', 'name' => 'Room Revenue Mix', 'category' => 'hospitality', 'module' => 'bi'],
+        ['slug' => 'payroll_snapshot', 'name' => 'Payroll Snapshot', 'category' => 'workforce', 'module' => 'bi'],
+        ['slug' => 'headcount_by_department', 'name' => 'Headcount by Department', 'category' => 'workforce', 'module' => 'bi'],
+        ['slug' => 'leave_summary', 'name' => 'Leave Summary', 'category' => 'workforce', 'module' => 'bi'],
+        ['slug' => 'payroll_cost_trend', 'name' => 'Payroll Cost Trend', 'category' => 'workforce', 'module' => 'bi'],
+        ['slug' => 'executive_dashboard', 'name' => 'Executive Dashboard', 'category' => 'executive', 'module' => 'dashboard'],
+        ['slug' => 'operations_dashboard', 'name' => 'Operations Dashboard', 'category' => 'executive', 'module' => 'dashboard'],
+        ['slug' => 'budget_variance', 'name' => 'Budget Variance', 'category' => 'executive', 'module' => 'bi'],
+        ['slug' => 'kpi_scorecard', 'name' => 'KPI Scorecard', 'category' => 'executive', 'module' => 'bi'],
+    ],
+];

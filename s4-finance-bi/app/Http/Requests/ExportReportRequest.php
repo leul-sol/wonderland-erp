@@ -14,8 +14,8 @@ class ExportReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'report' => ['required', 'in:trial_balance,income_statement,balance_sheet,cash_flow,revenue_by_source'],
-            'format' => ['required', 'in:csv'],
+            'report' => ['required', 'string', 'max:60'],
+            'format' => ['required', 'in:csv,pdf'],
             'fiscal_period_id' => ['nullable', 'integer', 'exists:fiscal_periods,id'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],

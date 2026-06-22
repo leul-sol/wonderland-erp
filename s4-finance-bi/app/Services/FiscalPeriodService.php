@@ -57,4 +57,37 @@ class FiscalPeriodService
 
         return $period->fresh();
     }
+
+    public function create(array $data): FiscalPeriod
+    {
+        $year = (int) $data['year'];
+        $periodNumber = (int) $data['period_number'];
+        $startDate = Carbon::parse($data['start_date'])->toDateString();
+        $endDate = Carbon::parse($data['end_date'])->toDateString();
+
+        if ($startDate > $endDate) {
+            throw new \InvalidArgumentException('start_date must be on or before end_date.');
+        }
+
+        if (FiscalPeriod::query()->where('year', $year)->where('period_number', $periodNumber)->exists()) {
+            throw new \InvalidArgumentException('Fiscal period already exists for this year and period number.');
+        }
+
+        $overlap = FiscalPeriod::query()
+            ->whereDate('start_date', '<=', $endDate)
+            ->whereDate('end_date', '>=', $startDate)
+            ->exists();
+
+        if ($overlap) {
+            throw new \InvalidArgumentException('Fiscal period dates overlap an existing period.');
+        }
+
+        return FiscalPeriod::query()->create([
+            'year' => $year,
+            'period_number' => $periodNumber,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'status' => 'open',
+        ]);
+    }
 }

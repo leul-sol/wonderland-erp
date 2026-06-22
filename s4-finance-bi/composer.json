@@ -4,6 +4,7 @@
     "description": "Wonderland Hotel ERP — S4 Finance & BI",
     "require": {
         "php": "^8.2",
+        "dompdf/dompdf": "^3.0",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9"
     },

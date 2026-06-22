@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\RespondsWithApiErrors;
+use App\Http\Controllers\Concerns\SerializesAccounts;
+use App\Http\Requests\StoreFiscalPeriodRequest;
 use App\Models\FiscalPeriod;
 use App\Services\FiscalPeriodService;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +13,7 @@ use Illuminate\Http\Request;
 class FiscalPeriodController extends Controller
 {
     use RespondsWithApiErrors;
+    use SerializesAccounts;
 
     public function __construct(private readonly FiscalPeriodService $fiscalPeriods)
     {
@@ -29,8 +32,19 @@ class FiscalPeriodController extends Controller
         }
 
         return response()->json([
-            'data' => $query->get()->map(fn (FiscalPeriod $period) => $this->periodPayload($period))->values(),
+            'data' => $query->get()->map(fn (FiscalPeriod $period) => $this->fiscalPeriodPayload($period))->values(),
         ]);
+    }
+
+    public function store(StoreFiscalPeriodRequest $request): JsonResponse
+    {
+        try {
+            $period = $this->fiscalPeriods->create($request->validated());
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->fiscalPeriodPayload($period)], 201);
     }
 
     public function close(Request $request, FiscalPeriod $fiscalPeriod): JsonResponse
@@ -43,7 +57,7 @@ class FiscalPeriodController extends Controller
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
         }
 
-        return response()->json(['data' => $this->periodPayload($period)]);
+        return response()->json(['data' => $this->fiscalPeriodPayload($period)]);
     }
 
     public function lock(FiscalPeriod $fiscalPeriod): JsonResponse
@@ -54,20 +68,6 @@ class FiscalPeriodController extends Controller
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
         }
 
-        return response()->json(['data' => $this->periodPayload($period)]);
-    }
-
-    private function periodPayload(FiscalPeriod $period): array
-    {
-        return [
-            'id' => $period->id,
-            'year' => $period->year,
-            'period_number' => $period->period_number,
-            'start_date' => $period->start_date?->toDateString(),
-            'end_date' => $period->end_date?->toDateString(),
-            'status' => $period->status,
-            'closed_by' => $period->closed_by,
-            'closed_at' => $period->closed_at?->toIso8601String(),
-        ];
+        return response()->json(['data' => $this->fiscalPeriodPayload($period)]);
     }
 }

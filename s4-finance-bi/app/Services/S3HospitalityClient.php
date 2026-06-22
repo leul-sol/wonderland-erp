@@ -35,6 +35,22 @@ class S3HospitalityClient
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function items(): array
+    {
+        return $this->cachedGet('s3.items', 'items', config('services.cache_ttl.s3_read'));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function purchaseOrders(): array
+    {
+        return $this->cachedGet('s3.purchase_orders', 'purchase-orders', config('services.cache_ttl.s3_read'));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function cachedGet(string $cacheKey, string $path, int $ttl): array
     {
         return Cache::remember($cacheKey, $ttl, function () use ($path) {

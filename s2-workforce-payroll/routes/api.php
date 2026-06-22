@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollRunController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,4 +28,15 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S2.workforce.payroll_runs.read');
     Route::post('/payroll-runs/{payrollRun}/approve', [PayrollRunController::class, 'approve'])
         ->middleware('permission:S2.workforce.payroll_runs.approve');
+
+    Route::get('/leave-requests', [LeaveRequestController::class, 'index'])
+        ->middleware('permission:S2.workforce.leave_requests.read');
+    Route::post('/leave-requests', [LeaveRequestController::class, 'store'])
+        ->middleware('permission:S2.workforce.leave_requests.create');
+    Route::get('/leave-requests/{leaveRequest}', [LeaveRequestController::class, 'show'])
+        ->middleware('permission:S2.workforce.leave_requests.read');
+    Route::post('/leave-requests/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])
+        ->middleware('permission:S2.workforce.leave_requests.approve');
+    Route::post('/leave-requests/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])
+        ->middleware('permission:S2.workforce.leave_requests.reject');
 });

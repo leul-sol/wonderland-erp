@@ -17,3 +17,11 @@ permissions:
     default_roles: [super_admin, payroll_officer]
   - action: S2.workforce.payroll_runs.approve
     default_roles: [super_admin, payroll_officer]
+  - action: S2.workforce.leave_requests.read
+    default_roles: [super_admin, general_manager, hr_manager, report_viewer]
+  - action: S2.workforce.leave_requests.create
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.leave_requests.approve
+    default_roles: [super_admin, hr_manager, general_manager]
+  - action: S2.workforce.leave_requests.reject
+    default_roles: [super_admin, hr_manager, general_manager]

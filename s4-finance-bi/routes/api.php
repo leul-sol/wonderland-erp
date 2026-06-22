@@ -23,8 +23,17 @@ Route::middleware('jwt')->group(function () {
     Route::get('/accounts', [AccountController::class, 'index'])
         ->middleware('permission:S4.finance.accounts.read');
 
+    Route::get('/accounts/{account}', [AccountController::class, 'show'])
+        ->middleware('permission:S4.finance.accounts.read');
+    Route::post('/accounts', [AccountController::class, 'store'])
+        ->middleware('permission:S4.finance.accounts.create');
+    Route::patch('/accounts/{account}', [AccountController::class, 'update'])
+        ->middleware('permission:S4.finance.accounts.update');
+
     Route::get('/fiscal-periods', [FiscalPeriodController::class, 'index'])
         ->middleware('permission:S4.finance.fiscal_periods.read');
+    Route::post('/fiscal-periods', [FiscalPeriodController::class, 'store'])
+        ->middleware('permission:S4.finance.fiscal_periods.create');
 
     Route::post('/fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])
         ->middleware('permission:S4.finance.fiscal_periods.close');
@@ -77,6 +86,9 @@ Route::middleware('jwt')->group(function () {
     Route::get('/dashboards/operations', [DashboardController::class, 'operations'])
         ->middleware('permission:S4.bi.dashboards.read');
 
+    Route::get('/bi/reports', [BiReportController::class, 'catalog'])
+        ->middleware('permission:S4.bi.reports.read');
+
     Route::get('/bi/reports/revenue-by-source', [BiReportController::class, 'revenueBySource'])
         ->middleware('permission:S4.bi.reports.read');
 
@@ -84,6 +96,9 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S4.bi.reports.read');
 
     Route::get('/bi/reports/hospitality-snapshot', [BiReportController::class, 'hospitalitySnapshot'])
+        ->middleware('permission:S4.bi.reports.read');
+
+    Route::get('/bi/reports/{slug}', [BiReportController::class, 'show'])
         ->middleware('permission:S4.bi.reports.read');
 
     Route::post('/bi/exports', [ExportController::class, 'store'])

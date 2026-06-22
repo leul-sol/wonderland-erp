@@ -20,6 +20,10 @@ trait MocksS2Auth
             'S2.workforce.payroll_runs.read',
             'S2.workforce.payroll_runs.create',
             'S2.workforce.payroll_runs.approve',
+            'S2.workforce.leave_requests.read',
+            'S2.workforce.leave_requests.create',
+            'S2.workforce.leave_requests.approve',
+            'S2.workforce.leave_requests.reject',
         ];
 
         if (! $this->s2AuthMocked) {

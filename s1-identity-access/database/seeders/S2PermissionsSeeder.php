@@ -17,6 +17,10 @@ class S2PermissionsSeeder extends Seeder
             ['action' => 'S2.workforce.payroll_runs.read', 'display_name' => 'Read payroll runs', 'roles' => ['super_admin', 'general_manager', 'hr_manager', 'payroll_officer']],
             ['action' => 'S2.workforce.payroll_runs.create', 'display_name' => 'Create payroll runs', 'roles' => ['super_admin', 'payroll_officer']],
             ['action' => 'S2.workforce.payroll_runs.approve', 'display_name' => 'Approve payroll runs', 'roles' => ['super_admin', 'payroll_officer']],
+            ['action' => 'S2.workforce.leave_requests.read', 'display_name' => 'Read leave requests', 'roles' => ['super_admin', 'general_manager', 'hr_manager', 'report_viewer']],
+            ['action' => 'S2.workforce.leave_requests.create', 'display_name' => 'Create leave requests', 'roles' => ['super_admin', 'hr_manager']],
+            ['action' => 'S2.workforce.leave_requests.approve', 'display_name' => 'Approve leave requests', 'roles' => ['super_admin', 'hr_manager', 'general_manager']],
+            ['action' => 'S2.workforce.leave_requests.reject', 'display_name' => 'Reject leave requests', 'roles' => ['super_admin', 'hr_manager', 'general_manager']],
         ];
 
         foreach ($permissions as $permission) {

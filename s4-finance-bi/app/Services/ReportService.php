@@ -318,6 +318,92 @@ class ReportService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function glDetail(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $range = $this->resolveDateRange($fiscalPeriodId, $from, $to);
+
+        $lines = JournalLine::query()
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->join('accounts', 'accounts.id', '=', 'journal_lines.account_id')
+            ->where('journal_entries.status', 'posted')
+            ->whereDate('journal_entries.entry_date', '>=', $range['from'])
+            ->whereDate('journal_entries.entry_date', '<=', $range['to'])
+            ->orderBy('journal_entries.entry_date')
+            ->orderBy('journal_entries.id')
+            ->get([
+                'journal_entries.entry_number',
+                'journal_entries.entry_date',
+                'journal_entries.description as entry_description',
+                'journal_entries.source_module',
+                'accounts.code as account_code',
+                'accounts.name as account_name',
+                'journal_lines.debit',
+                'journal_lines.credit',
+                'journal_lines.description as line_description',
+            ]);
+
+        return [
+            'report' => 'gl_detail',
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'lines' => $lines->map(fn ($line) => [
+                'entry_number' => $line->entry_number,
+                'entry_date' => $line->entry_date,
+                'account_code' => $line->account_code,
+                'account_name' => $line->account_name,
+                'debit' => $this->formatMoney((float) $line->debit),
+                'credit' => $this->formatMoney((float) $line->credit),
+                'source_module' => $line->source_module,
+                'description' => $line->line_description ?? $line->entry_description,
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function arAging(): array
+    {
+        $receivables = Receivable::query()->with('account')->where('status', 'open')->orderByDesc('balance')->get();
+
+        return [
+            'report' => 'ar_aging',
+            'as_of' => now()->toDateString(),
+            'total_outstanding' => $this->formatMoney((float) $receivables->sum('balance')),
+            'lines' => $receivables->map(fn ($r) => [
+                'id' => $r->id,
+                'party_name' => $r->party_name,
+                'source_reference' => $r->source_reference,
+                'account_code' => $r->account?->code,
+                'balance' => $this->formatMoney((float) $r->balance),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function apAging(): array
+    {
+        $payables = Payable::query()->with('account')->where('status', 'open')->orderByDesc('balance')->get();
+
+        return [
+            'report' => 'ap_aging',
+            'as_of' => now()->toDateString(),
+            'total_outstanding' => $this->formatMoney((float) $payables->sum('balance')),
+            'lines' => $payables->map(fn ($p) => [
+                'id' => $p->id,
+                'vendor_name' => $p->vendor_name,
+                'source_reference' => $p->source_reference,
+                'account_code' => $p->account?->code,
+                'balance' => $this->formatMoney((float) $p->balance),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
      * @return Collection<int, array{debit: float, credit: float}>
      */
     private function aggregateActivity(?string $from, string $to): Collection

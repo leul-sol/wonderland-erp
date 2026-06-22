@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\RespondsWithApiErrors;
 use App\Http\Requests\ExportReportRequest;
 use App\Services\ExportService;
+use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
@@ -15,7 +16,7 @@ class ExportController extends Controller
     {
     }
 
-    public function store(ExportReportRequest $request): StreamedResponse|\Illuminate\Http\JsonResponse
+    public function store(ExportReportRequest $request): StreamedResponse|Response|\Illuminate\Http\JsonResponse
     {
         try {
             return $this->exports->export(
