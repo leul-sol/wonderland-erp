@@ -1,5 +1,19 @@
 # S2 — Workforce & Payroll
 
-Not scaffolded yet. See `documents/S2_Workforce_Payroll_SDD.pdf`.
+Employees, payroll runs, and journal posting to S4.
 
-Build after S1 health + auth verify are stable.
+## Dev
+
+```powershell
+docker compose up -d s2-workforce s2-workers
+docker compose exec s2-workforce php artisan app:ensure-seeded
+```
+
+Health: `http://localhost/s2/api/v1/health`
+
+## Golden path
+
+1. Create employee → S1 user provisioned via `wh.events.s2.employee.created`
+2. Create payroll run (draft lines for all active employees)
+3. Approve payroll → S4 journal (salaries, pension, tax)
+4. Event `wh.events.s2.payroll_run.approved` published

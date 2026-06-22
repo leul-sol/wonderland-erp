@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             S4PermissionsSeeder::class,
             S3PermissionsSeeder::class,
+            S2PermissionsSeeder::class,
             SuperAdminSeeder::class,
         ]);
     }

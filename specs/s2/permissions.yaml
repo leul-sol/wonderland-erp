@@ -1,0 +1,19 @@
+# S2 §6.1 — Workforce & Payroll permission catalog (seed into S1 permissions table)
+
+domain_prefix: S2
+
+permissions:
+  - action: S2.workforce.employees.read
+    default_roles: [super_admin, general_manager, hr_manager, payroll_officer, report_viewer]
+  - action: S2.workforce.employees.create
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.employees.update
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.employees.archive
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.payroll_runs.read
+    default_roles: [super_admin, general_manager, hr_manager, payroll_officer]
+  - action: S2.workforce.payroll_runs.create
+    default_roles: [super_admin, payroll_officer]
+  - action: S2.workforce.payroll_runs.approve
+    default_roles: [super_admin, payroll_officer]

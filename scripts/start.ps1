@@ -19,10 +19,15 @@ if (-not (Test-Path "s3-hospitality-operations\.env")) {
     Write-Host "Created s3-hospitality-operations/.env from .env.example"
 }
 
+if (-not (Test-Path "s2-workforce-payroll\.env")) {
+    Copy-Item "s2-workforce-payroll/.env.example" "s2-workforce-payroll/.env"
+    Write-Host "Created s2-workforce-payroll/.env from .env.example"
+}
+
 Write-Host "Building and starting containers..."
 docker compose up -d --build
 
-Write-Host "Waiting for MySQL, S1, S4, and S3..."
+Write-Host "Waiting for MySQL, S1, S4, S3, and S2..."
 $ready = $false
 for ($i = 0; $i -lt 45; $i++) {
     # Native commands (mysqladmin) write warnings to stderr; do not treat as fatal.
@@ -41,9 +46,12 @@ for ($i = 0; $i -lt 45; $i++) {
     docker compose exec -T s3-hospitality php artisan migrate:status 2>$null | Out-Null
     $s3Ok = ($LASTEXITCODE -eq 0)
 
+    docker compose exec -T s2-workforce php artisan migrate:status 2>$null | Out-Null
+    $s2Ok = ($LASTEXITCODE -eq 0)
+
     $ErrorActionPreference = $prevPreference
 
-    if ($mysqlOk -and $s1Ok -and $s4Ok -and $s3Ok) {
+    if ($mysqlOk -and $s1Ok -and $s4Ok -and $s3Ok -and $s2Ok) {
         $ready = $true
         break
     }
@@ -84,6 +92,15 @@ if (-not $s3SeedOk) {
     Write-Warning "S3 bootstrap failed. Retry: docker compose exec s3-hospitality php artisan app:ensure-seeded"
 }
 
+$ErrorActionPreference = "Continue"
+docker compose exec -T s2-workforce php artisan app:ensure-seeded 2>&1 | Out-Host
+$s2SeedOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevPreference
+
+if (-not $s2SeedOk) {
+    Write-Warning "S2 bootstrap failed. Retry: docker compose exec s2-workforce php artisan app:ensure-seeded"
+}
+
 try {
     $response = Invoke-RestMethod -Uri "http://localhost/s1/api/v1/health" -TimeoutSec 10
     Write-Host "S1 health:" ($response | ConvertTo-Json -Compress)
@@ -107,6 +124,15 @@ try {
     Write-Host "S3 health check failed. Run:"
     Write-Host "  docker compose exec s3-hospitality php artisan app:ensure-seeded"
     Write-Host "  curl http://localhost/s3/api/v1/health"
+}
+
+try {
+    $s2 = Invoke-RestMethod -Uri "http://localhost/s2/api/v1/health" -TimeoutSec 10
+    Write-Host "S2 health:" ($s2 | ConvertTo-Json -Compress)
+} catch {
+    Write-Host "S2 health check failed. Run:"
+    Write-Host "  docker compose exec s2-workforce php artisan app:ensure-seeded"
+    Write-Host "  curl http://localhost/s2/api/v1/health"
 }
 
 Write-Host "Done."
