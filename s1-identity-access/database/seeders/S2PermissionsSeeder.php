@@ -21,6 +21,10 @@ class S2PermissionsSeeder extends Seeder
             ['action' => 'S2.workforce.leave_requests.create', 'display_name' => 'Create leave requests', 'roles' => ['super_admin', 'hr_manager']],
             ['action' => 'S2.workforce.leave_requests.approve', 'display_name' => 'Approve leave requests', 'roles' => ['super_admin', 'hr_manager', 'general_manager']],
             ['action' => 'S2.workforce.leave_requests.reject', 'display_name' => 'Reject leave requests', 'roles' => ['super_admin', 'hr_manager', 'general_manager']],
+            ['action' => 'S2.workforce.attendance.read', 'display_name' => 'Read attendance records', 'roles' => ['super_admin', 'general_manager', 'hr_manager', 'payroll_officer', 'report_viewer']],
+            ['action' => 'S2.workforce.attendance.create', 'display_name' => 'Create attendance records', 'roles' => ['super_admin', 'hr_manager', 'payroll_officer']],
+            ['action' => 'S2.workforce.severance.read', 'display_name' => 'Read severance calculations', 'roles' => ['super_admin', 'general_manager', 'hr_manager', 'payroll_officer']],
+            ['action' => 'S2.workforce.severance.calculate', 'display_name' => 'Calculate severance', 'roles' => ['super_admin', 'hr_manager']],
         ];
 
         foreach ($permissions as $permission) {

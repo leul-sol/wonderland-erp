@@ -1,0 +1,132 @@
+{
+  "info": {
+    "_postman_id": "wonderland-s2-workforce-v1",
+    "name": "Wonderland ERP — S2 Workforce & Payroll",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost/s2/api/v1" },
+    { "key": "serviceKey", "value": "dev-internal-key-change-in-prod" },
+    { "key": "accessToken", "value": "" },
+    { "key": "employeeId", "value": "1" },
+    { "key": "leaveRequestId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "List Employees",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/employees"
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Test Employee\",\n  \"base_salary\": 15000,\n  \"default_role\": \"cashier\"\n}"
+            },
+            "url": "{{baseUrl}}/employees"
+          }
+        },
+        {
+          "name": "Staff Meal Deduction (service key)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Service-Key", "value": "{{serviceKey}}" },
+              { "key": "Idempotency-Key", "value": "meal-{{$timestamp}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deduction_type\": \"staff_meal\",\n  \"amount\": 120.00,\n  \"source_reference\": \"CONSUMPTION-1\"\n}"
+            },
+            "url": "{{baseUrl}}/employees/{{employeeId}}/deductions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leave",
+      "item": [
+        {
+          "name": "Create Leave Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": {{employeeId}},\n  \"leave_type\": \"annual\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-03\"\n}"
+            },
+            "url": "{{baseUrl}}/leave-requests"
+          }
+        },
+        {
+          "name": "Approve Leave",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/leave-requests/{{leaveRequestId}}/approve"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Record Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": {{employeeId}},\n  \"work_date\": \"2026-06-15\",\n  \"check_in\": \"08:00\",\n  \"check_out\": \"17:00\"\n}"
+            },
+            "url": "{{baseUrl}}/attendance-records"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payroll",
+      "item": [
+        {
+          "name": "Create Payroll Run",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period_start\": \"2026-06-01\",\n  \"period_end\": \"2026-06-30\"\n}"
+            },
+            "url": "{{baseUrl}}/payroll-runs"
+          }
+        }
+      ]
+    }
+  ]
+}

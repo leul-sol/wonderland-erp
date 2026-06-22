@@ -33,6 +33,8 @@ class S4PermissionsSeeder extends Seeder
             ['action' => 'S4.bi.rtm.update', 'display_name' => 'Update RTM', 'roles' => ['super_admin', 'general_manager']],
             ['action' => 'S4.bi.uat.read', 'display_name' => 'Read UAT', 'roles' => ['super_admin', 'general_manager', 'finance_manager']],
             ['action' => 'S4.bi.uat.update', 'display_name' => 'Update UAT', 'roles' => ['super_admin', 'general_manager', 'finance_manager']],
+            ['action' => 'S4.finance.budgets.read', 'display_name' => 'Read budget lines', 'roles' => ['super_admin', 'general_manager', 'finance_manager', 'accountant']],
+            ['action' => 'S4.finance.budgets.create', 'display_name' => 'Create budget lines', 'roles' => ['super_admin', 'finance_manager']],
         ];
 
         foreach ($permissions as $permission) {

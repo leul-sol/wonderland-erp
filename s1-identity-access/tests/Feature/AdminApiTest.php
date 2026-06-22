@@ -94,7 +94,7 @@ class AdminApiTest extends TestCase
 
         $this->getJson('/api/v1/permissions', $this->authHeaders())
             ->assertOk()
-            ->assertJsonPath('meta.total', 66);
+            ->assertJsonPath('meta.total', 75);
     }
 
     public function test_audit_logs_index(): void

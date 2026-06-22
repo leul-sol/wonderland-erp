@@ -37,3 +37,9 @@ permissions:
     default_roles: [super_admin, restaurant_manager, cashier]
   - action: S3.hospitality.orders.finalize
     default_roles: [super_admin, restaurant_manager, cashier]
+  - action: S3.hospitality.consumption.read
+    default_roles: [super_admin, restaurant_manager, hr_manager, report_viewer]
+  - action: S3.hospitality.consumption.create
+    default_roles: [super_admin, restaurant_manager]
+  - action: S3.hospitality.consumption.close
+    default_roles: [super_admin, restaurant_manager, payroll_officer]

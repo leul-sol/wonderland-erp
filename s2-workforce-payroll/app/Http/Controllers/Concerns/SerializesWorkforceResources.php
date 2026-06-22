@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\AttendanceRecord;
 use App\Models\Employee;
+use App\Models\EmployeeDeduction;
 use App\Models\LeaveRequest;
 use App\Models\PayrollRun;
+use App\Models\SeveranceCalculation;
 
 trait SerializesWorkforceResources
 {
@@ -84,6 +87,51 @@ trait SerializesWorkforceResources
             'approved_at' => $request->approved_at?->toIso8601String(),
             'approved_by' => $request->approved_by,
             'rejection_reason' => $request->rejection_reason,
+        ];
+    }
+
+    protected function attendancePayload(AttendanceRecord $record): array
+    {
+        $record->loadMissing('employee.department');
+
+        return [
+            'id' => $record->id,
+            'employee_id' => $record->employee_id,
+            'employee_name' => $record->employee?->full_name,
+            'work_date' => $record->work_date?->toDateString(),
+            'check_in' => $record->check_in,
+            'check_out' => $record->check_out,
+            'hours_worked' => (string) $record->hours_worked,
+            'status' => $record->status,
+            'notes' => $record->notes,
+        ];
+    }
+
+    protected function deductionPayload(EmployeeDeduction $deduction): array
+    {
+        return [
+            'id' => $deduction->id,
+            'employee_id' => $deduction->employee_id,
+            'deduction_type' => $deduction->deduction_type,
+            'amount' => (string) $deduction->amount,
+            'description' => $deduction->description,
+            'source_reference' => $deduction->source_reference,
+            'status' => $deduction->status,
+        ];
+    }
+
+    protected function severancePayload(SeveranceCalculation $calculation): array
+    {
+        $calculation->loadMissing('employee');
+
+        return [
+            'id' => $calculation->id,
+            'employee_id' => $calculation->employee_id,
+            'employee_name' => $calculation->employee?->full_name,
+            'amount' => (string) $calculation->amount,
+            'months_of_service' => $calculation->months_of_service,
+            'calculation_date' => $calculation->calculation_date?->toDateString(),
+            'status' => $calculation->status,
         ];
     }
 }

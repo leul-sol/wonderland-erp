@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BiReportController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FiscalPeriodController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\OperationalEventController;
 use App\Http\Controllers\PayableController;
 use App\Http\Controllers\ReceivableController;
 use App\Http\Controllers\ReportController;
@@ -121,4 +123,13 @@ Route::middleware('jwt')->group(function () {
 
     Route::post('/bi/uat/{uatScenario}/results', [UatController::class, 'recordResult'])
         ->middleware('permission:S4.bi.uat.update');
+
+    Route::get('/bi/operational-events', [OperationalEventController::class, 'index'])
+        ->middleware('permission:S4.bi.reports.read');
+
+    Route::get('/finance/budgets', [BudgetController::class, 'index'])
+        ->middleware('permission:S4.finance.budgets.read');
+
+    Route::post('/finance/budgets', [BudgetController::class, 'store'])
+        ->middleware('permission:S4.finance.budgets.create');
 });

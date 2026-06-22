@@ -8,6 +8,14 @@
    - `Wonderland-S1-Local.postman_environment.json`
 3. Choose environment **Wonderland — Local (Docker)** (top-right dropdown)
 
+Additional collections (use S1 Login first for `accessToken`):
+
+| Collection | Base URL |
+|------------|----------|
+| `Wonderland-S2-Workforce.postman_collection.json` | `http://localhost/s2/api/v1` |
+| `Wonderland-S3-Hospitality.postman_collection.json` | `http://localhost/s3/api/v1` |
+| `Wonderland-S4-Finance.postman_collection.json` | `http://localhost/s4/api/v1` |
+
 ## Quick start
 
 1. Ensure stack is running: `.\scripts\start.ps1`

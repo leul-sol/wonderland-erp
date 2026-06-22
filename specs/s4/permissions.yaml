@@ -49,3 +49,7 @@ permissions:
     default_roles: [super_admin, general_manager, finance_manager]
   - action: S4.bi.uat.update
     default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.finance.budgets.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.budgets.create
+    default_roles: [super_admin, finance_manager]

@@ -90,6 +90,38 @@ class UatSeeder extends Seeder
                 'Revenue appears on P&L; guest checked out',
                 'pending',
             ],
+            [
+                'UAT-S2-002', 'S2', 'Leave request approval',
+                'S2-LEAVE-001',
+                'Active employee exists',
+                "1. Create leave request\n2. Approve leave request",
+                'Leave status approved; outbox event emitted',
+                'pending',
+            ],
+            [
+                'UAT-S2-003', 'S2', 'Attendance record for employee',
+                'S2-ATT-001',
+                'Active employee exists',
+                'POST /s2/api/v1/attendance-records with check-in/out times',
+                'Attendance saved with hours_worked',
+                'pending',
+            ],
+            [
+                'UAT-S4-005', 'S4', 'Budget variance with targets',
+                'S4-BUD-001',
+                'Budget lines seeded for current period',
+                'GET /s4/api/v1/bi/reports/budget_variance?fiscal_period_id=current',
+                'Returns actual and budget net income',
+                'pending',
+            ],
+            [
+                'UAT-S3-004', 'S3', 'Employee consumption close posts deduction',
+                'S3-CON-001',
+                'S2 healthy; consumption period with total_amount',
+                "1. Create consumption period\n2. Close period",
+                'S2 deduction applied; outbox event emitted',
+                'pending',
+            ],
         ];
 
         foreach ($scenarios as [$key, $system, $title, $requirement, $preconditions, $steps, $expected, $status]) {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EmployeeConsumptionController;
 use App\Http\Controllers\FolioController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InventoryItemController;
@@ -65,4 +66,11 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S3.hospitality.orders.create');
     Route::post('/orders/{order}/finalize', [OrderController::class, 'finalize'])
         ->middleware('permission:S3.hospitality.orders.finalize');
+
+    Route::get('/employee-consumption-periods', [EmployeeConsumptionController::class, 'index'])
+        ->middleware('permission:S3.hospitality.consumption.read');
+    Route::post('/employee-consumption-periods', [EmployeeConsumptionController::class, 'store'])
+        ->middleware('permission:S3.hospitality.consumption.create');
+    Route::post('/employee-consumption-periods/{employeeConsumptionPeriod}/close', [EmployeeConsumptionController::class, 'close'])
+        ->middleware('permission:S3.hospitality.consumption.close');
 });

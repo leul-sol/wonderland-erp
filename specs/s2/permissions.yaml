@@ -25,3 +25,11 @@ permissions:
     default_roles: [super_admin, hr_manager, general_manager]
   - action: S2.workforce.leave_requests.reject
     default_roles: [super_admin, hr_manager, general_manager]
+  - action: S2.workforce.attendance.read
+    default_roles: [super_admin, general_manager, hr_manager, payroll_officer, report_viewer]
+  - action: S2.workforce.attendance.create
+    default_roles: [super_admin, hr_manager, payroll_officer]
+  - action: S2.workforce.severance.read
+    default_roles: [super_admin, general_manager, hr_manager, payroll_officer]
+  - action: S2.workforce.severance.calculate
+    default_roles: [super_admin, hr_manager]

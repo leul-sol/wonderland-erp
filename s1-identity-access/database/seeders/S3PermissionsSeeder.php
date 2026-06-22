@@ -27,6 +27,9 @@ class S3PermissionsSeeder extends Seeder
             ['action' => 'S3.hospitality.orders.read', 'display_name' => 'Read restaurant orders', 'roles' => ['super_admin', 'restaurant_manager', 'cashier', 'receptionist', 'report_viewer']],
             ['action' => 'S3.hospitality.orders.create', 'display_name' => 'Create restaurant orders', 'roles' => ['super_admin', 'restaurant_manager', 'cashier']],
             ['action' => 'S3.hospitality.orders.finalize', 'display_name' => 'Finalize restaurant orders', 'roles' => ['super_admin', 'restaurant_manager', 'cashier']],
+            ['action' => 'S3.hospitality.consumption.read', 'display_name' => 'Read employee consumption periods', 'roles' => ['super_admin', 'restaurant_manager', 'hr_manager', 'report_viewer']],
+            ['action' => 'S3.hospitality.consumption.create', 'display_name' => 'Create employee consumption periods', 'roles' => ['super_admin', 'restaurant_manager']],
+            ['action' => 'S3.hospitality.consumption.close', 'display_name' => 'Close employee consumption periods', 'roles' => ['super_admin', 'restaurant_manager', 'payroll_officer']],
         ];
 
         foreach ($permissions as $permission) {

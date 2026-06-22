@@ -24,6 +24,10 @@ trait MocksS2Auth
             'S2.workforce.leave_requests.create',
             'S2.workforce.leave_requests.approve',
             'S2.workforce.leave_requests.reject',
+            'S2.workforce.attendance.read',
+            'S2.workforce.attendance.create',
+            'S2.workforce.severance.read',
+            'S2.workforce.severance.calculate',
         ];
 
         if (! $this->s2AuthMocked) {

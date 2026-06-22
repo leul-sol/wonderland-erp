@@ -18,4 +18,32 @@ class BiCacheService
             Cache::forget('finance.period.'.$fiscalPeriodId.'.summary');
         }
     }
+
+    public function invalidateS2Caches(): void
+    {
+        if (config('cache.default') === 'array') {
+            return;
+        }
+
+        foreach (['s2.employees', 's2.payroll_runs', 's2.leave_requests', 's2.attendance_records'] as $key) {
+            Cache::forget($key);
+        }
+    }
+
+    public function invalidateS3Caches(): void
+    {
+        if (config('cache.default') === 'array') {
+            return;
+        }
+
+        foreach (['s3.rooms', 's3.reservations', 's3.orders', 's3.items', 's3.purchase_orders'] as $key) {
+            Cache::forget($key);
+        }
+    }
+
+    public function invalidateIntegrationCaches(): void
+    {
+        $this->invalidateS2Caches();
+        $this->invalidateS3Caches();
+    }
 }

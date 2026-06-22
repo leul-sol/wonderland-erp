@@ -30,6 +30,9 @@ trait MocksS3Auth
             'S3.hospitality.orders.read',
             'S3.hospitality.orders.create',
             'S3.hospitality.orders.finalize',
+            'S3.hospitality.consumption.read',
+            'S3.hospitality.consumption.create',
+            'S3.hospitality.consumption.close',
         ];
 
         if (! $this->s3AuthMocked) {

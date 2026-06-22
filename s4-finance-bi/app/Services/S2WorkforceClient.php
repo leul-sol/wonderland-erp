@@ -35,6 +35,14 @@ class S2WorkforceClient
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function attendanceRecords(): array
+    {
+        return $this->cachedGet('s2.attendance_records', 'attendance-records', config('services.cache_ttl.s2_read'));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function cachedGet(string $cacheKey, string $path, int $ttl): array
     {
         return Cache::remember($cacheKey, $ttl, function () use ($path) {

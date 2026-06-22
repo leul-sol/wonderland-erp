@@ -13,6 +13,7 @@ class BiReportService
         private readonly ReportService $reports,
         private readonly S2WorkforceClient $s2,
         private readonly S3HospitalityClient $s3,
+        private readonly BudgetService $budgets,
     ) {
     }
 
@@ -283,13 +284,19 @@ class BiReportService
     {
         $income = $this->reports->incomeStatement($fiscalPeriodId, $from, $to);
         $actual = (float) $income['net_income'];
+        $range = $this->reports->resolveDateRange($fiscalPeriodId, $from, $to);
+        $periodId = $range['fiscal_period']?->id;
+
+        $budgetNet = $periodId !== null ? $this->budgets->budgetNetIncome((int) $periodId) : 0.0;
+
+        $variance = round($actual - $budgetNet, 2);
 
         return [
             'report' => 'budget_variance',
+            'fiscal_period_id' => $periodId,
             'actual_net_income' => $income['net_income'],
-            'budget_net_income' => '0.00',
-            'variance' => number_format($actual, 2, '.', ''),
-            'note' => 'Budget targets not configured; variance equals actual.',
+            'budget_net_income' => number_format($budgetNet, 2, '.', ''),
+            'variance' => number_format($variance, 2, '.', ''),
         ];
     }
 

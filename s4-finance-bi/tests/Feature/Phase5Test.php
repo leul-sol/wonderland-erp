@@ -36,7 +36,7 @@ class Phase5Test extends TestCase
         $response = $this->getJson('/api/v1/bi/rtm', $this->authHeaders());
 
         $response->assertOk()
-            ->assertJsonPath('meta.total', 20)
+            ->assertJsonPath('meta.total', 26)
             ->assertJsonStructure(['data' => [['requirement_key', 'system', 'status']], 'meta' => ['coverage_percent', 'by_status']]);
     }
 
@@ -76,7 +76,7 @@ class Phase5Test extends TestCase
         $response = $this->getJson('/api/v1/bi/uat', $this->authHeaders());
 
         $response->assertOk()
-            ->assertJsonPath('meta.total', 10)
+            ->assertJsonPath('meta.total', 14)
             ->assertJsonStructure(['meta' => ['pass_rate_percent', 'by_status']]);
     }
 

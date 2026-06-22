@@ -1,0 +1,86 @@
+{
+  "info": {
+    "_postman_id": "wonderland-s4-finance-v1",
+    "name": "Wonderland ERP — S4 Finance & BI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost/s4/api/v1" },
+    { "key": "serviceKey", "value": "dev-internal-key-change-in-prod" },
+    { "key": "accessToken", "value": "" },
+    { "key": "fiscalPeriodId", "value": "12" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Report Catalog",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bi/reports"
+          }
+        },
+        {
+          "name": "Trial Balance",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/reports/trial-balance?fiscal_period_id={{fiscalPeriodId}}"
+          }
+        },
+        {
+          "name": "Budget Variance",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bi/reports/budget_variance?fiscal_period_id={{fiscalPeriodId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Export PDF",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"report\": \"trial_balance\",\n  \"format\": \"pdf\",\n  \"fiscal_period_id\": {{fiscalPeriodId}}\n}"
+        },
+        "url": "{{baseUrl}}/bi/exports"
+      }
+    },
+    {
+      "name": "Operational Events",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/bi/operational-events"
+      }
+    },
+    {
+      "name": "Budgets",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fiscal_period_id\": {{fiscalPeriodId}},\n  \"account_code\": \"4001\",\n  \"budget_amount\": 50000\n}"
+        },
+        "url": "{{baseUrl}}/finance/budgets"
+      }
+    }
+  ]
+}

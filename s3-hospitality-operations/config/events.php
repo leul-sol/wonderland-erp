@@ -17,5 +17,6 @@ return [
         'goods_received' => 'wh.events.s3.goods.received',
         'purchase_order_approved' => 'wh.events.s3.purchase_order.approved',
         'order_finalized' => 'wh.events.s3.order.finalized',
+        'employee_consumption_period_closed' => 'wh.events.s3.employee_consumption_period.closed',
     ],
 ];

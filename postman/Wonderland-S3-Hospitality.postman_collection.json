@@ -1,0 +1,75 @@
+{
+  "info": {
+    "_postman_id": "wonderland-s3-hospitality-v1",
+    "name": "Wonderland ERP — S3 Hospitality",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost/s3/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "reservationId", "value": "1" },
+    { "key": "consumptionPeriodId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Rooms",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/rooms"
+      }
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Create Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guest_name\": \"Jane Guest\",\n  \"check_in_date\": \"2026-06-20\",\n  \"check_out_date\": \"2026-06-22\"\n}"
+            },
+            "url": "{{baseUrl}}/reservations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employee Consumption",
+      "item": [
+        {
+          "name": "Create Consumption Period",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"period_start\": \"2026-06-01\",\n  \"period_end\": \"2026-06-30\",\n  \"total_amount\": 180.00\n}"
+            },
+            "url": "{{baseUrl}}/employee-consumption-periods"
+          }
+        },
+        {
+          "name": "Close Consumption Period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/employee-consumption-periods/{{consumptionPeriodId}}/close"
+          }
+        }
+      ]
+    }
+  ]
+}

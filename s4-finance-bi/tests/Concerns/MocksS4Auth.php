@@ -28,6 +28,8 @@ trait MocksS4Auth
             'S4.finance.fiscal_periods.create',
             'S4.finance.fiscal_periods.close',
             'S4.finance.fiscal_periods.lock',
+            'S4.finance.budgets.read',
+            'S4.finance.budgets.create',
             'S4.finance.reports.read',
             'S4.bi.dashboards.read',
             'S4.bi.reports.read',
