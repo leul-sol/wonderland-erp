@@ -30,8 +30,7 @@ class EnsureSeeded extends Command
             return self::SUCCESS;
         }
 
-        if (Schema::hasTable('rtm_entries') && ! DB::table('rtm_entries')->exists()) {
-            $this->warn('No RTM entries found. Seeding RTM catalog...');
+        if (Schema::hasTable('rtm_entries')) {
             $this->call(\Database\Seeders\RtmSeeder::class);
         }
 

@@ -12,7 +12,7 @@ class RtmSeeder extends Seeder
         $entries = [
             ['S1', 'identity', 'S1-AUTH-001', 'User login with JWT', 'S1 §4.1', 'implemented', 'critical', 'POST /auth/login issues access + refresh tokens'],
             ['S1', 'identity', 'S1-AUTH-002', 'Service key token verify', 'S1 §5.2', 'implemented', 'critical', 'S2/S3/S4 call POST /auth/verify'],
-            ['S1', 'identity', 'S1-RBAC-001', 'Role-based permissions', 'S1 §6.1', 'implemented', 'high', '75 permissions seeded across S1–S4'],
+            ['S1', 'identity', 'S1-RBAC-001', 'Role-based permissions', 'S1 §6.1', 'implemented', 'high', '79 permissions seeded across S1–S4'],
             ['S2', 'workforce', 'S2-HR-001', 'Employee CRUD + S1 user provisioning', 'S2 §4.2', 'implemented', 'high', 'Outbox employee.created → S1'],
             ['S2', 'workforce', 'S2-PAY-001', 'Payroll run approve → S4 journal', 'S2 §5.3', 'implemented', 'critical', 'Consolidated GL posting; staff meal deductions reduce net pay'],
             ['S2', 'workforce', 'S2-LEAVE-001', 'Leave management', 'S2 §4.4', 'implemented', 'medium', 'Dept-scoped approval for department_head via dept_scope'],
@@ -24,6 +24,7 @@ class RtmSeeder extends Seeder
             ['S3', 'hospitality', 'S3-FB-001', 'F&B order with COGS posting', 'S3 §5.2', 'implemented', 'high', 'DR 5003 / CR 1200 on finalize'],
             ['S3', 'hospitality', 'S3-INV-001', 'Purchase order goods received', 'S3 §5.1', 'implemented', 'high', 'DR 1200 / CR 2001'],
             ['S3', 'hospitality', 'S3-CON-001', 'Employee consumption period close', 'S3 §5.4', 'implemented', 'medium', 'Closes period → S2 deduction + outbox'],
+            ['S3', 'hospitality', 'S3-GRP-001', 'Group booking bulk check-in/out', 'S3 §4.2', 'implemented', 'medium', 'POST /group-bookings with rooming list'],
             ['S4', 'finance', 'S4-GL-001', 'Balanced journal posting API', 'S4 §4.1', 'verified', 'critical', 'Idempotent POST /journal-entries'],
             ['S4', 'finance', 'S4-GL-002', 'Manual journal approve/post workflow', 'S4 §4.2', 'implemented', 'high', 'draft → approved → posted'],
             ['S4', 'finance', 'S4-AR-001', 'Receivables subledger sync', 'S4 §4.4', 'implemented', 'high', 'Auto from posted AR lines'],

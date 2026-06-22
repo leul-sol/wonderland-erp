@@ -9,7 +9,8 @@
     { "key": "serviceKey", "value": "dev-internal-key-change-in-prod" },
     { "key": "accessToken", "value": "" },
     { "key": "employeeId", "value": "1" },
-    { "key": "leaveRequestId", "value": "1" }
+    { "key": "leaveRequestId", "value": "1" },
+    { "key": "severanceEmployeeId", "value": "1" }
   ],
   "item": [
     {
@@ -124,6 +125,27 @@
               "raw": "{\n  \"period_start\": \"2026-06-01\",\n  \"period_end\": \"2026-06-30\"\n}"
             },
             "url": "{{baseUrl}}/payroll-runs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Severance",
+      "item": [
+        {
+          "name": "Calculate Severance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/employees/{{severanceEmployeeId}}/severance/calculate"
+          }
+        },
+        {
+          "name": "List Severance Calculations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/severance-calculations"
           }
         }
       ]

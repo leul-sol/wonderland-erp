@@ -8,7 +8,8 @@
     { "key": "baseUrl", "value": "http://localhost/s4/api/v1" },
     { "key": "serviceKey", "value": "dev-internal-key-change-in-prod" },
     { "key": "accessToken", "value": "" },
-    { "key": "fiscalPeriodId", "value": "12" }
+    { "key": "fiscalPeriodId", "value": "12" },
+    { "key": "uatFiscalPeriodId", "value": "1" }
   ],
   "item": [
     {
@@ -81,6 +82,35 @@
         },
         "url": "{{baseUrl}}/finance/budgets"
       }
+    },
+    {
+      "name": "Fiscal Periods",
+      "item": [
+        {
+          "name": "List Fiscal Periods",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/fiscal-periods"
+          }
+        },
+        {
+          "name": "Close Fiscal Period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/fiscal-periods/{{uatFiscalPeriodId}}/close"
+          }
+        },
+        {
+          "name": "Lock Fiscal Period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/fiscal-periods/{{uatFiscalPeriodId}}/lock"
+          }
+        }
+      ]
     }
   ]
 }

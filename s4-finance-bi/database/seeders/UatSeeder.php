@@ -130,21 +130,47 @@ class UatSeeder extends Seeder
                 'Group status checked_out; all reservations completed',
                 'pending',
             ],
+            [
+                'UAT-S2-004', 'S2', 'Severance calculation posts S4 accrual journal',
+                'S2-SEV-001',
+                'Employee with hire_date exists',
+                'POST /s2/api/v1/employees/{id}/severance/calculate',
+                'Severance calculated; DR 5005 / CR 2100 journal in S4',
+                'pending',
+            ],
+            [
+                'UAT-S4-006', 'S4', 'Fiscal period close and lock',
+                'S4-FP-001',
+                'Open fiscal period available',
+                "1. POST /fiscal-periods/{id}/close\n2. POST /fiscal-periods/{id}/lock",
+                'Period status becomes locked; posting blocked',
+                'pending',
+            ],
         ];
 
         foreach ($scenarios as [$key, $system, $title, $requirement, $preconditions, $steps, $expected, $status]) {
-            UatScenario::query()->updateOrCreate(
-                ['scenario_key' => $key],
-                [
-                    'system' => $system,
-                    'title' => $title,
-                    'requirement_key' => $requirement,
-                    'preconditions' => $preconditions,
-                    'steps' => $steps,
-                    'expected_outcome' => $expected,
+            $existing = UatScenario::query()->where('scenario_key', $key)->first();
+
+            $attributes = [
+                'system' => $system,
+                'title' => $title,
+                'requirement_key' => $requirement,
+                'preconditions' => $preconditions,
+                'steps' => $steps,
+                'expected_outcome' => $expected,
+            ];
+
+            if ($existing === null) {
+                UatScenario::query()->create([
+                    'scenario_key' => $key,
+                    ...$attributes,
                     'status' => $status,
-                ]
-            );
+                ]);
+
+                continue;
+            }
+
+            $existing->update($attributes);
         }
     }
 }

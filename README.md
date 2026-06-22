@@ -17,7 +17,7 @@ All four systems are implemented and wired through the gateway:
 
 - **S1** — JWT auth, RBAC (79 permissions), users/roles, audit, cross-system permission sync
 - **S2** — employees, payroll (with deductions), leave, attendance, severance, outbox events
-- **S3** — reservations, folios, F&B, procurement, staff consumption → S2 deductions
+- **S3** — reservations, folios, F&B, procurement, group bookings, staff consumption → S2 deductions
 - **S4** — GL, fiscal periods, budgets, 24-report BI catalog, dashboards, RTM/UAT tracking, event consumers
 
 External API base: `http://localhost/s{n}/api/v1/...`
@@ -49,7 +49,13 @@ After the stack is up and seeded:
 .\scripts\run-uat-e2e.ps1
 ```
 
-The script walks the hotel golden path (S3 check-in → folio → settle), payroll with staff-meal deductions (S2), finance reports (S4), and records UAT results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat` (RTM links should verify when scenarios pass).
+The script exercises **17 UAT scenarios** (hotel golden path, group bookings, employee consumption, payroll, severance, finance reports, fiscal period close/lock) and records results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat`.
+
+To reset UAT statuses and room availability before another run:
+
+```powershell
+.\scripts\reset-uat.ps1
+```
 
 ## Secrets (staging / shared hosts)
 

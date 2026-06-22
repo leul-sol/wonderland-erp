@@ -397,6 +397,26 @@ Invoke-Api -Method POST -Url "$BaseS2/attendance-records" -RequestHeaders $auth 
 } | Out-Null
 Record-Uat -ScenarioKey "UAT-S2-003" -Status "passed" -Notes "Attendance recorded with 9 hours." -Token $token
 
+Write-Step "S2 severance accrual (UAT-S2-004)"
+$severanceEmployee = Invoke-Api -Method POST -Url "$BaseS2/employees" -RequestHeaders $auth -Payload @{
+    full_name    = "E2E Severance Staff"
+    base_salary  = 24000
+    hire_date    = "2024-01-01"
+    default_role = "cashier"
+}
+$severanceEmployeeId = $severanceEmployee.data.id
+$severance = Invoke-Api -Method POST -Url "$BaseS2/employees/$severanceEmployeeId/severance/calculate" -RequestHeaders $auth
+if ($severance.data.status -ne "calculated") {
+    throw "Severance calculation failed."
+}
+if ([string]::IsNullOrWhiteSpace($severance.data.s4_journal_entry_id)) {
+    throw "Severance did not return an S4 journal entry id."
+}
+if ([decimal]$severance.data.amount -le 0) {
+    throw "Severance amount must be positive."
+}
+Record-Uat -ScenarioKey "UAT-S2-004" -Status "passed" -Notes "Severance accrual posted DR 5005 / CR 2100 in S4." -Token $token
+
 Write-Step "S4 finance reports (UAT-S4-001 .. UAT-S4-005)"
 $periods = Invoke-Api -Method GET -Url "$BaseS4/fiscal-periods" -RequestHeaders $auth
 $today = (Get-Date).ToString("yyyy-MM-dd")
@@ -471,6 +491,41 @@ if ($null -eq $variance.data.budget_net_income) {
     throw "Budget variance report incomplete."
 }
 Record-Uat -ScenarioKey "UAT-S4-005" -Status "passed" -Notes "Budget variance report returned targets." -Token $token
+
+Write-Step "S4 fiscal period close and lock (UAT-S4-006)"
+$uatFyYear = 2099
+$uatMonth = Get-Random -Minimum 1 -Maximum 12
+$uatPeriodNumber = $uatMonth
+$uatPeriodStart = ("2099-{0:D2}-01" -f $uatMonth)
+$uatPeriodEnd = ("2099-{0:D2}-28" -f $uatMonth)
+try {
+    $uatPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods" -RequestHeaders $auth -Payload @{
+        year          = $uatFyYear
+        period_number = $uatPeriodNumber
+        start_date    = $uatPeriodStart
+        end_date      = $uatPeriodEnd
+    }
+    $uatPeriodId = $uatPeriod.data.id
+}
+catch {
+    $openPeriods = Invoke-Api -Method GET -Url "$BaseS4/fiscal-periods?status=open" -RequestHeaders $auth
+    $fallback = $openPeriods.data | Where-Object { $_.start_date -gt $today } | Select-Object -First 1
+    if ($null -eq $fallback) {
+        throw "Could not create or find an open fiscal period for close/lock UAT."
+    }
+    $uatPeriodId = $fallback.id
+}
+
+$closedPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods/$uatPeriodId/close" -RequestHeaders $auth
+if ($closedPeriod.data.status -ne "closed") {
+    throw "Fiscal period close failed."
+}
+
+$lockedPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods/$uatPeriodId/lock" -RequestHeaders $auth
+if ($lockedPeriod.data.status -ne "locked") {
+    throw "Fiscal period lock failed."
+}
+Record-Uat -ScenarioKey "UAT-S4-006" -Status "passed" -Notes "Fiscal period closed then locked." -Token $token
 
 Write-Step "End-to-end hotel day (UAT-E2E-001)"
 $income = Invoke-Api -Method GET -Url "$BaseS4/reports/income-statement?fiscal_period_id=$periodId" -RequestHeaders $auth

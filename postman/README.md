@@ -36,3 +36,5 @@ Additional collections (use S1 Login first for `accessToken`):
 2. If you used **Change Password**, update the `password` variable in Postman (default new password in that request is `NewSecurePass!10`)
 
 After **List Roles**, set `roleId` to a role you want (e.g. `receptionist` = id from response).
+
+S2/S3 collections include severance, group bookings, and employee consumption flows. S4 includes fiscal period close/lock requests (set `uatFiscalPeriodId` to an open period you want to test).

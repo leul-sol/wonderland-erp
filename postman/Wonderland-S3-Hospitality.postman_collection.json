@@ -8,7 +8,8 @@
     { "key": "baseUrl", "value": "http://localhost/s3/api/v1" },
     { "key": "accessToken", "value": "" },
     { "key": "reservationId", "value": "1" },
-    { "key": "consumptionPeriodId", "value": "1" }
+    { "key": "consumptionPeriodId", "value": "1" },
+    { "key": "groupBookingId", "value": "1" }
   ],
   "item": [
     {
@@ -56,7 +57,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"employee_id\": 1,\n  \"period_start\": \"2026-06-01\",\n  \"period_end\": \"2026-06-30\",\n  \"total_amount\": 180.00\n}"
+              "raw": "{\n  \"employee_id\": 1,\n  \"period_start\": \"2026-06-01\",\n  \"period_end\": \"2026-06-30\"\n}"
             },
             "url": "{{baseUrl}}/employee-consumption-periods"
           }
@@ -67,6 +68,49 @@
             "method": "POST",
             "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
             "url": "{{baseUrl}}/employee-consumption-periods/{{consumptionPeriodId}}/close"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group Bookings",
+      "item": [
+        {
+          "name": "Create Group Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_name\": \"Corporate Retreat\",\n  \"contact_name\": \"Event Planner\",\n  \"check_in_date\": \"2026-06-20\",\n  \"check_out_date\": \"2026-06-22\",\n  \"rooms\": [\n    { \"guest_name\": \"Guest A\", \"room_type_id\": 1 },\n    { \"guest_name\": \"Guest B\", \"room_type_id\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/group-bookings"
+          }
+        },
+        {
+          "name": "Group Check-In",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignments\": [\n    { \"reservation_id\": 1, \"room_id\": 1 },\n    { \"reservation_id\": 2, \"room_id\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/group-bookings/{{groupBookingId}}/check-in"
+          }
+        },
+        {
+          "name": "Group Check-Out",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/group-bookings/{{groupBookingId}}/check-out"
           }
         }
       ]
