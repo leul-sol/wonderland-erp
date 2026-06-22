@@ -56,6 +56,7 @@ trait SerializesWorkforceResources
                 'employee_pension' => (string) $line->employee_pension,
                 'employer_pension' => (string) $line->employer_pension,
                 'income_tax' => (string) $line->income_tax,
+                'other_deductions' => (string) ($line->other_deductions ?? '0.00'),
                 'net_pay' => (string) $line->net_pay,
             ])->values()->all(),
         ];

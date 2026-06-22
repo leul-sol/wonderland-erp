@@ -15,6 +15,7 @@ class EmployeeDeduction extends Model
         'source_reference',
         'idempotency_key',
         'status',
+        'payroll_run_id',
     ];
 
     protected function casts(): array

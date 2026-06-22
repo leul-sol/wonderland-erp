@@ -136,3 +136,6 @@ try {
 }
 
 Write-Host "Done."
+Write-Host ""
+Write-Host "Optional: run automated UAT / E2E verification:"
+Write-Host "  .\scripts\run-uat-e2e.ps1"

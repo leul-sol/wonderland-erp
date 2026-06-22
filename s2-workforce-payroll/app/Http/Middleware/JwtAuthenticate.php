@@ -43,6 +43,7 @@ class JwtAuthenticate
         $request->attributes->set('auth_user_id', (int) ($user['sub'] ?? 0));
         $request->attributes->set('auth_permissions', $user['permissions'] ?? []);
         $request->attributes->set('auth_roles', $user['roles'] ?? []);
+        $request->attributes->set('auth_dept_scope', $user['dept_scope'] ?? null);
         $request->attributes->set('auth_user', $user);
 
         return $next($request);

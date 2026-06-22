@@ -14,6 +14,7 @@ class PayrollLine extends Model
         'employee_pension',
         'employer_pension',
         'income_tax',
+        'other_deductions',
         'net_pay',
     ];
 
@@ -24,6 +25,7 @@ class PayrollLine extends Model
             'employee_pension' => 'decimal:2',
             'employer_pension' => 'decimal:2',
             'income_tax' => 'decimal:2',
+            'other_deductions' => 'decimal:2',
             'net_pay' => 'decimal:2',
         ];
     }

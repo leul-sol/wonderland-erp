@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\EmployeeDeduction;
 use App\Models\PayrollLine;
 use App\Models\PayrollRun;
 use Illuminate\Support\Facades\DB;
@@ -27,11 +28,13 @@ class PayrollService
             throw new InvalidArgumentException('No active employees available for payroll.');
         }
 
-        return DB::transaction(function () use ($data, $employees) {
+        $periodEnd = (string) $data['period_end'];
+
+        return DB::transaction(function () use ($data, $employees, $periodEnd) {
             $run = PayrollRun::query()->create([
                 'run_number' => $this->nextRunNumber(),
                 'period_start' => $data['period_start'],
-                'period_end' => $data['period_end'],
+                'period_end' => $periodEnd,
                 'status' => 'draft',
             ]);
 
@@ -39,7 +42,8 @@ class PayrollService
             $totalNet = 0.0;
 
             foreach ($employees as $employee) {
-                $amounts = $this->calculateAmounts((float) $employee->base_salary);
+                $otherDeductions = $this->unappliedDeductionTotal($employee->id, $periodEnd);
+                $amounts = $this->calculateAmounts((float) $employee->base_salary, $otherDeductions);
 
                 PayrollLine::query()->create([
                     'payroll_run_id' => $run->id,
@@ -76,9 +80,10 @@ class PayrollService
         $employeePension = round((float) $run->lines->sum('employee_pension'), 2);
         $employerPension = round((float) $run->lines->sum('employer_pension'), 2);
         $incomeTax = round((float) $run->lines->sum('income_tax'), 2);
+        $otherDeductions = round((float) $run->lines->sum('other_deductions'), 2);
         $net = round((float) $run->lines->sum('net_pay'), 2);
 
-        return DB::transaction(function () use ($run, $approvedBy, $gross, $employeePension, $employerPension, $incomeTax, $net) {
+        return DB::transaction(function () use ($run, $approvedBy, $gross, $employeePension, $employerPension, $incomeTax, $otherDeductions, $net) {
             $journal = $this->s4->postJournal([
                 'description' => 'Payroll '.$run->run_number,
                 'source_module' => 's2',
@@ -102,11 +107,14 @@ class PayrollService
                 'approved_at' => now(),
             ]);
 
+            $this->linkDeductionsToRun($run);
+
             $this->outbox->enqueue(config('events.channels.payroll_run_approved'), [
                 'payroll_run_id' => $run->id,
                 'run_number' => $run->run_number,
                 'total_gross' => $gross,
                 'total_net' => $net,
+                'total_other_deductions' => $otherDeductions,
                 's4_journal_entry_id' => $journalId,
             ]);
 
@@ -114,27 +122,55 @@ class PayrollService
         });
     }
 
+    private function unappliedDeductionTotal(int $employeeId, string $periodEnd): float
+    {
+        return round((float) EmployeeDeduction::query()
+            ->where('employee_id', $employeeId)
+            ->where('status', 'applied')
+            ->whereNull('payroll_run_id')
+            ->whereDate('created_at', '<=', $periodEnd)
+            ->sum('amount'), 2);
+    }
+
+    private function linkDeductionsToRun(PayrollRun $run): void
+    {
+        $employeeIds = $run->lines->pluck('employee_id')->all();
+
+        EmployeeDeduction::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->where('status', 'applied')
+            ->whereNull('payroll_run_id')
+            ->whereDate('created_at', '<=', $run->period_end?->toDateString())
+            ->update(['payroll_run_id' => $run->id]);
+    }
+
     /**
-     * @return array{gross_salary: float, employee_pension: float, employer_pension: float, income_tax: float, net_pay: float}
+     * @return array{gross_salary: float, employee_pension: float, employer_pension: float, income_tax: float, other_deductions: float, net_pay: float}
      */
-    private function calculateAmounts(float $gross): array
+    private function calculateAmounts(float $gross, float $otherDeductions = 0.0): array
     {
         $employeeRate = config('payroll.employee_pension_rate');
         $employerRate = config('payroll.employer_pension_rate');
         $taxRate = config('payroll.income_tax_rate');
 
         $gross = round($gross, 2);
+        $otherDeductions = round(max(0, $otherDeductions), 2);
         $employeePension = round($gross * $employeeRate, 2);
         $employerPension = round($gross * $employerRate, 2);
         $taxable = $gross - $employeePension;
         $incomeTax = round($taxable * $taxRate, 2);
-        $net = round($gross - $employeePension - $incomeTax, 2);
+        $net = round($gross - $employeePension - $incomeTax - $otherDeductions, 2);
+
+        if ($net < 0) {
+            throw new InvalidArgumentException('Employee deductions exceed net pay for gross salary '.$gross.'.');
+        }
 
         return [
             'gross_salary' => $gross,
             'employee_pension' => $employeePension,
             'employer_pension' => $employerPension,
             'income_tax' => $incomeTax,
+            'other_deductions' => $otherDeductions,
             'net_pay' => $net,
         ];
     }
