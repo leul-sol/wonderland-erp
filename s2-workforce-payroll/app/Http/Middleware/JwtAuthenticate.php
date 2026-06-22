@@ -18,6 +18,14 @@ class JwtAuthenticate
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($this->hasValidServiceKey($request)) {
+            $request->attributes->set('auth_via_service_key', true);
+            $request->attributes->set('auth_user_id', 0);
+            $request->attributes->set('auth_permissions', []);
+
+            return $next($request);
+        }
+
         $header = $request->header('Authorization', '');
 
         if (! preg_match('/Bearer\s+(\S+)/', $header, $matches)) {
@@ -38,5 +46,18 @@ class JwtAuthenticate
         $request->attributes->set('auth_user', $user);
 
         return $next($request);
+    }
+
+    private function hasValidServiceKey(Request $request): bool
+    {
+        $key = $request->header('X-Service-Key');
+        $current = config('services.internal_key_current');
+        $previous = config('services.internal_key_previous');
+
+        if ($key === null || $key === '') {
+            return false;
+        }
+
+        return $key === $current || ($previous !== null && $previous !== '' && $key === $previous);
     }
 }

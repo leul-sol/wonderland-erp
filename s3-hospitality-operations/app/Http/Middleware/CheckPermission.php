@@ -10,6 +10,10 @@ class CheckPermission
 {
     public function handle(Request $request, Closure $next, string $permission): Response
     {
+        if ($request->attributes->get('auth_via_service_key')) {
+            return $next($request);
+        }
+
         $permissions = $request->attributes->get('auth_permissions', []);
 
         if (! in_array($permission, $permissions, true)) {

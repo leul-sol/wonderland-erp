@@ -27,6 +27,8 @@ trait MocksS4Auth
             'S4.finance.fiscal_periods.lock',
             'S4.finance.reports.read',
             'S4.bi.dashboards.read',
+            'S4.bi.reports.read',
+            'S4.bi.export.create',
         ];
 
         if (! $this->s4AuthMocked) {

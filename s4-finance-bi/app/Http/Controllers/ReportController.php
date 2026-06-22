@@ -59,4 +59,19 @@ class ReportController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
+    public function cashFlow(Request $request): JsonResponse
+    {
+        try {
+            $data = $this->reports->cashFlow(
+                $request->filled('fiscal_period_id') ? (int) $request->input('fiscal_period_id') : null,
+                $request->input('from'),
+                $request->input('to'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $data]);
+    }
 }

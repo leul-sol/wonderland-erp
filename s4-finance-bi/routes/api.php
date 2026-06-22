@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BiReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FiscalPeriodController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\JournalController;
@@ -64,6 +66,24 @@ Route::middleware('jwt')->group(function () {
     Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])
         ->middleware('permission:S4.finance.reports.read');
 
+    Route::get('/reports/cash-flow', [ReportController::class, 'cashFlow'])
+        ->middleware('permission:S4.finance.reports.read');
+
     Route::get('/dashboards/executive', [DashboardController::class, 'executive'])
         ->middleware('permission:S4.bi.dashboards.read');
+
+    Route::get('/dashboards/operations', [DashboardController::class, 'operations'])
+        ->middleware('permission:S4.bi.dashboards.read');
+
+    Route::get('/bi/reports/revenue-by-source', [BiReportController::class, 'revenueBySource'])
+        ->middleware('permission:S4.bi.reports.read');
+
+    Route::get('/bi/reports/payroll-snapshot', [BiReportController::class, 'payrollSnapshot'])
+        ->middleware('permission:S4.bi.reports.read');
+
+    Route::get('/bi/reports/hospitality-snapshot', [BiReportController::class, 'hospitalitySnapshot'])
+        ->middleware('permission:S4.bi.reports.read');
+
+    Route::post('/bi/exports', [ExportController::class, 'store'])
+        ->middleware('permission:S4.bi.export.create');
 });

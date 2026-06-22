@@ -238,6 +238,51 @@ class ReportService
     /**
      * @return array<string, mixed>
      */
+    public function cashFlow(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $range = $this->resolveDateRange($fiscalPeriodId, $from, $to);
+        $income = $this->incomeStatement($fiscalPeriodId, $range['from'], $range['to']);
+        $netIncome = (float) $income['net_income'];
+
+        $cashCodes = ['1001', '1002', '1003', '1004', '1005'];
+        $periodActivity = $this->aggregateActivity($range['from'], $range['to']);
+        $openingCumulative = $this->aggregateActivity(null, Carbon::parse($range['from'])->subDay()->toDateString());
+        $closingCumulative = $this->aggregateActivity(null, $range['to']);
+
+        $periodCashChange = 0.0;
+        $openingCash = 0.0;
+        $closingCash = 0.0;
+
+        $cashAccounts = Account::query()->whereIn('code', $cashCodes)->get();
+        foreach ($cashAccounts as $account) {
+            $periodTotals = $periodActivity->get($account->id, ['debit' => 0.0, 'credit' => 0.0]);
+            $periodCashChange += $this->signedBalance($account, (float) $periodTotals['debit'], (float) $periodTotals['credit']);
+
+            $openingTotals = $openingCumulative->get($account->id, ['debit' => 0.0, 'credit' => 0.0]);
+            $openingCash += $this->signedBalance($account, (float) $openingTotals['debit'], (float) $openingTotals['credit']);
+
+            $closingTotals = $closingCumulative->get($account->id, ['debit' => 0.0, 'credit' => 0.0]);
+            $closingCash += $this->signedBalance($account, (float) $closingTotals['debit'], (float) $closingTotals['credit']);
+        }
+
+        return [
+            'report' => 'cash_flow',
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'fiscal_period' => $this->periodMeta($range['fiscal_period']),
+            'operating' => [
+                'net_income' => $this->formatMoney($netIncome),
+                'net_cash_from_operations' => $this->formatMoney($netIncome),
+            ],
+            'net_change_in_cash' => $this->formatMoney($periodCashChange),
+            'opening_cash' => $this->formatMoney($openingCash),
+            'closing_cash' => $this->formatMoney($closingCash),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function executiveDashboard(?int $fiscalPeriodId, ?string $from, ?string $to): array
     {
         $range = $this->resolveDateRange($fiscalPeriodId, $from, $to);

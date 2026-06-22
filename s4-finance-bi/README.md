@@ -1,6 +1,6 @@
 # S4 — Finance & BI
 
-Laravel 11 application for general ledger, AR/AP, fiscal periods, and financial reporting.
+Laravel 11 application for general ledger, AR/AP, fiscal periods, financial reporting, and operational BI.
 
 ## Local setup (Docker)
 
@@ -14,23 +14,32 @@ curl http://localhost/s4/api/v1/health
 
 - User JWTs verified via S1 `POST /api/v1/auth/verify`
 - S2/S3 journal posts use `X-Service-Key` + `Idempotency-Key`
+- S4 reads S2/S3 operational data via service key (cached)
 
 ## API surface
 
 ### Finance core
-- `POST /journal-entries` — create journal (S2/S3 auto-post; manual → draft)
-- `POST /journal-entries/{id}/approve` | `/post` | `/reverse`
-- `GET /accounts`, `GET /fiscal-periods`, `POST /fiscal-periods/{id}/close|lock`
-- `GET /receivables`, `POST /receivables/{id}/settle`
-- `GET /payables`, `POST /payables/{id}/settle`
+- Journals, accounts, fiscal periods, AR/AP (see prior phases)
 
-### Reports (Phase 3)
-- `GET /reports/trial-balance?fiscal_period_id=` or `?from=&to=`
+### Financial reports (`S4.finance.reports.read`)
+- `GET /reports/trial-balance`
 - `GET /reports/income-statement`
 - `GET /reports/balance-sheet`
-- `GET /dashboards/executive` — revenue, expenses, net income, cash, AR/AP KPIs
+- `GET /reports/cash-flow`
 
-Reports aggregate **posted** journal lines only.
+### Dashboards (`S4.bi.dashboards.read`)
+- `GET /dashboards/executive` — finance KPIs
+- `GET /dashboards/operations` — finance + hospitality + workforce snapshot
+
+### Operational BI (`S4.bi.reports.read`)
+- `GET /bi/reports/revenue-by-source` — posted journal volume by S2/S3/manual
+- `GET /bi/reports/hospitality-snapshot` — occupancy, reservations, F&B (from S3)
+- `GET /bi/reports/payroll-snapshot` — headcount, payroll runs (from S2)
+
+### Export (`S4.bi.export.create`)
+- `POST /bi/exports` — `{ "report": "income_statement", "format": "csv", "fiscal_period_id": 12 }`
+
+Query params: `fiscal_period_id` or `from` + `to`.
 
 ## Specs
 
