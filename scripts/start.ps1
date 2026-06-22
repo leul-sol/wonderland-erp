@@ -9,10 +9,15 @@ if (-not (Test-Path "s1-identity-access\.env")) {
     Write-Host "Created s1-identity-access/.env from .env.example"
 }
 
+if (-not (Test-Path "s4-finance-bi\.env")) {
+    Copy-Item "s4-finance-bi/.env.example" "s4-finance-bi/.env"
+    Write-Host "Created s4-finance-bi/.env from .env.example"
+}
+
 Write-Host "Building and starting containers..."
 docker compose up -d --build
 
-Write-Host "Waiting for MySQL and S1..."
+Write-Host "Waiting for MySQL, S1, and S4..."
 $ready = $false
 for ($i = 0; $i -lt 30; $i++) {
     # Native commands (mysqladmin) write warnings to stderr; do not treat as fatal.
@@ -25,9 +30,12 @@ for ($i = 0; $i -lt 30; $i++) {
     docker compose exec -T s1-identity php artisan migrate:status 2>$null | Out-Null
     $s1Ok = ($LASTEXITCODE -eq 0)
 
+    docker compose exec -T s4-finance-bi php artisan migrate:status 2>$null | Out-Null
+    $s4Ok = ($LASTEXITCODE -eq 0)
+
     $ErrorActionPreference = $prevPreference
 
-    if ($mysqlOk -and $s1Ok) {
+    if ($mysqlOk -and $s1Ok -and $s4Ok) {
         $ready = $true
         break
     }
@@ -47,16 +55,32 @@ $seedOk = ($LASTEXITCODE -eq 0)
 $ErrorActionPreference = $prevPreference
 
 if (-not $seedOk) {
-    Write-Warning "Bootstrap failed. Retry: docker compose exec s1-identity php artisan app:ensure-seeded"
+    Write-Warning "S1 bootstrap failed. Retry: docker compose exec s1-identity php artisan app:ensure-seeded"
+}
+
+$ErrorActionPreference = "Continue"
+docker compose exec -T s4-finance-bi php artisan app:ensure-seeded 2>&1 | Out-Host
+$s4SeedOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevPreference
+
+if (-not $s4SeedOk) {
+    Write-Warning "S4 bootstrap failed. Retry: docker compose exec s4-finance-bi php artisan app:ensure-seeded"
 }
 
 try {
     $response = Invoke-RestMethod -Uri "http://localhost/s1/api/v1/health" -TimeoutSec 10
     Write-Host "S1 health:" ($response | ConvertTo-Json -Compress)
 } catch {
-    Write-Host "Health check failed (containers may still be starting). Run:"
-    Write-Host "  docker compose exec s1-identity php artisan app:ensure-seeded"
-    Write-Host "  curl http://localhost/s1/api/v1/health"
+    Write-Host "S1 health check failed (containers may still be starting)."
+}
+
+try {
+    $s4 = Invoke-RestMethod -Uri "http://localhost/s4/api/v1/health" -TimeoutSec 10
+    Write-Host "S4 health:" ($s4 | ConvertTo-Json -Compress)
+} catch {
+    Write-Host "S4 health check failed. Run:"
+    Write-Host "  docker compose exec s4-finance-bi php artisan app:ensure-seeded"
+    Write-Host "  curl http://localhost/s4/api/v1/health"
 }
 
 Write-Host "Done."

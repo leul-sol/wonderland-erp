@@ -1,0 +1,36 @@
+name: S4 CI
+
+on:
+  push:
+    paths:
+      - 's4-finance-bi/**'
+      - 'specs/s4/**'
+      - '.github/workflows/s4-ci.yml'
+  pull_request:
+    paths:
+      - 's4-finance-bi/**'
+      - 'specs/s4/**'
+      - '.github/workflows/s4-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s4-finance-bi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: vendor/bin/phpunit

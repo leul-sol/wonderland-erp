@@ -15,6 +15,8 @@ class EnsureSeeded extends Command
     {
         $this->call('migrate', ['--force' => true]);
 
+        $this->call(\Database\Seeders\S4PermissionsSeeder::class);
+
         if (User::query()->where('username', 'super.admin')->exists()) {
             $this->comment('Admin user already present — skipping seed.');
 

@@ -8,6 +8,8 @@ services:
     depends_on:
       s1-identity:
         condition: service_healthy
+      s4-finance-bi:
+        condition: service_healthy
     networks:
       - wh-internal
 
@@ -99,6 +101,43 @@ services:
         condition: service_healthy
     networks:
       - wh-internal
+
+  s4-finance-bi:
+    build:
+      context: ./s4-finance-bi
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: WH-S4-Finance-BI
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://s4-finance-bi:9004
+      DB_CONNECTION: mysql
+      DB_HOST: wh-mysql
+      DB_PORT: 3306
+      DB_DATABASE: wh_s4_db
+      DB_USERNAME: wh_app
+      DB_PASSWORD: wh_app_secret
+      REDIS_HOST: wh-redis
+      REDIS_PORT: 6379
+      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      S1_SERVICE_URL: http://s1-identity:9001
+    volumes:
+      - ./s4-finance-bi:/var/www/html
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+      wh-redis:
+        condition: service_started
+      s1-identity:
+        condition: service_healthy
+    networks:
+      - wh-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9004/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
 
 networks:
   wh-internal:

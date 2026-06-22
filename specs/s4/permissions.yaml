@@ -1,0 +1,51 @@
+# S4 §6.1 — Finance & BI permission catalog (seed into S1 permissions table)
+
+domain_prefix: S4
+
+permissions:
+  - action: S4.finance.accounts.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.accounts.create
+    default_roles: [super_admin, finance_manager]
+  - action: S4.finance.accounts.update
+    default_roles: [super_admin, finance_manager]
+  - action: S4.finance.journal_entries.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.journal_entries.create
+    default_roles: [super_admin, finance_manager, accountant]
+  - action: S4.finance.journal_entries.approve
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.finance.journal_entries.reverse
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.finance.receivables.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.receivables.settle
+    default_roles: [super_admin, finance_manager]
+  - action: S4.finance.payables.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.payables.settle
+    default_roles: [super_admin, finance_manager]
+  - action: S4.finance.fiscal_periods.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.finance.fiscal_periods.create
+    default_roles: [super_admin, finance_manager]
+  - action: S4.finance.fiscal_periods.close
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.finance.fiscal_periods.lock
+    default_roles: [super_admin, general_manager]
+  - action: S4.finance.reports.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant]
+  - action: S4.bi.dashboards.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant, department_head, report_viewer]
+  - action: S4.bi.reports.read
+    default_roles: [super_admin, general_manager, finance_manager, accountant, department_head, report_viewer]
+  - action: S4.bi.export.create
+    default_roles: [super_admin, general_manager, finance_manager, accountant, department_head]
+  - action: S4.bi.rtm.read
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.bi.rtm.update
+    default_roles: [super_admin, general_manager]
+  - action: S4.bi.uat.read
+    default_roles: [super_admin, general_manager, finance_manager]
+  - action: S4.bi.uat.update
+    default_roles: [super_admin, general_manager, finance_manager]
