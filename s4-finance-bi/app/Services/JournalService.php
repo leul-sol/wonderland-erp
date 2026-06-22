@@ -25,6 +25,95 @@ class JournalService
      */
     public function post(array $payload, ?string $idempotencyKey, ?int $createdBy = 0): JournalEntry
     {
+        $sourceModule = (string) ($payload['source_module'] ?? 'manual');
+        $forcePosted = (bool) ($payload['_force_posted'] ?? false);
+        unset($payload['_force_posted']);
+
+        return $this->createEntry($payload, $idempotencyKey, $createdBy, $sourceModule === 'manual' && ! $forcePosted ? 'draft' : 'posted');
+    }
+
+    /**
+     * Internal immediate post (settlements, reversals).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function postImmediate(array $payload, ?string $idempotencyKey, ?int $createdBy = 0): JournalEntry
+    {
+        $payload['_force_posted'] = true;
+
+        return $this->post($payload, $idempotencyKey, $createdBy);
+    }
+
+    public function approve(JournalEntry $entry, int $approvedBy): JournalEntry
+    {
+        if ($entry->status !== 'draft' || $entry->source_module !== 'manual') {
+            throw new \App\Exceptions\InvalidJournalStateException('Only draft manual entries can be approved.');
+        }
+
+        $entry->update([
+            'status' => 'approved',
+            'approved_by' => $approvedBy,
+            'approved_at' => now(),
+        ]);
+
+        return $entry->fresh(['lines.account', 'fiscalPeriod']);
+    }
+
+    public function postApproved(JournalEntry $entry): JournalEntry
+    {
+        if ($entry->status !== 'approved' || $entry->source_module !== 'manual') {
+            throw new \App\Exceptions\InvalidJournalStateException('Only approved manual entries can be posted.');
+        }
+
+        $this->fiscalPeriods->assertAllowsPosting($entry->fiscalPeriod);
+
+        $entry->update([
+            'status' => 'posted',
+            'posted_at' => now(),
+        ]);
+
+        $entry = $entry->fresh(['lines.account', 'fiscalPeriod']);
+        $this->biCache->invalidate($entry->fiscal_period_id);
+        $this->applySubledgerHooks($entry);
+
+        return $entry;
+    }
+
+    public function reverse(JournalEntry $entry, int $userId, ?string $reason = null): JournalEntry
+    {
+        if ($entry->status !== 'posted') {
+            throw new \App\Exceptions\InvalidJournalStateException('Only posted entries can be reversed.');
+        }
+
+        $entry->loadMissing('lines');
+        $reversalLines = $entry->lines->map(fn ($line) => [
+            'account_id' => $line->account_id,
+            'debit' => $line->credit,
+            'credit' => $line->debit,
+            'description' => 'Reversal: '.($line->description ?? ''),
+        ])->all();
+
+        return DB::transaction(function () use ($entry, $userId, $reason, $reversalLines) {
+            $reversal = $this->postImmediate([
+                'entry_date' => now()->toDateString(),
+                'description' => 'Reversal of '.$entry->entry_number.($reason ? ' — '.$reason : ''),
+                'source_module' => 'manual',
+                'source_reference' => 'REV-'.$entry->entry_number,
+                'lines' => $reversalLines,
+            ], 'reverse-'.$entry->id, $userId);
+
+            $reversal->update(['reversal_of_id' => $entry->id]);
+            $entry->update(['status' => 'reversed']);
+
+            return $reversal->load('lines.account', 'fiscalPeriod');
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function createEntry(array $payload, ?string $idempotencyKey, ?int $createdBy, string $status): JournalEntry
+    {
         if ($idempotencyKey !== null) {
             $existing = $this->resolveIdempotent($idempotencyKey, $payload);
             if ($existing !== null) {
@@ -47,8 +136,6 @@ class JournalService
         $entryDate = $payload['entry_date'] ?? now()->toDateString();
         $period = $this->fiscalPeriods->forDate($entryDate);
         $this->fiscalPeriods->assertAllowsPosting($period);
-
-        $status = $sourceModule === 'manual' ? 'draft' : 'posted';
 
         return DB::transaction(function () use ($payload, $idempotencyKey, $createdBy, $sourceModule, $totalDebit, $totalCredit, $normalizedLines, $entryDate, $period, $status) {
             $entry = JournalEntry::query()->create([
@@ -87,10 +174,18 @@ class JournalService
 
             if ($status === 'posted') {
                 $this->biCache->invalidate($period->id);
+                $entry = $entry->load('lines.account', 'fiscalPeriod');
+                $this->applySubledgerHooks($entry);
             }
 
             return $entry->load('lines.account', 'fiscalPeriod');
         });
+    }
+
+    private function applySubledgerHooks(JournalEntry $entry): void
+    {
+        app(ReceivableService::class)->applyPostedEntry($entry);
+        app(PayableService::class)->applyPostedEntry($entry);
     }
 
     private function resolveIdempotent(string $key, array $payload): ?JournalEntry

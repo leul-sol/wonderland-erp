@@ -31,4 +31,30 @@ class FiscalPeriodService
             );
         }
     }
+
+    public function close(FiscalPeriod $period, int $closedBy): FiscalPeriod
+    {
+        if ($period->status !== 'open') {
+            throw new \InvalidArgumentException('Only open fiscal periods can be closed.');
+        }
+
+        $period->update([
+            'status' => 'closed',
+            'closed_by' => $closedBy,
+            'closed_at' => now(),
+        ]);
+
+        return $period->fresh();
+    }
+
+    public function lock(FiscalPeriod $period): FiscalPeriod
+    {
+        if ($period->status !== 'closed') {
+            throw new \InvalidArgumentException('Only closed fiscal periods can be locked.');
+        }
+
+        $period->update(['status' => 'locked']);
+
+        return $period->fresh();
+    }
 }

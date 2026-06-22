@@ -27,6 +27,8 @@ trait SerializesJournalEntries
                 'status' => $entry->fiscalPeriod->status,
             ] : null,
             'posted_at' => $entry->posted_at?->toIso8601String(),
+            'approved_by' => $entry->approved_by,
+            'approved_at' => $entry->approved_at?->toIso8601String(),
             'lines' => $entry->lines->map(fn ($line) => [
                 'id' => $line->id,
                 'account_id' => $line->account_id,

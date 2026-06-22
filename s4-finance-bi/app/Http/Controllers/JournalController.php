@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\ClosedPeriodException;
 use App\Exceptions\IdempotencyConflictException;
+use App\Exceptions\InvalidJournalStateException;
 use App\Exceptions\UnbalancedJournalException;
 use App\Http\Controllers\Concerns\RespondsWithApiErrors;
 use App\Http\Controllers\Concerns\SerializesJournalEntries;
@@ -80,5 +81,49 @@ class JournalController extends Controller
     public function show(JournalEntry $journalEntry): JsonResponse
     {
         return response()->json(['data' => $this->journalPayload($journalEntry)]);
+    }
+
+    public function approve(Request $request, JournalEntry $journalEntry): JsonResponse
+    {
+        $userId = (int) $request->attributes->get('auth_user_id', 0);
+
+        try {
+            $entry = $this->journals->approve($journalEntry, $userId);
+        } catch (InvalidJournalStateException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->journalPayload($entry)]);
+    }
+
+    public function postApproved(Request $request, JournalEntry $journalEntry): JsonResponse
+    {
+        try {
+            $entry = $this->journals->postApproved($journalEntry);
+        } catch (InvalidJournalStateException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        } catch (ClosedPeriodException $e) {
+            return $this->error('UNPROCESSABLE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->journalPayload($entry)]);
+    }
+
+    public function reverse(Request $request, JournalEntry $journalEntry): JsonResponse
+    {
+        $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $reason = $request->input('reason');
+
+        try {
+            $entry = $this->journals->reverse($journalEntry, $userId, is_string($reason) ? $reason : null);
+        } catch (InvalidJournalStateException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        } catch (ClosedPeriodException $e) {
+            return $this->error('UNPROCESSABLE', $e->getMessage(), 422);
+        } catch (UnbalancedJournalException $e) {
+            return $this->error('UNBALANCED_JOURNAL', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->journalPayload($entry)], 201);
     }
 }
