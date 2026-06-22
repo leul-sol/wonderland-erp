@@ -27,7 +27,7 @@ class EnsureSeeded extends Command
 
         $this->warn('No admin user found. Seeding roles, permissions, and super.admin...');
         $this->call('db:seed', ['--force' => true]);
-        $this->info('Default login: super.admin / ChangeMeNow!10');
+        $this->info('Default login: super.admin / '.env('SUPER_ADMIN_PASSWORD', 'ChangeMeNow!10'));
 
         return self::SUCCESS;
     }

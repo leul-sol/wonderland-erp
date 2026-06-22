@@ -24,6 +24,10 @@ if (-not (Test-Path "s2-workforce-payroll\.env")) {
     Write-Host "Created s2-workforce-payroll/.env from .env.example"
 }
 
+if (-not (Test-Path ".env.example")) {
+    Write-Warning "Missing root .env.example — secrets template not found."
+}
+
 Write-Host "Building and starting containers..."
 docker compose up -d --build
 
@@ -61,6 +65,11 @@ for ($i = 0; $i -lt 45; $i++) {
 
 if (-not $ready) {
     Write-Warning "Services still starting. Run bootstrap manually if login fails."
+}
+else {
+    Write-Host "Restarting gateway so upstream routes pick up fresh container IPs..."
+    docker compose restart wh-gateway | Out-Null
+    Start-Sleep -Seconds 5
 }
 
 Write-Host "Running database migrations (seed only if admin missing)..."
@@ -136,6 +145,8 @@ try {
 }
 
 Write-Host "Done."
+Write-Host ""
+Write-Host "Staging: copy .env.example to .env and rotate secrets before shared hosting."
 Write-Host ""
 Write-Host "Optional: run automated UAT / E2E verification:"
 Write-Host "  .\scripts\run-uat-e2e.ps1"

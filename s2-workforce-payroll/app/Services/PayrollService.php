@@ -84,18 +84,24 @@ class PayrollService
         $net = round((float) $run->lines->sum('net_pay'), 2);
 
         return DB::transaction(function () use ($run, $approvedBy, $gross, $employeePension, $employerPension, $incomeTax, $otherDeductions, $net) {
+            $lines = [
+                ['account_code' => '5001', 'debit' => $gross, 'credit' => 0],
+                ['account_code' => '5002', 'debit' => $employerPension, 'credit' => 0],
+                ['account_code' => '2100', 'debit' => 0, 'credit' => $net],
+                ['account_code' => '2101', 'debit' => 0, 'credit' => $employeePension],
+                ['account_code' => '2200', 'debit' => 0, 'credit' => $incomeTax],
+                ['account_code' => '2102', 'debit' => 0, 'credit' => $employerPension],
+            ];
+
+            if ($otherDeductions > 0) {
+                $lines[] = ['account_code' => '1102', 'debit' => 0, 'credit' => $otherDeductions];
+            }
+
             $journal = $this->s4->postJournal([
                 'description' => 'Payroll '.$run->run_number,
                 'source_module' => 's2',
                 'source_reference' => $run->run_number,
-                'lines' => [
-                    ['account_code' => '5001', 'debit' => $gross, 'credit' => 0],
-                    ['account_code' => '5002', 'debit' => $employerPension, 'credit' => 0],
-                    ['account_code' => '2100', 'debit' => 0, 'credit' => $net],
-                    ['account_code' => '2101', 'debit' => 0, 'credit' => $employeePension],
-                    ['account_code' => '2200', 'debit' => 0, 'credit' => $incomeTax],
-                    ['account_code' => '2102', 'debit' => 0, 'credit' => $employerPension],
-                ],
+                'lines' => $lines,
             ], 'payroll-run-'.$run->id);
 
             $journalId = (string) ($journal['data']['id'] ?? '');

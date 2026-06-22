@@ -31,11 +31,12 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s1_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMeNow!10}
     volumes:
       - ./s1-identity-access:/var/www/html
     networks:
@@ -50,7 +51,7 @@ services:
   wh-mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
       MYSQL_DATABASE: wh_s1_db
     volumes:
       - wh-mysql-data:/var/lib/mysql
@@ -58,7 +59,7 @@ services:
     networks:
       - wh-internal
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_secret"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root_secret}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -89,11 +90,11 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s1_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
     volumes:
       - ./s1-identity-access:/var/www/html
     depends_on:
@@ -120,12 +121,12 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s4_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S2_SERVICE_URL: http://s2-workforce:9002
       S3_SERVICE_URL: http://s3-hospitality:9003
@@ -164,12 +165,12 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s4_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S2_SERVICE_URL: http://s2-workforce:9002
       S3_SERVICE_URL: http://s3-hospitality:9003
@@ -201,12 +202,12 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s3_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S2_SERVICE_URL: http://s2-workforce:9002
       S4_SERVICE_URL: http://s4-finance-bi:9004
@@ -247,10 +248,10 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s3_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S4_SERVICE_URL: http://s4-finance-bi:9004
     volumes:
@@ -279,12 +280,12 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s2_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_HOST: wh-redis
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S4_SERVICE_URL: http://s4-finance-bi:9004
     volumes:
@@ -324,10 +325,10 @@ services:
       DB_PORT: 3306
       DB_DATABASE: wh_s2_db
       DB_USERNAME: wh_app
-      DB_PASSWORD: wh_app_secret
+      DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
       REDIS_BUS_HOST: wh-redis-bus
       REDIS_BUS_PORT: 6379
-      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
       S1_SERVICE_URL: http://s1-identity:9001
       S4_SERVICE_URL: http://s4-finance-bi:9004
     volumes:

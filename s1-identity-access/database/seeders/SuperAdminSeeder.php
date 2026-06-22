@@ -14,7 +14,7 @@ class SuperAdminSeeder extends Seeder
             ['username' => 'super.admin'],
             [
                 'email' => 'super.admin@wonderlandhotel.local',
-                'password' => Hash::make('ChangeMeNow!10'),
+                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'ChangeMeNow!10')),
                 'display_name' => 'Super Administrator',
                 'is_active' => true,
                 'must_change_password' => true,
