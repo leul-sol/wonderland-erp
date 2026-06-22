@@ -14,12 +14,17 @@ if (-not (Test-Path "s4-finance-bi\.env")) {
     Write-Host "Created s4-finance-bi/.env from .env.example"
 }
 
+if (-not (Test-Path "s3-hospitality-operations\.env")) {
+    Copy-Item "s3-hospitality-operations/.env.example" "s3-hospitality-operations/.env"
+    Write-Host "Created s3-hospitality-operations/.env from .env.example"
+}
+
 Write-Host "Building and starting containers..."
 docker compose up -d --build
 
-Write-Host "Waiting for MySQL, S1, and S4..."
+Write-Host "Waiting for MySQL, S1, S4, and S3..."
 $ready = $false
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 45; $i++) {
     # Native commands (mysqladmin) write warnings to stderr; do not treat as fatal.
     $prevPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -33,9 +38,12 @@ for ($i = 0; $i -lt 30; $i++) {
     docker compose exec -T s4-finance-bi php artisan migrate:status 2>$null | Out-Null
     $s4Ok = ($LASTEXITCODE -eq 0)
 
+    docker compose exec -T s3-hospitality php artisan migrate:status 2>$null | Out-Null
+    $s3Ok = ($LASTEXITCODE -eq 0)
+
     $ErrorActionPreference = $prevPreference
 
-    if ($mysqlOk -and $s1Ok -and $s4Ok) {
+    if ($mysqlOk -and $s1Ok -and $s4Ok -and $s3Ok) {
         $ready = $true
         break
     }
@@ -67,6 +75,15 @@ if (-not $s4SeedOk) {
     Write-Warning "S4 bootstrap failed. Retry: docker compose exec s4-finance-bi php artisan app:ensure-seeded"
 }
 
+$ErrorActionPreference = "Continue"
+docker compose exec -T s3-hospitality php artisan app:ensure-seeded 2>&1 | Out-Host
+$s3SeedOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevPreference
+
+if (-not $s3SeedOk) {
+    Write-Warning "S3 bootstrap failed. Retry: docker compose exec s3-hospitality php artisan app:ensure-seeded"
+}
+
 try {
     $response = Invoke-RestMethod -Uri "http://localhost/s1/api/v1/health" -TimeoutSec 10
     Write-Host "S1 health:" ($response | ConvertTo-Json -Compress)
@@ -81,6 +98,15 @@ try {
     Write-Host "S4 health check failed. Run:"
     Write-Host "  docker compose exec s4-finance-bi php artisan app:ensure-seeded"
     Write-Host "  curl http://localhost/s4/api/v1/health"
+}
+
+try {
+    $s3 = Invoke-RestMethod -Uri "http://localhost/s3/api/v1/health" -TimeoutSec 10
+    Write-Host "S3 health:" ($s3 | ConvertTo-Json -Compress)
+} catch {
+    Write-Host "S3 health check failed. Run:"
+    Write-Host "  docker compose exec s3-hospitality php artisan app:ensure-seeded"
+    Write-Host "  curl http://localhost/s3/api/v1/health"
 }
 
 Write-Host "Done."

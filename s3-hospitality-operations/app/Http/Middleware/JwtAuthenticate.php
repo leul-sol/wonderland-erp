@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Http\Controllers\Concerns\RespondsWithApiErrors;
+use App\Services\S1AuthService;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class JwtAuthenticate
+{
+    use RespondsWithApiErrors;
+
+    public function __construct(private readonly S1AuthService $s1Auth)
+    {
+    }
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $header = $request->header('Authorization', '');
+
+        if (! preg_match('/Bearer\s+(\S+)/', $header, $matches)) {
+            return $this->error('UNAUTHENTICATED', 'Bearer token required.', 401);
+        }
+
+        $payload = $this->s1Auth->verify($matches[1]);
+
+        if ($payload === null) {
+            return $this->error('UNAUTHENTICATED', 'Invalid token.', 401);
+        }
+
+        $user = $payload['user'] ?? [];
+
+        $request->attributes->set('auth_user_id', (int) ($user['sub'] ?? 0));
+        $request->attributes->set('auth_permissions', $user['permissions'] ?? []);
+        $request->attributes->set('auth_roles', $user['roles'] ?? []);
+        $request->attributes->set('auth_user', $user);
+
+        return $next($request);
+    }
+}

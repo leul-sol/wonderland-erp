@@ -10,6 +10,8 @@ services:
         condition: service_healthy
       s4-finance-bi:
         condition: service_healthy
+      s3-hospitality:
+        condition: service_healthy
     networks:
       - wh-internal
 
@@ -138,6 +140,83 @@ services:
       timeout: 5s
       retries: 10
       start_period: 120s
+
+  s3-hospitality:
+    build:
+      context: ./s3-hospitality-operations
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: WH-S3-Hospitality
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://s3-hospitality:9003
+      DB_CONNECTION: mysql
+      DB_HOST: wh-mysql
+      DB_PORT: 3306
+      DB_DATABASE: wh_s3_db
+      DB_USERNAME: wh_app
+      DB_PASSWORD: wh_app_secret
+      REDIS_HOST: wh-redis
+      REDIS_PORT: 6379
+      REDIS_BUS_HOST: wh-redis-bus
+      REDIS_BUS_PORT: 6379
+      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      S1_SERVICE_URL: http://s1-identity:9001
+      S4_SERVICE_URL: http://s4-finance-bi:9004
+    volumes:
+      - ./s3-hospitality-operations:/var/www/html
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+      wh-redis:
+        condition: service_started
+      wh-redis-bus:
+        condition: service_started
+      s1-identity:
+        condition: service_healthy
+      s4-finance-bi:
+        condition: service_healthy
+    networks:
+      - wh-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9003/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+
+  s3-workers:
+    build:
+      context: ./s3-hospitality-operations
+      dockerfile: Dockerfile
+    command: >
+      sh -c "while true; do php artisan outbox:publish; sleep 10; done"
+    environment:
+      APP_NAME: WH-S3-Hospitality
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: wh-mysql
+      DB_PORT: 3306
+      DB_DATABASE: wh_s3_db
+      DB_USERNAME: wh_app
+      DB_PASSWORD: wh_app_secret
+      REDIS_BUS_HOST: wh-redis-bus
+      REDIS_BUS_PORT: 6379
+      INTERNAL_KEY_CURRENT: dev-internal-key-change-in-prod
+      S1_SERVICE_URL: http://s1-identity:9001
+      S4_SERVICE_URL: http://s4-finance-bi:9004
+    volumes:
+      - ./s3-hospitality-operations:/var/www/html
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+      wh-redis-bus:
+        condition: service_started
+      s3-hospitality:
+        condition: service_healthy
+    networks:
+      - wh-internal
 
 networks:
   wh-internal:

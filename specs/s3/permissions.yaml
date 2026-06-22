@@ -1,0 +1,21 @@
+# S3 §6.1 — Hospitality permission catalog (seed into S1 permissions table)
+
+domain_prefix: S3
+
+permissions:
+  - action: S3.hospitality.rooms.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hospitality.reservations.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hospitality.reservations.create
+    default_roles: [super_admin, receptionist, cashier]
+  - action: S3.hospitality.reservations.check_in
+    default_roles: [super_admin, receptionist]
+  - action: S3.hospitality.reservations.check_out
+    default_roles: [super_admin, receptionist, cashier]
+  - action: S3.hospitality.folios.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager]
+  - action: S3.hospitality.folios.charge
+    default_roles: [super_admin, receptionist, cashier]
+  - action: S3.hospitality.folios.settle
+    default_roles: [super_admin, cashier]
