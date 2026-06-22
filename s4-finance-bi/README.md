@@ -1,30 +1,36 @@
 # S4 — Finance & BI
 
-Laravel 11 application. Full spec: `../documents/S4_Finance_BI_SDD.pdf`.
+Laravel 11 application for general ledger, AR/AP, fiscal periods, and financial reporting.
 
 ## Local setup (Docker)
 
-From repo root (once `docker-compose` includes the S4 service):
-
-```bash
-cp s4-finance-bi/.env.example s4-finance-bi/.env
-docker compose up -d --build
-docker compose exec s4-finance-bi php artisan key:generate
+```powershell
+docker compose up -d s4-finance-bi
 docker compose exec s4-finance-bi php artisan app:ensure-seeded
 curl http://localhost/s4/api/v1/health
 ```
 
 ## Auth
 
-- User JWTs are verified via S1 `POST /api/v1/auth/verify` (`S1AuthService`).
-- Service-to-service calls use `X-Service-Key`.
-- Journal posts from S2/S3 require `Idempotency-Key` (middleware alias `idempotency`).
+- User JWTs verified via S1 `POST /api/v1/auth/verify`
+- S2/S3 journal posts use `X-Service-Key` + `Idempotency-Key`
 
-## API surface (initial)
+## API surface
 
-- `GET /api/v1/health`
+### Finance core
+- `POST /journal-entries` — create journal (S2/S3 auto-post; manual → draft)
+- `POST /journal-entries/{id}/approve` | `/post` | `/reverse`
+- `GET /accounts`, `GET /fiscal-periods`, `POST /fiscal-periods/{id}/close|lock`
+- `GET /receivables`, `POST /receivables/{id}/settle`
+- `GET /payables`, `POST /payables/{id}/settle`
 
-Finance routes (`POST /journal-entries`, COA, reports) are added in follow-up work.
+### Reports (Phase 3)
+- `GET /reports/trial-balance?fiscal_period_id=` or `?from=&to=`
+- `GET /reports/income-statement`
+- `GET /reports/balance-sheet`
+- `GET /dashboards/executive` — revenue, expenses, net income, cash, AR/AP KPIs
+
+Reports aggregate **posted** journal lines only.
 
 ## Specs
 

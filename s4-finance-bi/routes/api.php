@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FiscalPeriodController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\PayableController;
 use App\Http\Controllers\ReceivableController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
@@ -52,4 +54,16 @@ Route::middleware('jwt')->group(function () {
 
     Route::post('/payables/{payable}/settle', [PayableController::class, 'settle'])
         ->middleware('permission:S4.finance.payables.settle');
+
+    Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])
+        ->middleware('permission:S4.finance.reports.read');
+
+    Route::get('/reports/income-statement', [ReportController::class, 'incomeStatement'])
+        ->middleware('permission:S4.finance.reports.read');
+
+    Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])
+        ->middleware('permission:S4.finance.reports.read');
+
+    Route::get('/dashboards/executive', [DashboardController::class, 'executive'])
+        ->middleware('permission:S4.bi.dashboards.read');
 });
