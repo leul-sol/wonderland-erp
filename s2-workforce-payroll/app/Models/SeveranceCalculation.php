@@ -13,6 +13,7 @@ class SeveranceCalculation extends Model
         'months_of_service',
         'calculation_date',
         'status',
+        's4_journal_entry_id',
     ];
 
     protected function casts(): array

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EmployeeConsumptionPeriod;
 use App\Models\Folio;
 use App\Models\FolioLine;
 use App\Models\MenuItem;
@@ -19,8 +20,27 @@ class OrderService
     ) {
     }
 
-    public function create(?int $folioId = null): RestaurantOrder
+    public function create(?int $folioId = null, ?int $consumptionPeriodId = null): RestaurantOrder
     {
+        if ($folioId !== null && $consumptionPeriodId !== null) {
+            throw new InvalidArgumentException('An order cannot be linked to both a folio and an employee consumption period.');
+        }
+
+        if ($consumptionPeriodId !== null) {
+            $period = EmployeeConsumptionPeriod::query()->findOrFail($consumptionPeriodId);
+
+            if ($period->status !== 'open') {
+                throw new InvalidArgumentException('Consumption period is not open.');
+            }
+
+            return RestaurantOrder::query()->create([
+                'order_number' => $this->nextOrderNumber(),
+                'employee_consumption_period_id' => $period->id,
+                'payment_context' => 'employee_meal',
+                'status' => 'open',
+            ]);
+        }
+
         if ($folioId !== null) {
             $folio = Folio::query()->findOrFail($folioId);
             if ($folio->status !== 'open') {
@@ -93,23 +113,26 @@ class OrderService
 
             $cogsTotal = round($cogsTotal, 2);
 
-            $debitAccount = $order->payment_context === 'folio'
-                ? $accounts['ar_guest']
-                : $accounts['cash'];
+            $revenueJournal = null;
+            if ($order->payment_context !== 'employee_meal') {
+                $debitAccount = $order->payment_context === 'folio'
+                    ? $accounts['ar_guest']
+                    : $accounts['cash'];
 
-            $revenueReference = $order->folio_id !== null
-                ? 'FOLIO-'.$order->folio_id
-                : 'ORDER-'.$order->id;
+                $revenueReference = $order->folio_id !== null
+                    ? 'FOLIO-'.$order->folio_id
+                    : 'ORDER-'.$order->id;
 
-            $revenueJournal = $this->s4->postJournal([
-                'description' => 'F&B order '.$order->order_number,
-                'source_module' => 's3',
-                'source_reference' => $revenueReference,
-                'lines' => [
-                    ['account_code' => $debitAccount, 'debit' => $subtotal, 'credit' => 0],
-                    ['account_code' => $accounts['fb_revenue'], 'debit' => 0, 'credit' => $subtotal],
-                ],
-            ], 'order-'.$order->id.'-revenue');
+                $revenueJournal = $this->s4->postJournal([
+                    'description' => 'F&B order '.$order->order_number,
+                    'source_module' => 's3',
+                    'source_reference' => $revenueReference,
+                    'lines' => [
+                        ['account_code' => $debitAccount, 'debit' => $subtotal, 'credit' => 0],
+                        ['account_code' => $accounts['fb_revenue'], 'debit' => 0, 'credit' => $subtotal],
+                    ],
+                ], 'order-'.$order->id.'-revenue');
+            }
 
             $cogsJournalId = null;
             if ($cogsTotal > 0) {
@@ -126,7 +149,7 @@ class OrderService
                 $cogsJournalId = (string) ($cogsJournal['data']['id'] ?? '');
             }
 
-            if ($order->folio_id !== null) {
+            if ($order->folio_id !== null && $revenueJournal !== null) {
                 $folio = $order->folio;
                 FolioLine::query()->create([
                     'folio_id' => $folio->id,
@@ -144,10 +167,16 @@ class OrderService
             $order->update([
                 'status' => 'finalized',
                 'cogs_total' => $cogsTotal,
-                'revenue_journal_entry_id' => (string) ($revenueJournal['data']['id'] ?? ''),
+                'revenue_journal_entry_id' => $revenueJournal !== null
+                    ? (string) ($revenueJournal['data']['id'] ?? '')
+                    : null,
                 'cogs_journal_entry_id' => $cogsJournalId,
                 'finalized_at' => now(),
             ]);
+
+            if ($order->employee_consumption_period_id !== null) {
+                $this->syncConsumptionPeriodTotal((int) $order->employee_consumption_period_id);
+            }
 
             $this->outbox->enqueue(config('events.channels.order_finalized'), [
                 'order_id' => $order->id,
@@ -161,6 +190,18 @@ class OrderService
 
             return $order->fresh(['lines.menuItem', 'folio']);
         });
+    }
+
+    private function syncConsumptionPeriodTotal(int $periodId): void
+    {
+        $total = (float) RestaurantOrder::query()
+            ->where('employee_consumption_period_id', $periodId)
+            ->where('status', 'finalized')
+            ->sum('subtotal');
+
+        EmployeeConsumptionPeriod::query()
+            ->whereKey($periodId)
+            ->update(['total_amount' => round($total, 2)]);
     }
 
     private function nextOrderNumber(): string

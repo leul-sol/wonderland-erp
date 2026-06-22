@@ -20,4 +20,4 @@ Machine-readable contracts extracted from the S0–S4 SDDs. **PDFs in `documents
 
 - **AP journal timing:** S0 says goods receipt; S3 §5.3 says PO approval — implement goods receipt (S0 + S4).
 - **S4 event_outbox:** S0 ID8/ID10 vs S4 §8.1 — follow S0 (S4 consumes events, does not emit on bus for BI).
-- **Group bookings:** mentioned in S0 §6 only — not in S3 SDD; defer.
+- **Group bookings:** `POST /group-bookings` with rooming list; bulk check-in/out via `POST /group-bookings/{id}/check-in`.

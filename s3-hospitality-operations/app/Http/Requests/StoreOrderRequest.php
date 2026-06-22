@@ -15,6 +15,7 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'folio_id' => ['nullable', 'integer', 'exists:folios,id'],
+            'employee_consumption_period_id' => ['nullable', 'integer', 'exists:employee_consumption_periods,id'],
         ];
     }
 }

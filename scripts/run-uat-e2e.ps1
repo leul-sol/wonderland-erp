@@ -173,6 +173,41 @@ $checkedIn = Invoke-Api -Method POST -Url "$BaseS3/reservations/$reservationId/c
 }
 $folioId = $checkedIn.data.folio_id
 
+# UAT-S3-003: F&B order with COGS on guest folio
+Write-Step "S3 F&B order with COGS (UAT-S3-003)"
+$items = Invoke-Api -Method GET -Url "$BaseS3/items" -RequestHeaders $auth
+$beef = ($items.data | Where-Object { $_.sku -eq "BEEF-001" } | Select-Object -First 1)
+$bun = ($items.data | Where-Object { $_.sku -eq "BUN-001" } | Select-Object -First 1)
+if ($null -eq $beef -or $null -eq $bun) {
+    throw "Inventory seed items BEEF-001 / BUN-001 not found."
+}
+$po = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders" -RequestHeaders $auth -Payload @{
+    vendor_name = "E2E Kitchen Supply"
+    lines       = @(
+        @{ inventory_item_id = $beef.id; quantity = 10; unit_cost = 450 },
+        @{ inventory_item_id = $bun.id; quantity = 50; unit_cost = 15 }
+    )
+}
+$poId = $po.data.id
+Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/approve" -RequestHeaders $auth | Out-Null
+Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/receive" -RequestHeaders $auth | Out-Null
+$menu = Invoke-Api -Method GET -Url "$BaseS3/menu-items" -RequestHeaders $auth
+$burger = $menu.data | Where-Object { $_.code -eq "BURGER-CL" } | Select-Object -First 1
+if ($null -eq $burger) {
+    throw "Menu item BURGER-CL not found."
+}
+$fbOrder = Invoke-Api -Method POST -Url "$BaseS3/orders" -RequestHeaders $auth -Payload @{ folio_id = $folioId }
+$fbOrderId = $fbOrder.data.id
+Invoke-Api -Method POST -Url "$BaseS3/orders/$fbOrderId/lines" -RequestHeaders $auth -Payload @{
+    menu_item_id = $burger.id
+    quantity     = 2
+} | Out-Null
+$finalized = Invoke-Api -Method POST -Url "$BaseS3/orders/$fbOrderId/finalize" -RequestHeaders $auth
+if ($finalized.data.status -ne "finalized") {
+    throw "F&B order finalize failed."
+}
+Record-Uat -ScenarioKey "UAT-S3-003" -Status "passed" -Notes "Folio F&B order finalized with COGS posting." -Token $token
+
 Invoke-Api -Method POST -Url "$BaseS3/folios/$folioId/charges" -RequestHeaders $auth -Payload @{
     description      = "E2E room night"
     amount           = 2500
@@ -197,6 +232,26 @@ $employee = Invoke-Api -Method POST -Url "$BaseS2/employees" -RequestHeaders $au
 }
 $employeeId = $employee.data.id
 
+$payPeriodStart = (Get-Date).ToString("yyyy-MM-01")
+$payPeriodEnd = (Get-Date).ToString("yyyy-MM-dd")
+$allEmployees = Invoke-Api -Method GET -Url "$BaseS2/employees" -RequestHeaders $auth
+$day = [DateTime]::Parse($payPeriodStart)
+$endDay = [DateTime]::Parse($payPeriodEnd)
+while ($day -le $endDay) {
+    if ($day.DayOfWeek -ne 'Saturday' -and $day.DayOfWeek -ne 'Sunday') {
+        foreach ($emp in ($allEmployees.data | Where-Object { $_.status -eq "active" })) {
+            Invoke-Api -Method POST -Url "$BaseS2/attendance-records" -RequestHeaders $auth -Payload @{
+                employee_id = $emp.id
+                work_date   = $day.ToString("yyyy-MM-dd")
+                check_in    = "08:00"
+                check_out   = "17:00"
+                status      = "present"
+            } | Out-Null
+        }
+    }
+    $day = $day.AddDays(1)
+}
+
 Invoke-Api -Method POST -Url "$BaseS2/employees/$employeeId/deductions" -RequestHeaders @{
     "X-Service-Key"   = $ServiceKey
     "Idempotency-Key" = "e2e-meal-$employeeId"
@@ -207,8 +262,8 @@ Invoke-Api -Method POST -Url "$BaseS2/employees/$employeeId/deductions" -Request
 } | Out-Null
 
 $payrollRun = Invoke-Api -Method POST -Url "$BaseS2/payroll-runs" -RequestHeaders $auth -Payload @{
-    period_start = (Get-Date).ToString("yyyy-MM-01")
-    period_end   = (Get-Date).ToString("yyyy-MM-dd")
+    period_start = $payPeriodStart
+    period_end   = $payPeriodEnd
 }
 $line = $payrollRun.data.lines | Where-Object { $_.employee_id -eq $employeeId } | Select-Object -First 1
 if ([decimal]$line.other_deductions -ne 300) {

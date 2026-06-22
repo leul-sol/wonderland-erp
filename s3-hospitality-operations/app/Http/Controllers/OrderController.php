@@ -36,7 +36,10 @@ class OrderController extends Controller
     public function store(StoreOrderRequest $request): JsonResponse
     {
         try {
-            $order = $this->orders->create($request->validated('folio_id'));
+            $order = $this->orders->create(
+                $request->validated('folio_id'),
+                $request->validated('employee_consumption_period_id'),
+            );
         } catch (\InvalidArgumentException $e) {
             return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
         }

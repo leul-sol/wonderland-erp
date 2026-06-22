@@ -31,7 +31,7 @@ class EmployeeConsumptionService
             'employee_id' => (int) $data['employee_id'],
             'period_start' => $start->toDateString(),
             'period_end' => $end->toDateString(),
-            'total_amount' => round((float) ($data['total_amount'] ?? 0), 2),
+            'total_amount' => 0,
             'status' => 'open',
         ]);
     }
@@ -43,6 +43,9 @@ class EmployeeConsumptionService
         }
 
         return DB::transaction(function () use ($period) {
+            $this->syncTotalFromOrders($period);
+            $period->refresh();
+
             $amount = round((float) $period->total_amount, 2);
 
             if ($amount > 0) {
@@ -69,5 +72,15 @@ class EmployeeConsumptionService
 
             return $period->fresh();
         });
+    }
+
+    public function syncTotalFromOrders(EmployeeConsumptionPeriod $period): void
+    {
+        $total = (float) \App\Models\RestaurantOrder::query()
+            ->where('employee_consumption_period_id', $period->id)
+            ->where('status', 'finalized')
+            ->sum('subtotal');
+
+        $period->update(['total_amount' => round($total, 2)]);
     }
 }

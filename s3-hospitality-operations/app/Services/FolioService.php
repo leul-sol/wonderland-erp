@@ -71,6 +71,15 @@ class FolioService
         }
 
         $balance = $folio->balance();
+        if ($balance <= 0) {
+            $folio->update([
+                'status' => 'settled',
+                'settled_at' => now(),
+            ]);
+
+            return $folio->fresh('lines');
+        }
+
         if ($amount < $balance) {
             throw new InvalidArgumentException('Payment does not cover folio balance.');
         }

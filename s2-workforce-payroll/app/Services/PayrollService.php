@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceRecord;
 use App\Models\Employee;
 use App\Models\EmployeeDeduction;
 use App\Models\PayrollLine;
 use App\Models\PayrollRun;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -28,9 +31,10 @@ class PayrollService
             throw new InvalidArgumentException('No active employees available for payroll.');
         }
 
+        $periodStart = (string) $data['period_start'];
         $periodEnd = (string) $data['period_end'];
 
-        return DB::transaction(function () use ($data, $employees, $periodEnd) {
+        return DB::transaction(function () use ($data, $employees, $periodStart, $periodEnd) {
             $run = PayrollRun::query()->create([
                 'run_number' => $this->nextRunNumber(),
                 'period_start' => $data['period_start'],
@@ -42,8 +46,10 @@ class PayrollService
             $totalNet = 0.0;
 
             foreach ($employees as $employee) {
+                $attendanceFactor = $this->attendancePayFactor($employee, $periodStart, $periodEnd);
+                $effectiveGross = round((float) $employee->base_salary * $attendanceFactor, 2);
                 $otherDeductions = $this->unappliedDeductionTotal($employee->id, $periodEnd);
-                $amounts = $this->calculateAmounts((float) $employee->base_salary, $otherDeductions);
+                $amounts = $this->calculateAmounts($effectiveGross, $otherDeductions);
 
                 PayrollLine::query()->create([
                     'payroll_run_id' => $run->id,
@@ -126,6 +132,42 @@ class PayrollService
 
             return $run->fresh('lines.employee');
         });
+    }
+
+    private function attendancePayFactor(Employee $employee, string $periodStart, string $periodEnd): float
+    {
+        $expectedDays = 0;
+        $paidUnits = 0.0;
+
+        foreach (CarbonPeriod::create(Carbon::parse($periodStart), Carbon::parse($periodEnd)) as $day) {
+            if (! $day->isWeekday()) {
+                continue;
+            }
+
+            $expectedDays++;
+            $record = AttendanceRecord::query()
+                ->where('employee_id', $employee->id)
+                ->whereDate('work_date', $day->toDateString())
+                ->first();
+
+            if ($record === null) {
+                throw new InvalidArgumentException(
+                    'Missing attendance for '.$employee->full_name.' on '.$day->toDateString().'.'
+                );
+            }
+
+            $paidUnits += match ($record->status) {
+                'present', 'leave' => 1.0,
+                'half_day' => 0.5,
+                default => 0.0,
+            };
+        }
+
+        if ($expectedDays === 0) {
+            return 1.0;
+        }
+
+        return round($paidUnits / $expectedDays, 4);
     }
 
     private function unappliedDeductionTotal(int $employeeId, string $periodEnd): float

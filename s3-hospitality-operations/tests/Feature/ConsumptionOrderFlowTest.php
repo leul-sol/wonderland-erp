@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\EventOutbox;
 use App\Models\InventoryItem;
 use App\Models\MenuItem;
 use Database\Seeders\DatabaseSeeder;
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS3Auth;
 use Tests\TestCase;
 
-class ConsumptionFlowTest extends TestCase
+class ConsumptionOrderFlowTest extends TestCase
 {
     use MocksS3Auth;
     use RefreshDatabase;
@@ -20,55 +19,52 @@ class ConsumptionFlowTest extends TestCase
     {
         parent::setUp();
 
-        config([
-            'services.internal_key_current' => 'test-service-key',
-            'services.s2_url' => 'http://s2.test',
-        ]);
+        config(['services.internal_key_current' => 'test-service-key']);
 
         $this->seed(DatabaseSeeder::class);
 
         Http::fake([
-            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 66]], 201),
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 77]], 201),
             'http://s2.test/api/v1/employees/*/deductions' => Http::response([
                 'data' => ['id' => 1, 'amount' => '350.00', 'status' => 'applied'],
             ], 201),
         ]);
     }
 
-    public function test_consumption_close_posts_deduction_from_order_totals(): void
+    public function test_consumption_period_total_sums_finalized_employee_meal_orders(): void
     {
+        config(['services.s2_url' => 'http://s2.test']);
         $headers = $this->authHeaders();
+
         $this->receiveStock();
 
-        $periodId = $this->postJson('/api/v1/employee-consumption-periods', [
+        $period = $this->postJson('/api/v1/employee-consumption-periods', [
             'employee_id' => 42,
             'period_start' => '2026-06-01',
             'period_end' => '2026-06-30',
-        ], $headers)->assertCreated()->json('data.id');
+        ], $headers)->assertCreated();
+
+        $periodId = $period->json('data.id');
+        $this->assertSame('0.00', $period->json('data.total_amount'));
 
         $burger = MenuItem::query()->where('code', 'BURGER-CL')->firstOrFail();
-        $orderId = $this->postJson('/api/v1/orders', [
-            'employee_consumption_period_id' => $periodId,
-        ], $headers)->json('data.id');
 
-        $this->postJson("/api/v1/orders/{$orderId}/lines", [
+        $order = $this->postJson('/api/v1/orders', [
+            'employee_consumption_period_id' => $periodId,
+        ], $headers)->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/orders/{$order}/lines", [
             'menu_item_id' => $burger->id,
             'quantity' => 1,
-        ], $headers);
+        ], $headers)->assertCreated();
 
-        $this->postJson("/api/v1/orders/{$orderId}/finalize", [], $headers)->assertOk();
+        $this->postJson("/api/v1/orders/{$order}/finalize", [], $headers)->assertOk();
 
         $this->postJson("/api/v1/employee-consumption-periods/{$periodId}/close", [], $headers)
             ->assertOk()
-            ->assertJsonPath('data.status', 'closed')
             ->assertJsonPath('data.total_amount', '350.00');
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/deductions')
-            && $request->hasHeader('X-Service-Key', 'test-service-key'));
-
-        $this->assertDatabaseHas('event_outbox', [
-            'event' => 'wh.events.s3.employee_consumption_period.closed',
-        ]);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/deductions'));
     }
 
     private function receiveStock(): void

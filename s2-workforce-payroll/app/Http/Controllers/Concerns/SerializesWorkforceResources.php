@@ -133,6 +133,7 @@ trait SerializesWorkforceResources
             'months_of_service' => $calculation->months_of_service,
             'calculation_date' => $calculation->calculation_date?->toDateString(),
             'status' => $calculation->status,
+            's4_journal_entry_id' => $calculation->s4_journal_entry_id,
         ];
     }
 }

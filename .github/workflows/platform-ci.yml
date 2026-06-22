@@ -1,0 +1,80 @@
+name: Platform CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  s1-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s1-identity-access
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+      - run: composer install --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit
+
+  s2-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s2-workforce-payroll
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+      - run: composer install --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit
+
+  s3-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s3-hospitality-operations
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+      - run: composer install --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit
+
+  s4-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: s4-finance-bi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+      - run: composer install --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit
+
+  contract-tests:
+    runs-on: ubuntu-latest
+    needs: [s1-tests, s2-tests, s3-tests, s4-tests]
+    defaults:
+      run:
+        working-directory: s4-finance-bi
+    env:
+      WONDERLAND_REPO_ROOT: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath
+      - run: composer install --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit --testsuite Contract

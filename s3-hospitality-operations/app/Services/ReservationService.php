@@ -31,6 +31,7 @@ class ReservationService
             'adults' => $data['adults'] ?? 1,
             'notes' => $data['notes'] ?? null,
             'status' => 'confirmed',
+            'group_booking_id' => $data['group_booking_id'] ?? null,
         ]);
     }
 

@@ -15,7 +15,7 @@ Design source: [`documents/`](documents/) (S0–S4 SDDs, v1.0). Executable contr
 
 All four systems are implemented and wired through the gateway:
 
-- **S1** — JWT auth, RBAC (75 permissions), users/roles, audit, cross-system permission sync
+- **S1** — JWT auth, RBAC (79 permissions), users/roles, audit, cross-system permission sync
 - **S2** — employees, payroll (with deductions), leave, attendance, severance, outbox events
 - **S3** — reservations, folios, F&B, procurement, staff consumption → S2 deductions
 - **S4** — GL, fiscal periods, budgets, 24-report BI catalog, dashboards, RTM/UAT tracking, event consumers

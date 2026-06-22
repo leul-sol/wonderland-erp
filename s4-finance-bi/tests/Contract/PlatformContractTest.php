@@ -21,7 +21,7 @@ class PlatformContractTest extends TestCase
     {
         $checks = [
             's2-workforce-payroll/routes/api.php' => ['/leave-requests', '/attendance-records', '/employees/{employee}/deductions'],
-            's3-hospitality-operations/routes/api.php' => ['/rooms', '/reservations', '/orders', '/items', '/purchase-orders', '/employee-consumption-periods'],
+            's3-hospitality-operations/routes/api.php' => ['/rooms', '/reservations', '/group-bookings', '/orders', '/items', '/purchase-orders', '/employee-consumption-periods'],
             's4-finance-bi/routes/api.php' => ['/journal-entries', '/finance/budgets', '/bi/operational-events'],
             's1-identity-access/routes/api.php' => ["'/verify'", '/users', '/roles', '/audit-logs'],
         ];

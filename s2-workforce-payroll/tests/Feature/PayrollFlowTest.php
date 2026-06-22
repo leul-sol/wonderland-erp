@@ -7,12 +7,14 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS2Auth;
+use Tests\Concerns\SeedsPayrollAttendance;
 use Tests\TestCase;
 
 class PayrollFlowTest extends TestCase
 {
     use MocksS2Auth;
     use RefreshDatabase;
+    use SeedsPayrollAttendance;
 
     protected function setUp(): void
     {
@@ -48,11 +50,13 @@ class PayrollFlowTest extends TestCase
     {
         $headers = $this->authHeaders();
 
-        $this->postJson('/api/v1/employees', [
+        $employeeId = $this->postJson('/api/v1/employees', [
             'full_name' => 'Marta Tadesse',
             'base_salary' => 20000,
             'default_role' => 'cashier',
-        ], $headers)->assertCreated();
+        ], $headers)->assertCreated()->json('data.id');
+
+        $this->seedWeekdayAttendance($employeeId, '2026-06-01', '2026-06-30');
 
         $run = $this->postJson('/api/v1/payroll-runs', [
             'period_start' => '2026-06-01',

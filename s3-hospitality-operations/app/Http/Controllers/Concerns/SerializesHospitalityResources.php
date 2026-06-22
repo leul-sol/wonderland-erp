@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\Folio;
+use App\Models\GroupBooking;
 use App\Models\InventoryItem;
 use App\Models\MenuItem;
 use App\Models\PurchaseOrder;
@@ -50,6 +51,26 @@ trait SerializesHospitalityResources
             'room_id' => $reservation->room_id,
             'room' => $reservation->room ? $this->roomPayload($reservation->room) : null,
             'folio_id' => $reservation->folio?->id,
+            'group_booking_id' => $reservation->group_booking_id,
+        ];
+    }
+
+    protected function groupBookingPayload(GroupBooking $group): array
+    {
+        $group->loadMissing('reservations.roomType', 'reservations.room');
+
+        return [
+            'id' => $group->id,
+            'group_code' => $group->group_code,
+            'group_name' => $group->group_name,
+            'contact_name' => $group->contact_name,
+            'contact_email' => $group->contact_email,
+            'contact_phone' => $group->contact_phone,
+            'check_in_date' => $group->check_in_date?->toDateString(),
+            'check_out_date' => $group->check_out_date?->toDateString(),
+            'status' => $group->status,
+            'room_count' => $group->room_count,
+            'reservations' => $group->reservations->map(fn ($r) => $this->reservationPayload($r))->values(),
         ];
     }
 
@@ -147,6 +168,7 @@ trait SerializesHospitalityResources
             'id' => $order->id,
             'order_number' => $order->order_number,
             'folio_id' => $order->folio_id,
+            'employee_consumption_period_id' => $order->employee_consumption_period_id,
             'status' => $order->status,
             'payment_context' => $order->payment_context,
             'subtotal' => (string) $order->subtotal,

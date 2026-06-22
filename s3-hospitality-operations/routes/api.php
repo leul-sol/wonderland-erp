@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EmployeeConsumptionController;
 use App\Http\Controllers\FolioController;
+use App\Http\Controllers\GroupBookingController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\MenuItemController;
@@ -29,6 +30,17 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S3.hospitality.reservations.check_in');
     Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])
         ->middleware('permission:S3.hospitality.reservations.check_out');
+
+    Route::get('/group-bookings', [GroupBookingController::class, 'index'])
+        ->middleware('permission:S3.hospitality.group_bookings.read');
+    Route::post('/group-bookings', [GroupBookingController::class, 'store'])
+        ->middleware('permission:S3.hospitality.group_bookings.create');
+    Route::get('/group-bookings/{groupBooking}', [GroupBookingController::class, 'show'])
+        ->middleware('permission:S3.hospitality.group_bookings.read');
+    Route::post('/group-bookings/{groupBooking}/check-in', [GroupBookingController::class, 'checkIn'])
+        ->middleware('permission:S3.hospitality.group_bookings.check_in');
+    Route::post('/group-bookings/{groupBooking}/check-out', [GroupBookingController::class, 'checkOut'])
+        ->middleware('permission:S3.hospitality.group_bookings.check_out');
 
     Route::get('/folios/{folio}', [FolioController::class, 'show'])
         ->middleware('permission:S3.hospitality.folios.read');

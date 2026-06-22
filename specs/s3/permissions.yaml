@@ -43,3 +43,11 @@ permissions:
     default_roles: [super_admin, restaurant_manager]
   - action: S3.hospitality.consumption.close
     default_roles: [super_admin, restaurant_manager, payroll_officer]
+  - action: S3.hospitality.group_bookings.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hospitality.group_bookings.create
+    default_roles: [super_admin, receptionist]
+  - action: S3.hospitality.group_bookings.check_in
+    default_roles: [super_admin, receptionist]
+  - action: S3.hospitality.group_bookings.check_out
+    default_roles: [super_admin, receptionist, cashier]

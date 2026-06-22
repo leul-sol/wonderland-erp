@@ -8,12 +8,14 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS2Auth;
+use Tests\Concerns\SeedsPayrollAttendance;
 use Tests\TestCase;
 
 class PayrollDeductionTest extends TestCase
 {
     use MocksS2Auth;
     use RefreshDatabase;
+    use SeedsPayrollAttendance;
 
     protected function setUp(): void
     {
@@ -36,6 +38,8 @@ class PayrollDeductionTest extends TestCase
             'full_name' => 'Tigist Worku',
             'base_salary' => 20000,
         ], $headers)->json('data.id');
+
+        $this->seedWeekdayAttendance($employeeId, '2026-06-01', '2026-06-30');
 
         EmployeeDeduction::query()->create([
             'employee_id' => $employeeId,

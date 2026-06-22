@@ -10,8 +10,10 @@ use InvalidArgumentException;
 
 class SeveranceService
 {
-    public function __construct(private readonly OutboxService $outbox)
-    {
+    public function __construct(
+        private readonly S4FinanceClient $s4,
+        private readonly OutboxService $outbox,
+    ) {
     }
 
     public function calculate(Employee $employee): SeveranceCalculation
@@ -34,14 +36,29 @@ class SeveranceService
                 'status' => 'calculated',
             ]);
 
+            $journal = $this->s4->postJournal([
+                'description' => 'Severance accrual employee '.$employee->id,
+                'source_module' => 's2',
+                'source_reference' => 'SEVERANCE-'.$calculation->id,
+                'lines' => [
+                    ['account_code' => '5005', 'debit' => $amount, 'credit' => 0],
+                    ['account_code' => '2100', 'debit' => 0, 'credit' => $amount],
+                ],
+            ], 'severance-'.$calculation->id);
+
+            $calculation->update([
+                's4_journal_entry_id' => (string) ($journal['data']['id'] ?? ''),
+            ]);
+
             $this->outbox->enqueue(config('events.channels.severance_calculated'), [
                 'severance_id' => $calculation->id,
                 'employee_id' => $employee->id,
                 'amount' => (string) $amount,
                 'months_of_service' => $months,
+                's4_journal_entry_id' => $calculation->s4_journal_entry_id,
             ]);
 
-            return $calculation->load('employee.department');
+            return $calculation->fresh(['employee.department']);
         });
     }
 }

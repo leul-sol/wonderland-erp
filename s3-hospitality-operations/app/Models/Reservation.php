@@ -22,6 +22,7 @@ class Reservation extends Model
         'notes',
         'checked_in_at',
         'checked_out_at',
+        'group_booking_id',
     ];
 
     protected function casts(): array
@@ -47,5 +48,10 @@ class Reservation extends Model
     public function folio(): HasOne
     {
         return $this->hasOne(Folio::class);
+    }
+
+    public function groupBooking(): BelongsTo
+    {
+        return $this->belongsTo(GroupBooking::class);
     }
 }

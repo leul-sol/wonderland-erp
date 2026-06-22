@@ -11,6 +11,7 @@ class RestaurantOrder extends Model
     protected $fillable = [
         'order_number',
         'folio_id',
+        'employee_consumption_period_id',
         'status',
         'payment_context',
         'subtotal',
@@ -32,6 +33,11 @@ class RestaurantOrder extends Model
     public function folio(): BelongsTo
     {
         return $this->belongsTo(Folio::class);
+    }
+
+    public function consumptionPeriod(): BelongsTo
+    {
+        return $this->belongsTo(EmployeeConsumptionPeriod::class, 'employee_consumption_period_id');
     }
 
     public function lines(): HasMany
