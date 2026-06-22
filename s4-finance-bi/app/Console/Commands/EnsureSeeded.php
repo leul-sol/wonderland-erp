@@ -10,7 +10,7 @@ class EnsureSeeded extends Command
 {
     protected $signature = 'app:ensure-seeded';
 
-    protected $description = 'Run migrations and seed chart of accounts when no accounts exist';
+    protected $description = 'Run migrations and seed finance catalog, RTM, and UAT data when missing';
 
     public function handle(): int
     {
@@ -22,21 +22,25 @@ class EnsureSeeded extends Command
             return self::SUCCESS;
         }
 
-        if (DB::table('accounts')->exists()) {
-            $this->comment('Accounts already present — skipping seed.');
+        if (! DB::table('accounts')->exists()) {
+            $this->warn('No accounts found. Running database seeder...');
+            $this->call('db:seed', ['--force' => true]);
+            $this->info('Finance seed data loaded.');
 
             return self::SUCCESS;
         }
 
-        if (! class_exists(\Database\Seeders\DatabaseSeeder::class)) {
-            $this->warn('No DatabaseSeeder found — skipping seed.');
-
-            return self::SUCCESS;
+        if (Schema::hasTable('rtm_entries') && ! DB::table('rtm_entries')->exists()) {
+            $this->warn('No RTM entries found. Seeding RTM catalog...');
+            $this->call(\Database\Seeders\RtmSeeder::class);
         }
 
-        $this->warn('No accounts found. Running database seeder...');
-        $this->call('db:seed', ['--force' => true]);
-        $this->info('Chart of accounts seeded.');
+        if (Schema::hasTable('uat_scenarios') && ! DB::table('uat_scenarios')->exists()) {
+            $this->warn('No UAT scenarios found. Seeding UAT catalog...');
+            $this->call(\Database\Seeders\UatSeeder::class);
+        }
+
+        $this->comment('S4 seed data present.');
 
         return self::SUCCESS;
     }

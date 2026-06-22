@@ -29,6 +29,10 @@ trait MocksS4Auth
             'S4.bi.dashboards.read',
             'S4.bi.reports.read',
             'S4.bi.export.create',
+            'S4.bi.rtm.read',
+            'S4.bi.rtm.update',
+            'S4.bi.uat.read',
+            'S4.bi.uat.update',
         ];
 
         if (! $this->s4AuthMocked) {

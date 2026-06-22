@@ -10,6 +10,8 @@ use App\Http\Controllers\JournalController;
 use App\Http\Controllers\PayableController;
 use App\Http\Controllers\ReceivableController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RtmController;
+use App\Http\Controllers\UatController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
@@ -86,4 +88,22 @@ Route::middleware('jwt')->group(function () {
 
     Route::post('/bi/exports', [ExportController::class, 'store'])
         ->middleware('permission:S4.bi.export.create');
+
+    Route::get('/bi/rtm', [RtmController::class, 'index'])
+        ->middleware('permission:S4.bi.rtm.read');
+
+    Route::get('/bi/rtm/{rtmEntry}', [RtmController::class, 'show'])
+        ->middleware('permission:S4.bi.rtm.read');
+
+    Route::patch('/bi/rtm/{rtmEntry}', [RtmController::class, 'update'])
+        ->middleware('permission:S4.bi.rtm.update');
+
+    Route::get('/bi/uat', [UatController::class, 'index'])
+        ->middleware('permission:S4.bi.uat.read');
+
+    Route::get('/bi/uat/{uatScenario}', [UatController::class, 'show'])
+        ->middleware('permission:S4.bi.uat.read');
+
+    Route::post('/bi/uat/{uatScenario}/results', [UatController::class, 'recordResult'])
+        ->middleware('permission:S4.bi.uat.update');
 });

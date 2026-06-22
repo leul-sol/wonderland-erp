@@ -39,7 +39,13 @@ curl http://localhost/s4/api/v1/health
 ### Export (`S4.bi.export.create`)
 - `POST /bi/exports` — `{ "report": "income_statement", "format": "csv", "fiscal_period_id": 12 }`
 
-Query params: `fiscal_period_id` or `from` + `to`.
+### RTM & UAT
+- `GET /bi/rtm` — requirements matrix + coverage summary (`S4.bi.rtm.read`)
+- `PATCH /bi/rtm/{id}` — update requirement status (`S4.bi.rtm.update`)
+- `GET /bi/uat` — UAT scenarios + pass rate (`S4.bi.uat.read`)
+- `POST /bi/uat/{id}/results` — record pass/fail (`S4.bi.uat.update`)
+
+Query params: `fiscal_period_id` or `from` + `to` (reports). Filter RTM/UAT with `?system=S3&status=pending`.
 
 ## Specs
 
