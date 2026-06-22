@@ -118,8 +118,16 @@ class UatSeeder extends Seeder
                 'UAT-S3-004', 'S3', 'Employee consumption close posts deduction',
                 'S3-CON-001',
                 'S2 healthy; consumption period with total_amount',
-                "1. Create consumption period\n2. Close period",
+                "1. Create consumption period\n2. Add employee meal order\n3. Close period",
                 'S2 deduction applied; outbox event emitted',
+                'pending',
+            ],
+            [
+                'UAT-S3-005', 'S3', 'Group booking bulk check-in and check-out',
+                'S3-GRP-001',
+                'Two available rooms; JWT with group booking permissions',
+                "1. Create group booking with rooming list\n2. Bulk check-in\n3. Settle folios\n4. Bulk check-out",
+                'Group status checked_out; all reservations completed',
                 'pending',
             ],
         ];

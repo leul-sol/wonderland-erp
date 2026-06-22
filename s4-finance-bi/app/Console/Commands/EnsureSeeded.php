@@ -35,8 +35,7 @@ class EnsureSeeded extends Command
             $this->call(\Database\Seeders\RtmSeeder::class);
         }
 
-        if (Schema::hasTable('uat_scenarios') && ! DB::table('uat_scenarios')->exists()) {
-            $this->warn('No UAT scenarios found. Seeding UAT catalog...');
+        if (Schema::hasTable('uat_scenarios')) {
             $this->call(\Database\Seeders\UatSeeder::class);
         }
 

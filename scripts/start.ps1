@@ -25,7 +25,7 @@ if (-not (Test-Path "s2-workforce-payroll\.env")) {
 }
 
 if (-not (Test-Path ".env.example")) {
-    Write-Warning "Missing root .env.example — secrets template not found."
+    Write-Warning "Missing root .env.example - secrets template not found."
 }
 
 Write-Host "Building and starting containers..."
@@ -65,11 +65,6 @@ for ($i = 0; $i -lt 45; $i++) {
 
 if (-not $ready) {
     Write-Warning "Services still starting. Run bootstrap manually if login fails."
-}
-else {
-    Write-Host "Restarting gateway so upstream routes pick up fresh container IPs..."
-    docker compose restart wh-gateway | Out-Null
-    Start-Sleep -Seconds 5
 }
 
 Write-Host "Running database migrations (seed only if admin missing)..."
