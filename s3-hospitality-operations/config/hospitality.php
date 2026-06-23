@@ -5,6 +5,7 @@ return [
     'vat_rate' => (float) env('VAT_RATE', 0.15),
     'po_dept_head_threshold' => (float) env('PO_DEPT_HEAD_THRESHOLD', 5000),
     'po_finance_threshold' => (float) env('PO_FINANCE_THRESHOLD', 50000),
+    'expiry_alert_days' => (int) env('EXPIRY_ALERT_DAYS', 14),
     'accounts' => [
         'ar_guest' => '1100',
         'cash' => '1001',

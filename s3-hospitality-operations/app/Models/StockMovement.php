@@ -9,11 +9,13 @@ class StockMovement extends Model
 {
     protected $fillable = [
         'inventory_item_id',
+        'batch_id',
         'movement_type',
         'quantity',
         'unit_cost',
         'reference_type',
         'reference_id',
+        'created_by',
     ];
 
     protected function casts(): array

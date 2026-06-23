@@ -79,8 +79,63 @@ class EmployeeConsumptionService
         $total = (float) \App\Models\RestaurantOrder::query()
             ->where('employee_consumption_period_id', $period->id)
             ->where('status', 'finalized')
-            ->sum('subtotal');
+            ->sum('total_amount');
 
         $period->update(['total_amount' => round($total, 2)]);
+    }
+
+    public function accumulateSubtotal(int $employeeId, float $amount): void
+    {
+        if ($employeeId <= 0) {
+            throw new InvalidArgumentException('Employee reference is required for consumption billing.');
+        }
+
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('Consumption amount must be positive.');
+        }
+
+        $period = now()->format('Y-m');
+
+        $record = \App\Models\EmployeeConsumption::query()->firstOrCreate(
+            ['employee_id' => $employeeId, 'period' => $period],
+            ['total_amount' => 0, 'pushed_to_payroll' => false],
+        );
+
+        $record->increment('total_amount', round($amount, 2));
+    }
+
+    public function pushPendingToPayroll(): int
+    {
+        $records = \App\Models\EmployeeConsumption::query()
+            ->where('pushed_to_payroll', false)
+            ->where('total_amount', '>', 0)
+            ->orderBy('id')
+            ->get();
+
+        $pushed = 0;
+
+        foreach ($records as $record) {
+            $amount = round((float) $record->total_amount, 2);
+
+            $this->s2->postDeduction((int) $record->employee_id, [
+                'deduction_type' => 'staff_meal',
+                'amount' => $amount,
+                'description' => 'Staff meal consumption '.$record->period,
+                'source_reference' => 'CONSUMPTION-ACCUM-'.$record->id,
+            ], 'consumption-push-'.$record->id);
+
+            $record->update(['pushed_to_payroll' => true]);
+
+            $this->outbox->enqueue(config('events.channels.employee_consumption_pushed'), [
+                'employee_consumption_id' => $record->id,
+                'employee_id' => $record->employee_id,
+                'period' => $record->period,
+                'total_amount' => (string) $amount,
+            ]);
+
+            $pushed++;
+        }
+
+        return $pushed;
     }
 }

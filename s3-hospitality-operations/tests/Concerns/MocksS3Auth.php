@@ -13,30 +13,38 @@ trait MocksS3Auth
     protected function authHeaders(array $permissions = [], array $roles = ['super_admin']): array
     {
         $defaults = [
-            'S3.hospitality.rooms.read',
-            'S3.hospitality.reservations.read',
-            'S3.hospitality.reservations.create',
-            'S3.hospitality.reservations.check_in',
-            'S3.hospitality.reservations.check_out',
-            'S3.hospitality.folios.read',
-            'S3.hospitality.folios.charge',
-            'S3.hospitality.folios.settle',
-            'S3.hospitality.items.read',
-            'S3.hospitality.purchase_orders.read',
-            'S3.hospitality.purchase_orders.create',
-            'S3.hospitality.purchase_orders.approve',
-            'S3.hospitality.purchase_orders.receive',
-            'S3.hospitality.menu_items.read',
-            'S3.hospitality.orders.read',
-            'S3.hospitality.orders.create',
-            'S3.hospitality.orders.finalize',
-            'S3.hospitality.consumption.read',
-            'S3.hospitality.consumption.create',
-            'S3.hospitality.consumption.close',
-            'S3.hospitality.group_bookings.read',
-            'S3.hospitality.group_bookings.create',
-            'S3.hospitality.group_bookings.check_in',
-            'S3.hospitality.group_bookings.check_out',
+            'S3.inventory.items.read',
+            'S3.inventory.items.write',
+            'S3.inventory.stock.read',
+            'S3.inventory.stock.write',
+            'S3.inventory.suppliers.read',
+            'S3.inventory.suppliers.write',
+            'S3.inventory.purchase_orders.read',
+            'S3.inventory.purchase_orders.write',
+            'S3.inventory.purchase_orders.approve',
+            'S3.inventory.reports.read',
+            'S3.restaurant.menu.read',
+            'S3.restaurant.menu.write',
+            'S3.restaurant.orders.read',
+            'S3.restaurant.orders.write',
+            'S3.restaurant.billing.write',
+            'S3.restaurant.consumption.read',
+            'S3.restaurant.consumption.write',
+            'S3.hotel.rooms.read',
+            'S3.hotel.rooms.write',
+            'S3.hotel.guests.read',
+            'S3.hotel.guests.write',
+            'S3.hotel.reservations.read',
+            'S3.hotel.reservations.write',
+            'S3.hotel.checkinout.write',
+            'S3.hotel.folios.read',
+            'S3.hotel.folios.write',
+            'S3.hotel.cashier.read',
+            'S3.hotel.cashier.write',
+            'S3.hotel.group_bookings.read',
+            'S3.hotel.group_bookings.create',
+            'S3.hotel.group_bookings.check_in',
+            'S3.hotel.group_bookings.check_out',
         ];
 
         if (! $this->s3AuthMocked) {
@@ -54,5 +62,14 @@ trait MocksS3Auth
         }
 
         return ['Authorization' => 'Bearer test-token'];
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return array<string, string>
+     */
+    protected function withIdempotency(array $headers, string $key): array
+    {
+        return array_merge($headers, ['Idempotency-Key' => $key]);
     }
 }

@@ -39,6 +39,10 @@ class UserController extends Controller
             $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOL));
         }
 
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', (int) $request->input('employee_id'));
+        }
+
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->where(function ($builder) use ($search) {

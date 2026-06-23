@@ -44,7 +44,7 @@ class PurchaseOrderApprovalFlowTest extends TestCase
             ->assertJsonPath('data.status', 'pending_dept_head')
             ->assertJsonPath('data.approval_tier', 1);
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $headers)
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($headers, 'po-approve-'.$poId))
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
     }
@@ -65,7 +65,7 @@ class PurchaseOrderApprovalFlowTest extends TestCase
         $this->postJson("/api/v1/purchase-orders/{$poId}/submit", [], $headers)
             ->assertJsonPath('data.approval_tier', 3);
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $headers)
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($headers, 'po-approve-'.$poId))
             ->assertStatus(422);
     }
 
@@ -84,7 +84,7 @@ class PurchaseOrderApprovalFlowTest extends TestCase
 
         $this->postJson("/api/v1/purchase-orders/{$poId}/submit", [], $headers);
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $headers)
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($headers, 'po-approve-'.$poId))
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_finance');
     }
@@ -102,7 +102,7 @@ class PurchaseOrderApprovalFlowTest extends TestCase
             ],
         ], $headers)->json('data.id');
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $headers)
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($headers, 'po-approve-'.$poId))
             ->assertOk()
             ->assertJsonPath('data.status', 'approved')
             ->assertJsonPath('data.approval_tier', 3);

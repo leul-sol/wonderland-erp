@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\SerializesHospitalityResources;
 use App\Http\Requests\AddOrderLineRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Models\RestaurantOrder;
+use App\Models\RestaurantOrderLine;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,9 @@ class OrderController extends Controller
             $order = $this->orders->create(
                 $request->validated('folio_id'),
                 $request->validated('employee_consumption_period_id'),
+                $request->validated('customer_type'),
+                $request->validated('customer_ref_id'),
+                $request->validated('dining_table_id'),
             );
         } catch (\InvalidArgumentException $e) {
             return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
@@ -65,6 +69,28 @@ class OrderController extends Controller
         }
 
         return response()->json(['data' => $this->orderPayload($order->fresh(['lines.menuItem', 'folio']))], 201);
+    }
+
+    public function removeLine(RestaurantOrder $order, RestaurantOrderLine $line): JsonResponse
+    {
+        try {
+            $order = $this->orders->removeLine($order, $line);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->orderPayload($order)]);
+    }
+
+    public function cancel(RestaurantOrder $order): JsonResponse
+    {
+        try {
+            $order = $this->orders->cancel($order);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->orderPayload($order)]);
     }
 
     public function finalize(RestaurantOrder $order): JsonResponse

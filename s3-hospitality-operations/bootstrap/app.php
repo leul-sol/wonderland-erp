@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt' => \App\Http\Middleware\JwtAuthenticate::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'service.key' => \App\Http\Middleware\ServiceKeyAuthenticate::class,
+            'idempotent' => \App\Http\Middleware\EnsureIdempotent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

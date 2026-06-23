@@ -7,11 +7,12 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 class PurchaseOrderService
 {
     public function __construct(
-        private readonly InventoryService $inventory,
+        private readonly GoodsReceiptService $goodsReceipt,
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
     ) {
@@ -101,63 +102,75 @@ class PurchaseOrderService
         } while ($isSuperAdmin && in_array($po->status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true));
 
         if ($po->status === 'approved') {
+            $this->postApprovalJournal($po);
+
             $this->outbox->enqueue(config('events.channels.purchase_order_approved'), [
                 'purchase_order_id' => $po->id,
                 'po_number' => $po->po_number,
                 'vendor_name' => $po->vendor_name,
                 'total_amount' => (string) $po->total_amount,
                 'approval_tier' => $po->approval_tier,
+                'journal_entry_id' => $po->s4_journal_entry_id,
             ]);
         }
 
         return $po->fresh('lines.inventoryItem');
     }
 
-    public function receive(PurchaseOrder $po): PurchaseOrder
+    public function receive(PurchaseOrder $po, int $receivedBy = 0): PurchaseOrder
     {
-        if ($po->status !== 'approved') {
-            throw new InvalidArgumentException('Only approved purchase orders can be received.');
+        $this->goodsReceipt->receive($po, $receivedBy);
+
+        return $po->fresh('lines.inventoryItem');
+    }
+
+    public function cancel(PurchaseOrder $po): PurchaseOrder
+    {
+        if ($po->status === 'cancelled') {
+            throw new InvalidArgumentException('Purchase order is already cancelled.');
         }
 
-        $po->loadMissing('lines.inventoryItem');
+        if (in_array($po->status, ['approved', 'received', 'closed'], true)) {
+            throw new InvalidArgumentException('Cannot cancel an approved or received purchase order.');
+        }
+
+        $po->update(['status' => 'cancelled']);
+
+        $this->outbox->enqueue(config('events.channels.purchase_order_cancelled'), [
+            'purchase_order_id' => $po->id,
+            'po_number' => $po->po_number,
+            'vendor_name' => $po->vendor_name,
+            'total_amount' => (string) $po->total_amount,
+        ]);
+
+        return $po->fresh('lines.inventoryItem');
+    }
+
+    private function postApprovalJournal(PurchaseOrder $po): void
+    {
+        if ($po->s4_journal_entry_id !== null && $po->s4_journal_entry_id !== '') {
+            return;
+        }
+
         $accounts = config('hospitality.accounts');
 
-        return DB::transaction(function () use ($po, $accounts) {
-            foreach ($po->lines as $line) {
-                $this->inventory->receiveStock(
-                    $line->inventory_item_id,
-                    (float) $line->quantity,
-                    (float) $line->unit_cost,
-                    'purchase_order',
-                    $po->id
-                );
-            }
-
+        try {
             $journal = $this->s4->postJournal([
-                'description' => 'Goods received '.$po->po_number,
+                'description' => 'PO approved '.$po->po_number,
                 'source_module' => 's3',
                 'source_reference' => 'PO-'.$po->id,
                 'lines' => [
                     ['account_code' => $accounts['inventory_fb'], 'debit' => (float) $po->total_amount, 'credit' => 0],
                     ['account_code' => $accounts['ap_suppliers'], 'debit' => 0, 'credit' => (float) $po->total_amount],
                 ],
-            ], 'po-'.$po->id.'-receive');
+            ], 'po-'.$po->id.'-approve');
+        } catch (RuntimeException $e) {
+            throw $e;
+        }
 
-            $po->update([
-                'status' => 'received',
-                'received_at' => now(),
-                's4_journal_entry_id' => (string) ($journal['data']['id'] ?? ''),
-            ]);
-
-            $this->outbox->enqueue(config('events.channels.goods_received'), [
-                'purchase_order_id' => $po->id,
-                'po_number' => $po->po_number,
-                'total_amount' => (string) $po->total_amount,
-                'journal_entry_id' => $po->s4_journal_entry_id,
-            ]);
-
-            return $po->fresh('lines.inventoryItem');
-        });
+        $po->update([
+            's4_journal_entry_id' => (string) ($journal['data']['id'] ?? ''),
+        ]);
     }
 
     private function requiredApprovalTier(float $totalAmount): int

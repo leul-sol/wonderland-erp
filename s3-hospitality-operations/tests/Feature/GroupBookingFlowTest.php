@@ -6,6 +6,7 @@ use App\Models\Room;
 use App\Models\RoomType;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS3Auth;
 use Tests\TestCase;
 
@@ -17,7 +18,11 @@ class GroupBookingFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['services.internal_key_current' => 'test-service-key']);
         $this->seed(DatabaseSeeder::class);
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 88, 'entry_number' => 'JE-00088']], 201),
+        ]);
     }
 
     public function test_group_booking_create_check_in_and_check_out(): void
@@ -59,8 +64,11 @@ class GroupBookingFlowTest extends TestCase
         foreach ($checkedIn->json('data.reservations') as $reservation) {
             $folioId = $reservation['folio_id'] ?? null;
             if ($folioId !== null) {
+                $folio = $this->getJson("/api/v1/folios/{$folioId}", $headers)->json('data');
+                $balance = (float) ($folio['balance'] ?? $folio['total_charges'] ?? 0);
+
                 $this->postJson("/api/v1/folios/{$folioId}/settle", [
-                    'amount' => 0,
+                    'amount' => $balance,
                     'payment_method' => 'cash',
                 ], $headers)->assertOk();
             }

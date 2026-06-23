@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Reservation extends Model
 {
     protected $fillable = [
+        'guest_id',
         'confirmation_code',
         'guest_name',
         'guest_email',
@@ -17,9 +18,12 @@ class Reservation extends Model
         'room_id',
         'check_in_date',
         'check_out_date',
+        'quoted_rate',
+        'total_nights',
         'status',
         'adults',
         'notes',
+        'created_by',
         'checked_in_at',
         'checked_out_at',
         'group_booking_id',
@@ -30,9 +34,15 @@ class Reservation extends Model
         return [
             'check_in_date' => 'date',
             'check_out_date' => 'date',
+            'quoted_rate' => 'decimal:2',
             'checked_in_at' => 'datetime',
             'checked_out_at' => 'datetime',
         ];
+    }
+
+    public function guest(): BelongsTo
+    {
+        return $this->belongsTo(GuestProfile::class, 'guest_id');
     }
 
     public function roomType(): BelongsTo

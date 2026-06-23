@@ -126,7 +126,7 @@ trait SerializesHospitalityResources
             'code' => $item->code,
             'name' => $item->name,
             'price' => (string) $item->price,
-            'category' => $item->category,
+            'category' => $item->getAttributes()['category'] ?? null,
             'is_active' => $item->is_active,
             'ingredients' => $item->ingredients->map(fn ($ingredient) => [
                 'inventory_item_id' => $ingredient->id,

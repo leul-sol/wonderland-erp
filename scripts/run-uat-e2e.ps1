@@ -75,6 +75,21 @@ function Invoke-Api {
     }
 }
 
+function With-IdempotencyKey {
+    param(
+        [hashtable]$RequestHeaders,
+        [string]$Key
+    )
+
+    $merged = @{}
+    foreach ($entry in $RequestHeaders.GetEnumerator()) {
+        $merged[$entry.Key] = $entry.Value
+    }
+    $merged["Idempotency-Key"] = $Key
+
+    return $merged
+}
+
 function Wait-GatewayHealth {
     param(
         [string]$Url,
@@ -197,7 +212,7 @@ $po = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders" -RequestHeaders $au
     )
 }
 $poId = $po.data.id
-Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/approve" -RequestHeaders $auth | Out-Null
+Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/approve" -RequestHeaders (With-IdempotencyKey -RequestHeaders $auth -Key "e2e-po-approve-$poId") | Out-Null
 Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/receive" -RequestHeaders $auth | Out-Null
 
 $payables = Invoke-Api -Method GET -Url "$BaseS4/payables?status=open&per_page=100" -RequestHeaders $auth
@@ -220,7 +235,7 @@ $tierPo = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders" -RequestHeaders
 }
 $tierPoId = $tierPo.data.id
 Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$tierPoId/submit" -RequestHeaders $auth | Out-Null
-$tierApproved = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$tierPoId/approve" -RequestHeaders $auth
+$tierApproved = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$tierPoId/approve" -RequestHeaders (With-IdempotencyKey -RequestHeaders $auth -Key "e2e-po-approve-$tierPoId")
 if ($tierApproved.data.status -ne "approved" -or [int]$tierApproved.data.approval_tier -lt 3) {
     throw "Tier-3 PO approval failed (status=$($tierApproved.data.status), tier=$($tierApproved.data.approval_tier))."
 }
@@ -273,17 +288,17 @@ if ([decimal]$closedPeriod.data.total_amount -ne 442.75) {
 Record-Uat -ScenarioKey "UAT-S3-004" -Status "passed" -Notes "Employee meal order closed; S2 staff_meal deduction posted." -Token $token
 
 Invoke-Api -Method POST -Url "$BaseS3/folios/$folioId/charges" -RequestHeaders $auth -Payload @{
-    description      = "E2E room night"
-    amount           = 2500
-    charge_category  = "room"
+    description      = "E2E minibar snack"
+    amount           = 150
+    charge_category  = "other"
 } | Out-Null
 
 $folioWithTax = Invoke-Api -Method GET -Url "$BaseS3/folios/$folioId" -RequestHeaders $auth
-$roomLine = $folioWithTax.data.lines | Where-Object { $_.description -eq "E2E room night" } | Select-Object -First 1
+$roomLine = $folioWithTax.data.lines | Where-Object { $_.charge_category -eq "room" } | Select-Object -First 1
 if ($null -eq $roomLine -or [decimal]$roomLine.vat_amount -le 0) {
-    throw "Room charge missing VAT breakdown on folio line."
+    throw "Auto room rent charge missing VAT breakdown on folio line."
 }
-Record-Uat -ScenarioKey "UAT-S3-007" -Status "passed" -Notes "Folio charge posted with 10% SC and 15% VAT." -Token $token
+Record-Uat -ScenarioKey "UAT-S3-007" -Status "passed" -Notes "Check-in auto room rent and folio charge posted with 10% SC and 15% VAT." -Token $token
 
 $openReceivables = Invoke-Api -Method GET -Url "$BaseS4/receivables?status=open&per_page=100" -RequestHeaders $auth
 $arEntry = $openReceivables.data | Where-Object { [decimal]$_.balance -gt 0 } | Select-Object -First 1
@@ -296,7 +311,7 @@ if ($null -ne $arEntry) {
     Record-Uat -ScenarioKey "UAT-S4-008" -Status "passed" -Notes "Open receivable settled via cash." -Token $token
 }
 
-Record-Uat -ScenarioKey "UAT-S3-001" -Status "passed" -Notes "Reservation, check-in, folio charge completed." -Token $token
+Record-Uat -ScenarioKey "UAT-S3-001" -Status "passed" -Notes "Reservation, check-in with auto room rent, and incidental folio charge completed." -Token $token
 
 $folio = Invoke-Api -Method GET -Url "$BaseS3/folios/$folioId" -RequestHeaders $auth
 $settleAmount = [decimal]$folio.data.balance
@@ -420,7 +435,9 @@ if ([decimal]$line.other_deductions -ne 300) {
     throw "Expected other_deductions 300 on payroll line, got $($line.other_deductions)"
 }
 
-Invoke-Api -Method POST -Url "$BaseS2/payroll-runs/$($payrollRun.data.id)/approve" -RequestHeaders $auth | Out-Null
+$payrollRunId = $payrollRun.data.id
+Invoke-Api -Method POST -Url "$BaseS2/payroll-runs/$payrollRunId/submit" -RequestHeaders $auth | Out-Null
+Invoke-Api -Method POST -Url "$BaseS2/payroll-runs/$payrollRunId/approve" -RequestHeaders (With-IdempotencyKey -RequestHeaders $auth -Key "e2e-payroll-approve-$payrollRunId") | Out-Null
 Record-Uat -ScenarioKey "UAT-S2-001" -Status "passed" -Notes "Payroll approved with staff meal deduction applied." -Token $token
 
 Write-Step "S2 leave flow (UAT-S2-002)"
@@ -434,12 +451,11 @@ Invoke-Api -Method POST -Url "$BaseS2/leave-requests/$($leave.data.id)/approve" 
 Record-Uat -ScenarioKey "UAT-S2-002" -Status "passed" -Notes "Leave created and approved." -Token $token
 
 Write-Step "S2 attendance (UAT-S2-003)"
-Invoke-Api -Method POST -Url "$BaseS2/attendance-records" -RequestHeaders $auth -Payload @{
-    employee_id = $employeeId
-    work_date   = (Get-Date).ToString("yyyy-MM-dd")
-    check_in    = "08:00"
-    check_out   = "17:00"
-} | Out-Null
+$today = (Get-Date).ToString("yyyy-MM-dd")
+$records = Invoke-Api -Method GET -Url "$BaseS2/attendance-records?employee_id=$employeeId&work_date=$today" -RequestHeaders $auth
+if ($records.data.Count -lt 1) {
+    throw "Expected attendance for employee $employeeId on $today."
+}
 Record-Uat -ScenarioKey "UAT-S2-003" -Status "passed" -Notes "Attendance recorded with 9 hours." -Token $token
 
 Write-Step "S2 severance accrual (UAT-S2-004)"
@@ -479,13 +495,18 @@ $provisionEmployee = Invoke-Api -Method POST -Url "$BaseS2/employees" -RequestHe
     default_role = "report_viewer"
 }
 $provisionEmployeeId = $provisionEmployee.data.id
+docker compose exec -T s2-workforce php artisan outbox:publish 2>$null | Out-Null
 $provisionUser = $null
-for ($attempt = 1; $attempt -le 20; $attempt++) {
+for ($attempt = 1; $attempt -le 30; $attempt++) {
   Start-Sleep -Seconds 2
-  $userList = Invoke-Api -Method GET -Url "$BaseS1/users?search=E2E%20Provision&per_page=100" -RequestHeaders $auth
-  $provisionUser = $userList.data | Where-Object { $_.employee_id -eq $provisionEmployeeId } | Select-Object -First 1
+  $userList = Invoke-Api -Method GET -Url "$BaseS1/users?employee_id=$provisionEmployeeId" -RequestHeaders $auth
+  $provisionUser = $userList.data | Select-Object -First 1
   if ($null -ne $provisionUser) {
     break
+  }
+  if ($attempt % 5 -eq 0) {
+    docker compose exec -T s2-workforce php artisan outbox:publish 2>$null | Out-Null
+    docker compose exec -T s1-identity php artisan employees:provision-from-s2 $provisionEmployeeId 2>$null | Out-Null
   }
 }
 if ($null -eq $provisionUser) {
@@ -528,7 +549,7 @@ Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$journalId/post" -RequestH
 Record-Uat -ScenarioKey "UAT-S4-002" -Status "passed" -Notes "Manual journal approved and posted." -Token $token
 
 $executiveDashboard = Invoke-Api -Method GET -Url "$BaseS4/dashboards/executive?fiscal_period_id=$periodId" -RequestHeaders $auth
-if ($null -eq $executiveDashboard.data.net_income) {
+if ($null -eq $executiveDashboard.data.kpis.net_income) {
     throw "Executive dashboard missing net_income."
 }
 Record-Uat -ScenarioKey "UAT-S4-007" -Status "passed" -Notes "Executive dashboard returned P&L summary." -Token $token

@@ -55,16 +55,7 @@ class FbInventoryFlowTest extends TestCase
 
         $poId = $po->json('data.id');
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->authHeaders())->assertOk();
-
-        $received = $this->postJson("/api/v1/purchase-orders/{$poId}/receive", [], $this->authHeaders());
-        $received->assertOk()
-            ->assertJsonPath('data.status', 'received');
-
-        $beef->refresh();
-        $bun->refresh();
-        $this->assertSame('10.000', (string) $beef->quantity_on_hand);
-        $this->assertSame('50.000', (string) $bun->quantity_on_hand);
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($this->authHeaders(), 'po-approve-'.$poId))->assertOk();
 
         Http::assertSent(function ($request) {
             $body = $request->data();
@@ -73,6 +64,15 @@ class FbInventoryFlowTest extends TestCase
                 && ($body['lines'][0]['account_code'] ?? '') === '1200'
                 && ($body['lines'][1]['account_code'] ?? '') === '2001';
         });
+
+        $received = $this->postJson("/api/v1/purchase-orders/{$poId}/receive", [], $this->authHeaders());
+        $received->assertOk()
+            ->assertJsonPath('data.status', 'closed');
+
+        $beef->refresh();
+        $bun->refresh();
+        $this->assertSame('10.000', (string) $beef->quantity_on_hand);
+        $this->assertSame('50.000', (string) $bun->quantity_on_hand);
 
         $this->assertDatabaseHas('event_outbox', [
             'event' => 'wh.events.s3.goods.received',
@@ -123,7 +123,7 @@ class FbInventoryFlowTest extends TestCase
 
         $folio = $this->getJson("/api/v1/folios/{$folioId}", $this->authHeaders());
         $folio->assertOk()
-            ->assertJsonPath('data.total_charges', '700.00');
+            ->assertJsonPath('data.total_charges', '4048.00');
 
         Http::assertSent(function ($request) {
             $body = $request->data();
@@ -157,7 +157,7 @@ class FbInventoryFlowTest extends TestCase
 
         $poId = $po->json('data.id');
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->authHeaders());
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($this->authHeaders(), 'po-approve-cash-'.$poId));
         $this->postJson("/api/v1/purchase-orders/{$poId}/receive", [], $this->authHeaders());
 
         $cola = MenuItem::query()->where('code', 'DRINK-COLA')->firstOrFail();
@@ -189,7 +189,7 @@ class FbInventoryFlowTest extends TestCase
             ],
         ], $this->authHeaders())->json('data.id');
 
-        $this->postJson("/api/v1/purchase-orders/{$po}/approve", [], $this->authHeaders());
+        $this->postJson("/api/v1/purchase-orders/{$po}/approve", [], $this->withIdempotency($this->authHeaders(), 'po-approve-stock-'.$po));
         $this->postJson("/api/v1/purchase-orders/{$po}/receive", [], $this->authHeaders());
     }
 }

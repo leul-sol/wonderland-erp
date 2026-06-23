@@ -81,7 +81,7 @@ class ConsumptionOrderFlowTest extends TestCase
             ],
         ], $headers)->json('data.id');
 
-        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $headers);
+        $this->postJson("/api/v1/purchase-orders/{$poId}/approve", [], $this->withIdempotency($headers, 'po-approve-'.$poId));
         $this->postJson("/api/v1/purchase-orders/{$poId}/receive", [], $headers);
     }
 }

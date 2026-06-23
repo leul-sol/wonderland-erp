@@ -60,6 +60,8 @@ class PurchaseOrderController extends Controller
             $po = $this->purchaseOrders->approve($purchaseOrder, $userId, is_array($roles) ? $roles : []);
         } catch (\InvalidArgumentException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            return $this->error('INTEGRATION_ERROR', $e->getMessage(), 502);
         }
 
         return response()->json(['data' => $this->purchaseOrderPayload($po)]);
@@ -76,14 +78,25 @@ class PurchaseOrderController extends Controller
         return response()->json(['data' => $this->purchaseOrderPayload($po)]);
     }
 
-    public function receive(PurchaseOrder $purchaseOrder): JsonResponse
+    public function receive(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
+        $receivedBy = (int) $request->attributes->get('auth_user_id', 0);
+
         try {
-            $po = $this->purchaseOrders->receive($purchaseOrder);
+            $po = $this->purchaseOrders->receive($purchaseOrder, $receivedBy);
         } catch (\InvalidArgumentException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
-        } catch (\RuntimeException $e) {
-            return $this->error('INTEGRATION_ERROR', $e->getMessage(), 502);
+        }
+
+        return response()->json(['data' => $this->purchaseOrderPayload($po)]);
+    }
+
+    public function cancel(PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        try {
+            $po = $this->purchaseOrders->cancel($purchaseOrder);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
         }
 
         return response()->json(['data' => $this->purchaseOrderPayload($po)]);

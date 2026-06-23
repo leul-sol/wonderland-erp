@@ -77,4 +77,42 @@ class ReservationController extends Controller
 
         return response()->json(['data' => $this->reservationPayload($reservation)]);
     }
+
+    public function update(Request $request, Reservation $reservation): JsonResponse
+    {
+        try {
+            $data = $request->validate([
+                'check_in_date' => ['sometimes', 'date'],
+                'check_out_date' => ['sometimes', 'date', 'after:check_in_date'],
+                'quoted_rate' => ['sometimes', 'numeric', 'gte:0'],
+            ]);
+            $reservation = $this->reservations->update($reservation, $data);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->reservationPayload($reservation)]);
+    }
+
+    public function cancel(Reservation $reservation): JsonResponse
+    {
+        try {
+            $reservation = $this->reservations->cancel($reservation);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->reservationPayload($reservation)]);
+    }
+
+    public function noShow(Reservation $reservation): JsonResponse
+    {
+        try {
+            $reservation = $this->reservations->markNoShow($reservation);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->reservationPayload($reservation)]);
+    }
 }

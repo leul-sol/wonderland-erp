@@ -36,6 +36,7 @@ services:
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
+      S2_SERVICE_URL: http://s2-workforce:9002
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMeNow!10}
     volumes:
       - ./s1-identity-access:/var/www/html
@@ -83,8 +84,9 @@ services:
     build:
       context: ./s1-identity-access
       dockerfile: Dockerfile
+    entrypoint: []
     command: >
-      sh -c "php artisan events:consume-s2 &
+      sh -c "while true; do php artisan events:consume-s2; echo 'S2 consumer exited, restarting...'; sleep 2; done &
       while true; do php artisan outbox:publish; sleep 10; done"
     environment:
       APP_NAME: WH-S1-Identity-Access
@@ -100,6 +102,7 @@ services:
       REDIS_PORT: 6379
       REDIS_BUS_HOST: wh-redis-bus
       INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
+      S2_SERVICE_URL: http://s2-workforce:9002
     volumes:
       - ./s1-identity-access:/var/www/html
       - ./specs:/var/www/html/specs:ro
@@ -160,6 +163,7 @@ services:
     build:
       context: ./s4-finance-bi
       dockerfile: Dockerfile
+    entrypoint: []
     command: >
       sh -c "php artisan events:consume"
     environment:
@@ -217,8 +221,10 @@ services:
       S1_SERVICE_URL: http://s1-identity:9001
       S2_SERVICE_URL: http://s2-workforce:9002
       S4_SERVICE_URL: http://s4-finance-bi:9004
+      WONDERLAND_REPO_ROOT: /opt/wonderland-erp
     volumes:
       - ./s3-hospitality-operations:/var/www/html
+      - .:/opt/wonderland-erp:ro
     depends_on:
       wh-mysql:
         condition: service_healthy
@@ -243,8 +249,9 @@ services:
     build:
       context: ./s3-hospitality-operations
       dockerfile: Dockerfile
+    entrypoint: []
     command: >
-      sh -c "while true; do php artisan outbox:publish; sleep 10; done"
+      sh -c "while true; do php artisan outbox:publish; php artisan schedule:run; sleep 10; done"
     environment:
       APP_NAME: WH-S3-Hospitality
       APP_ENV: local
@@ -320,6 +327,7 @@ services:
     build:
       context: ./s2-workforce-payroll
       dockerfile: Dockerfile
+    entrypoint: []
     command: >
       sh -c "while true; do php artisan outbox:publish; sleep 10; done"
     environment:

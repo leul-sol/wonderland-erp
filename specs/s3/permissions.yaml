@@ -1,53 +1,74 @@
-# S3 §6.1 — Hospitality permission catalog (seed into S1 permissions table)
+# S3 §6.1 — Hospitality permission catalog (ID9: S3.{domain}.{resource}.{action})
 
 domain_prefix: S3
 
 permissions:
-  - action: S3.hospitality.rooms.read
-    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
-  - action: S3.hospitality.reservations.read
-    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
-  - action: S3.hospitality.reservations.create
-    default_roles: [super_admin, receptionist, cashier]
-  - action: S3.hospitality.reservations.check_in
-    default_roles: [super_admin, receptionist]
-  - action: S3.hospitality.reservations.check_out
-    default_roles: [super_admin, receptionist, cashier]
-  - action: S3.hospitality.folios.read
-    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager]
-  - action: S3.hospitality.folios.charge
-    default_roles: [super_admin, receptionist, cashier]
-  - action: S3.hospitality.folios.settle
-    default_roles: [super_admin, cashier]
-  - action: S3.hospitality.items.read
-    default_roles: [super_admin, general_manager, inventory_manager, restaurant_manager, cashier, report_viewer]
-  - action: S3.hospitality.purchase_orders.read
+  # Inventory domain
+  - action: S3.inventory.items.read
+    default_roles: [super_admin, general_manager, inventory_manager, restaurant_manager, report_viewer]
+  - action: S3.inventory.items.write
+    default_roles: [super_admin, inventory_manager]
+  - action: S3.inventory.stock.read
+    default_roles: [super_admin, general_manager, inventory_manager, restaurant_manager, report_viewer]
+  - action: S3.inventory.stock.write
+    default_roles: [super_admin, inventory_manager]
+  - action: S3.inventory.suppliers.read
     default_roles: [super_admin, general_manager, finance_manager, inventory_manager, report_viewer]
-  - action: S3.hospitality.purchase_orders.create
+  - action: S3.inventory.suppliers.write
     default_roles: [super_admin, inventory_manager]
-  - action: S3.hospitality.purchase_orders.approve
-    default_roles: [super_admin, general_manager, finance_manager]
-  - action: S3.hospitality.purchase_orders.receive
-    default_roles: [super_admin, inventory_manager]
-  - action: S3.hospitality.menu_items.read
-    default_roles: [super_admin, restaurant_manager, cashier, receptionist, report_viewer]
-  - action: S3.hospitality.orders.read
-    default_roles: [super_admin, restaurant_manager, cashier, receptionist, report_viewer]
-  - action: S3.hospitality.orders.create
-    default_roles: [super_admin, restaurant_manager, cashier]
-  - action: S3.hospitality.orders.finalize
-    default_roles: [super_admin, restaurant_manager, cashier]
-  - action: S3.hospitality.consumption.read
-    default_roles: [super_admin, restaurant_manager, hr_manager, report_viewer]
-  - action: S3.hospitality.consumption.create
+  - action: S3.inventory.purchase_orders.read
+    default_roles: [super_admin, general_manager, finance_manager, inventory_manager, department_head, report_viewer]
+  - action: S3.inventory.purchase_orders.write
+    default_roles: [super_admin, inventory_manager, department_head]
+  - action: S3.inventory.purchase_orders.approve
+    default_roles: [super_admin, general_manager, finance_manager, department_head]
+  - action: S3.inventory.reports.read
+    default_roles: [super_admin, general_manager, finance_manager, inventory_manager, report_viewer]
+
+  # Restaurant domain
+  - action: S3.restaurant.menu.read
+    default_roles: [super_admin, general_manager, restaurant_manager, cashier, receptionist, report_viewer]
+  - action: S3.restaurant.menu.write
     default_roles: [super_admin, restaurant_manager]
-  - action: S3.hospitality.consumption.close
+  - action: S3.restaurant.orders.read
+    default_roles: [super_admin, general_manager, restaurant_manager, cashier, receptionist, report_viewer]
+  - action: S3.restaurant.orders.write
+    default_roles: [super_admin, restaurant_manager, cashier]
+  - action: S3.restaurant.billing.write
+    default_roles: [super_admin, restaurant_manager, cashier]
+  - action: S3.restaurant.consumption.read
+    default_roles: [super_admin, general_manager, restaurant_manager, finance_manager, hr_manager, report_viewer]
+  - action: S3.restaurant.consumption.write
     default_roles: [super_admin, restaurant_manager, payroll_officer]
-  - action: S3.hospitality.group_bookings.read
+
+  # Hotel domain
+  - action: S3.hotel.rooms.read
     default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
-  - action: S3.hospitality.group_bookings.create
+  - action: S3.hotel.rooms.write
     default_roles: [super_admin, receptionist]
-  - action: S3.hospitality.group_bookings.check_in
+  - action: S3.hotel.guests.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hotel.guests.write
     default_roles: [super_admin, receptionist]
-  - action: S3.hospitality.group_bookings.check_out
+  - action: S3.hotel.reservations.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hotel.reservations.write
+    default_roles: [super_admin, receptionist]
+  - action: S3.hotel.checkinout.write
+    default_roles: [super_admin, receptionist]
+  - action: S3.hotel.folios.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, report_viewer]
+  - action: S3.hotel.folios.write
+    default_roles: [super_admin, receptionist, cashier]
+  - action: S3.hotel.cashier.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, report_viewer]
+  - action: S3.hotel.cashier.write
+    default_roles: [super_admin, receptionist, cashier]
+  - action: S3.hotel.group_bookings.read
+    default_roles: [super_admin, general_manager, receptionist, cashier, report_viewer]
+  - action: S3.hotel.group_bookings.create
+    default_roles: [super_admin, receptionist]
+  - action: S3.hotel.group_bookings.check_in
+    default_roles: [super_admin, receptionist]
+  - action: S3.hotel.group_bookings.check_out
     default_roles: [super_admin, receptionist, cashier]

@@ -31,6 +31,9 @@ RUN composer dump-autoload --optimize \
         '  php artisan key:generate --force --no-interaction || true' \
         'fi' \
         'php artisan app:ensure-seeded --no-interaction || true' \
+        'if [ "$#" -gt 0 ]; then' \
+        '  exec "$@"' \
+        'fi' \
         'exec php artisan serve --host=0.0.0.0 --port=9004' \
         > /usr/local/bin/wonderland-entrypoint.sh \
     && chmod +x /usr/local/bin/wonderland-entrypoint.sh

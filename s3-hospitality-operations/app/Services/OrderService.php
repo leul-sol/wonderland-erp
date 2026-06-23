@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Bill;
 use App\Models\EmployeeConsumptionPeriod;
 use App\Models\Folio;
 use App\Models\FolioLine;
@@ -15,14 +16,20 @@ class OrderService
 {
     public function __construct(
         private readonly InventoryService $inventory,
+        private readonly BillingService $billing,
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
         private readonly TaxBreakdownService $tax,
     ) {
     }
 
-    public function create(?int $folioId = null, ?int $consumptionPeriodId = null): RestaurantOrder
-    {
+    public function create(
+        ?int $folioId = null,
+        ?int $consumptionPeriodId = null,
+        ?string $customerType = null,
+        ?int $customerRefId = null,
+        ?int $tableId = null,
+    ): RestaurantOrder {
         if ($folioId !== null && $consumptionPeriodId !== null) {
             throw new InvalidArgumentException('An order cannot be linked to both a folio and an employee consumption period.');
         }
@@ -38,9 +45,14 @@ class OrderService
                 'order_number' => $this->nextOrderNumber(),
                 'employee_consumption_period_id' => $period->id,
                 'payment_context' => 'employee_meal',
+                'customer_type' => 'employee',
+                'customer_ref_id' => $period->employee_id,
                 'status' => 'open',
+                'opened_at' => now(),
             ]);
         }
+
+        $resolvedCustomerType = $customerType ?? ($folioId !== null ? 'hotel_guest' : 'outside_cash');
 
         if ($folioId !== null) {
             $folio = Folio::query()->findOrFail($folioId);
@@ -49,11 +61,20 @@ class OrderService
             }
         }
 
+        $resolvedRefId = $customerRefId;
+        if ($resolvedRefId === null && $folioId !== null) {
+            $resolvedRefId = Folio::query()->whereKey($folioId)->value('guest_id');
+        }
+
         return RestaurantOrder::query()->create([
             'order_number' => $this->nextOrderNumber(),
             'folio_id' => $folioId,
+            'dining_table_id' => $tableId,
+            'customer_type' => $resolvedCustomerType,
+            'customer_ref_id' => $resolvedRefId,
             'payment_context' => $folioId !== null ? 'folio' : 'cash',
             'status' => 'open',
+            'opened_at' => now(),
         ]);
     }
 
@@ -83,6 +104,38 @@ class OrderService
 
             return $line->load('menuItem');
         });
+    }
+
+    public function removeLine(RestaurantOrder $order, RestaurantOrderLine $line): RestaurantOrder
+    {
+        if ($order->status !== 'open') {
+            throw new InvalidArgumentException('Cannot modify a finalized order.');
+        }
+
+        if ((int) $line->restaurant_order_id !== (int) $order->id) {
+            throw new InvalidArgumentException('Order line does not belong to this order.');
+        }
+
+        return DB::transaction(function () use ($order, $line) {
+            $order->decrement('subtotal', (float) $line->line_total);
+            $line->delete();
+
+            return $order->fresh(['lines.menuItem', 'folio']);
+        });
+    }
+
+    public function cancel(RestaurantOrder $order): RestaurantOrder
+    {
+        if ($order->status !== 'open') {
+            throw new InvalidArgumentException('Only open orders can be cancelled.');
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+            'finalized_at' => now(),
+        ]);
+
+        return $order->fresh(['lines.menuItem', 'folio']);
     }
 
     public function finalize(RestaurantOrder $order): RestaurantOrder
@@ -180,6 +233,21 @@ class OrderService
                 'cogs_journal_entry_id' => $cogsJournalId,
                 'finalized_at' => now(),
             ]);
+
+            $bill = Bill::query()->create([
+                'restaurant_order_id' => $order->id,
+                'subtotal' => $breakdown['subtotal'],
+                'service_charge_rate' => $breakdown['service_charge_rate'],
+                'service_charge_amount' => $breakdown['service_charge_amount'],
+                'vat_rate' => $breakdown['vat_rate'],
+                'vat_amount' => $breakdown['vat_amount'],
+                'total_amount' => $breakdown['total_amount'],
+                'paid_amount' => 0,
+                'outstanding_balance' => $breakdown['total_amount'],
+                'status' => 'unpaid',
+            ]);
+
+            $this->billing->settleFromFinalize($bill, $order->fresh());
 
             if ($order->employee_consumption_period_id !== null) {
                 $this->syncConsumptionPeriodTotal((int) $order->employee_consumption_period_id);
