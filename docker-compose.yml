@@ -53,6 +53,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
       MYSQL_DATABASE: wh_s1_db
+      WH_DB_PASSWORD: ${DB_PASSWORD:-wh_app_secret}
     volumes:
       - wh-mysql-data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d:ro

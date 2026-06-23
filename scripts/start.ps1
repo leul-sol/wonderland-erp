@@ -28,18 +28,53 @@ if (-not (Test-Path ".env.example")) {
     Write-Warning "Missing root .env.example - secrets template not found."
 }
 
+function Import-RepoEnv {
+    param([string]$Root)
+
+    $path = Join-Path $Root ".env"
+    if (-not (Test-Path $path)) {
+        return
+    }
+
+    Get-Content $path | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -eq "" -or $line.StartsWith("#")) {
+            return
+        }
+
+        $eq = $line.IndexOf("=")
+        if ($eq -lt 1) {
+            return
+        }
+
+        $name = $line.Substring(0, $eq).Trim()
+        $value = $line.Substring($eq + 1).Trim().Trim('"').Trim("'")
+        Set-Item -Path "env:$name" -Value $value
+    }
+}
+
+Import-RepoEnv -Root $RepoRoot
+
+$MysqlRootPassword = if ($env:MYSQL_ROOT_PASSWORD) { $env:MYSQL_ROOT_PASSWORD } else { "root_secret" }
+$DbPassword = if ($env:DB_PASSWORD) { $env:DB_PASSWORD } else { "wh_app_secret" }
+
 Write-Host "Building and starting containers..."
 docker compose up -d --build
 
-Write-Host "Waiting for MySQL, S1, S4, S3, and S2..."
+Write-Host "Waiting for MySQL init and app DB access..."
 $ready = $false
-for ($i = 0; $i -lt 45; $i++) {
-    # Native commands (mysqladmin) write warnings to stderr; do not treat as fatal.
+for ($i = 0; $i -lt 60; $i++) {
     $prevPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
 
-    docker compose exec -T wh-mysql mysqladmin ping -h localhost -uroot -proot_secret --silent 2>$null | Out-Null
+    docker compose exec -T wh-mysql mysqladmin ping -h localhost -uroot "-p$MysqlRootPassword" --silent 2>$null | Out-Null
     $mysqlOk = ($LASTEXITCODE -eq 0)
+
+    $appDbOk = $false
+    if ($mysqlOk) {
+        docker compose exec -T wh-mysql mysql -uwh_app "-p$DbPassword" -e "SELECT 1" wh_s1_db 2>$null | Out-Null
+        $appDbOk = ($LASTEXITCODE -eq 0)
+    }
 
     docker compose exec -T s1-identity php artisan migrate:status 2>$null | Out-Null
     $s1Ok = ($LASTEXITCODE -eq 0)
@@ -55,7 +90,7 @@ for ($i = 0; $i -lt 45; $i++) {
 
     $ErrorActionPreference = $prevPreference
 
-    if ($mysqlOk -and $s1Ok -and $s4Ok -and $s3Ok -and $s2Ok) {
+    if ($mysqlOk -and $appDbOk -and $s1Ok -and $s4Ok -and $s3Ok -and $s2Ok) {
         $ready = $true
         break
     }

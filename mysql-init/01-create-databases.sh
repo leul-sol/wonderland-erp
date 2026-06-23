@@ -1,11 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+APP_PASSWORD="${WH_DB_PASSWORD:-wh_app_secret}"
+APP_PASSWORD_SQL="${APP_PASSWORD//\'/\'\'}"
+
+mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" <<-EOSQL
 CREATE DATABASE IF NOT EXISTS wh_s1_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS wh_s2_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS wh_s3_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS wh_s4_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'wh_app'@'%' IDENTIFIED BY 'wh_app_secret';
+CREATE USER IF NOT EXISTS 'wh_app'@'%' IDENTIFIED BY '${APP_PASSWORD_SQL}';
+ALTER USER 'wh_app'@'%' IDENTIFIED BY '${APP_PASSWORD_SQL}';
 GRANT ALL PRIVILEGES ON wh_s1_db.* TO 'wh_app'@'%';
 GRANT ALL PRIVILEGES ON wh_s2_db.* TO 'wh_app'@'%';
 GRANT ALL PRIVILEGES ON wh_s3_db.* TO 'wh_app'@'%';
 GRANT ALL PRIVILEGES ON wh_s4_db.* TO 'wh_app'@'%';
 FLUSH PRIVILEGES;
+EOSQL
