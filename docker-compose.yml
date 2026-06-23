@@ -49,7 +49,10 @@ services:
       start_period: 120s
 
   wh-mysql:
-    image: mysql:8.0
+    build:
+      context: .
+      dockerfile: docker/mysql/Dockerfile
+    image: wonderland-erp-wh-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
       MYSQL_DATABASE: wh_s1_db

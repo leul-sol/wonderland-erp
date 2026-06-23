@@ -100,6 +100,13 @@ for ($i = 0; $i -lt 60; $i++) {
 
 if (-not $ready) {
     Write-Warning "Services still starting. Run bootstrap manually if login fails."
+    $mysqlState = docker compose ps wh-mysql --format "{{.State}}" 2>$null
+    if ($mysqlState -match "exited|dead") {
+        Write-Warning "MySQL is not running. Reset with: docker compose down -v && .\scripts\start.ps1"
+        Write-Warning "Recent MySQL logs:"
+        docker compose logs wh-mysql --tail 15 2>&1 | Out-Host
+        exit 1
+    }
 }
 
 Write-Host "Running database migrations (seed only if admin missing)..."
