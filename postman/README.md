@@ -28,8 +28,10 @@ Additional collections (use S1 Login first for `accessToken`):
 |----------|-------|
 | `baseUrl` | `http://localhost/s1/api/v1` |
 | `username` | `super.admin` |
-| `password` | `ChangeMeNow!10` |
-| `serviceKey` | `dev-internal-key-change-in-prod` |
+| `password` | `SUPER_ADMIN_PASSWORD` from repo root `.env` (Postman default `ChangeMeNow!10` only applies when you have no root `.env`) |
+| `serviceKey` | `INTERNAL_KEY_CURRENT` from repo root `.env` (or `dev-internal-key-change-in-prod` without root `.env`) |
+
+**If login returns 500 / 504 or SQL access denied:** run `.\scripts\start.ps1` so service `.env` files pick up `DB_PASSWORD` from root `.env`. After changing `DB_PASSWORD`, reset MySQL once: `docker compose down -v` then `.\scripts\start.ps1`.
 
 **If login says "Invalid credentials":**
 1. Run `docker compose exec s1-identity php artisan app:ensure-seeded`

@@ -57,6 +57,52 @@ Import-RepoEnv -Root $RepoRoot
 
 $MysqlRootPassword = if ($env:MYSQL_ROOT_PASSWORD) { $env:MYSQL_ROOT_PASSWORD } else { "root_secret" }
 $DbPassword = if ($env:DB_PASSWORD) { $env:DB_PASSWORD } else { "wh_app_secret" }
+$InternalKey = if ($env:INTERNAL_KEY_CURRENT) { $env:INTERNAL_KEY_CURRENT } else { "dev-internal-key-change-in-prod" }
+
+function Set-EnvFileLine {
+    param(
+        [string]$FilePath,
+        [string]$Key,
+        [string]$Value
+    )
+
+    if (-not (Test-Path $FilePath)) {
+        return
+    }
+
+    $escaped = $Value -replace '\\', '\\\\'
+    $lines = Get-Content $FilePath
+    $found = $false
+    $updated = foreach ($line in $lines) {
+        if ($line -match "^\s*$([regex]::Escape($Key))\s*=") {
+            $found = $true
+            "$Key=$escaped"
+        } else {
+            $line
+        }
+    }
+
+    if (-not $found) {
+        $updated = @($updated) + "$Key=$escaped"
+    }
+
+    Set-Content -Path $FilePath -Value $updated -Encoding utf8
+}
+
+$ServiceEnvFiles = @(
+    "s1-identity-access\.env",
+    "s2-workforce-payroll\.env",
+    "s3-hospitality-operations\.env",
+    "s4-finance-bi\.env"
+)
+
+foreach ($relPath in $ServiceEnvFiles) {
+    $fullPath = Join-Path $RepoRoot $relPath
+    Set-EnvFileLine -FilePath $fullPath -Key "DB_PASSWORD" -Value $DbPassword
+    Set-EnvFileLine -FilePath $fullPath -Key "INTERNAL_KEY_CURRENT" -Value $InternalKey
+}
+
+Write-Host "Synced DB_PASSWORD and INTERNAL_KEY_CURRENT from root .env into service .env files."
 
 Write-Host "Building and starting containers..."
 docker compose up -d --build
@@ -182,6 +228,14 @@ try {
 }
 
 Write-Host "Done."
+Write-Host ""
+Write-Host "Login (Postman Auth -> Login):"
+Write-Host "  username: super.admin"
+Write-Host "  password: SUPER_ADMIN_PASSWORD from root .env (not the Postman default unless you have no root .env)"
+Write-Host ""
+Write-Host "If you changed DB_PASSWORD or MYSQL_ROOT_PASSWORD, reset MySQL once:"
+Write-Host "  docker compose down -v"
+Write-Host "  .\scripts\start.ps1"
 Write-Host ""
 Write-Host "Staging: copy .env.example to .env and rotate secrets before shared hosting."
 Write-Host ""
