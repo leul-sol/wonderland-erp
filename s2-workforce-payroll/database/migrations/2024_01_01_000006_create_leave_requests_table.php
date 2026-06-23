@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->unsignedSmallInteger('days_requested');
             $table->text('reason')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->timestamp('approved_at')->nullable();
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->text('rejection_reason')->nullable();

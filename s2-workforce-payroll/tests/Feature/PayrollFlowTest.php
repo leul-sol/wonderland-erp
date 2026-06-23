@@ -66,10 +66,15 @@ class PayrollFlowTest extends TestCase
         $run->assertCreated();
         $runId = $run->json('data.id');
 
-        $approved = $this->postJson("/api/v1/payroll-runs/{$runId}/approve", [], $headers);
+        $this->postJson("/api/v1/payroll-runs/{$runId}/submit", [], $headers)->assertOk()
+            ->assertJsonPath('data.status', 'pending_approval');
+
+        $approved = $this->postJson("/api/v1/payroll-runs/{$runId}/approve", [], array_merge($headers, [
+            'Idempotency-Key' => 'payroll-approve-'.$runId,
+        ]));
 
         $approved->assertOk()
-            ->assertJsonPath('data.status', 'posted')
+            ->assertJsonPath('data.status', 'approved')
             ->assertJsonPath('data.s4_journal_entry_id', '42');
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/api/v1/journal-entries')

@@ -61,7 +61,11 @@ class PayrollDeductionTest extends TestCase
 
         $runId = $run->json('data.id');
 
-        $this->postJson("/api/v1/payroll-runs/{$runId}/approve", [], $headers)->assertOk();
+        $this->postJson("/api/v1/payroll-runs/{$runId}/submit", [], $headers)->assertOk();
+
+        $this->postJson("/api/v1/payroll-runs/{$runId}/approve", [], array_merge($headers, [
+            'Idempotency-Key' => 'payroll-deduction-'.$runId,
+        ]))->assertOk();
 
         $this->assertDatabaseHas('employee_deductions', [
             'employee_id' => $employeeId,

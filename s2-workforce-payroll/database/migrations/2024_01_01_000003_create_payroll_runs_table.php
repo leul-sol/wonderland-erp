@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('run_number', 30)->unique();
             $table->date('period_start');
             $table->date('period_end');
-            $table->enum('status', ['draft', 'approved', 'posted'])->default('draft');
+            $table->enum('status', ['draft', 'pending_approval', 'approved', 'locked'])->default('draft');
             $table->decimal('total_gross', 12, 2)->default(0);
             $table->decimal('total_net', 12, 2)->default(0);
             $table->string('s4_journal_entry_id', 50)->nullable();

@@ -9,6 +9,7 @@ return [
         'permission_changed' => 'wh.events.s1.permission.changed',
         'payroll_run_approved' => 'wh.events.s2.payroll_run.approved',
         'severance_calculated' => 'wh.events.s2.severance.calculated',
+        'severance_paid' => 'wh.events.s2.severance.paid',
         'leave_approved' => 'wh.events.s2.leave.approved',
         'goods_received' => 'wh.events.s3.goods.received',
         'purchase_order_approved' => 'wh.events.s3.purchase_order.approved',

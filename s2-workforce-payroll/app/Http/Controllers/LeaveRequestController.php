@@ -56,7 +56,7 @@ class LeaveRequestController extends Controller
         try {
             $this->assertLeaveInScope($leaveRequest, $request);
         } catch (InvalidArgumentException $e) {
-            return $this->error('FORBIDDEN', $e->getMessage(), 403);
+            return $this->departmentScopeError($e);
         }
 
         return response()->json(['data' => $this->leaveRequestPayload($leaveRequest)]);
@@ -88,11 +88,20 @@ class LeaveRequestController extends Controller
         return response()->json(['data' => $this->leaveRequestPayload($leaveRequest)]);
     }
 
+    public function cancel(Request $request, LeaveRequest $leaveRequest): JsonResponse
+    {
+        try {
+            $this->assertLeaveInScope($leaveRequest, $request);
+            $leaveRequest = $this->leave->cancel($leaveRequest);
+        } catch (InvalidArgumentException $e) {
+            return $this->departmentScopeError($e);
+        }
+
+        return response()->json(['data' => $this->leaveRequestPayload($leaveRequest)]);
+    }
+
     private function leaveScopeError(InvalidArgumentException $e): JsonResponse
     {
-        $code = str_contains($e->getMessage(), 'department scope') ? 'FORBIDDEN' : 'VALIDATION_ERROR';
-        $status = $code === 'FORBIDDEN' ? 403 : 422;
-
-        return $this->error($code, $e->getMessage(), $status);
+        return $this->departmentScopeError($e);
     }
 }

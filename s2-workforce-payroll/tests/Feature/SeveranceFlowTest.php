@@ -21,14 +21,14 @@ class SeveranceFlowTest extends TestCase
         config(['services.internal_key_current' => 'test-service-key']);
 
         $this->seed(DatabaseSeeder::class);
-
-        Http::fake([
-            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 88, 'entry_number' => 'JE-00088']], 201),
-        ]);
     }
 
     public function test_severance_calculation_posts_journal_and_emits_outbox_event(): void
     {
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 88, 'entry_number' => 'JE-00088']], 201),
+        ]);
+
         $headers = $this->authHeaders();
 
         $employeeId = $this->postJson('/api/v1/employees', [
@@ -66,12 +66,14 @@ class SeveranceFlowTest extends TestCase
             'hire_date' => '2023-06-01',
         ], $headers)->json('data.id');
 
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::sequence()
+                ->push(['data' => ['id' => 88, 'entry_number' => 'JE-00088']], 201)
+                ->push(['data' => ['id' => 99, 'entry_number' => 'JE-00099']], 201),
+        ]);
+
         $calculationId = $this->postJson("/api/v1/employees/{$employeeId}/severance/calculate", [], $headers)
             ->json('data.id');
-
-        Http::fake([
-            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 99, 'entry_number' => 'JE-00099']], 201),
-        ]);
 
         $response = $this->postJson("/api/v1/severance-calculations/{$calculationId}/pay", [], $headers);
 

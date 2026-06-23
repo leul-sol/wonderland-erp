@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AppliesDepartmentScope;
 use App\Http\Controllers\Concerns\RespondsWithApiErrors;
 use App\Http\Controllers\Concerns\SerializesWorkforceResources;
 use App\Http\Requests\StoreEmployeeRequest;
@@ -14,6 +15,7 @@ use InvalidArgumentException;
 
 class EmployeeController extends Controller
 {
+    use AppliesDepartmentScope;
     use RespondsWithApiErrors;
     use SerializesWorkforceResources;
 
@@ -23,7 +25,10 @@ class EmployeeController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::query()->with('department')->orderBy('employee_number');
+        $query = $this->scopeEmployeeQuery(
+            Employee::query()->with('department')->orderBy('employee_number'),
+            $request,
+        );
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -41,17 +46,24 @@ class EmployeeController extends Controller
         return response()->json(['data' => $this->employeePayload($employee)], 201);
     }
 
-    public function show(Employee $employee): JsonResponse
+    public function show(Request $request, Employee $employee): JsonResponse
     {
+        try {
+            $this->assertEmployeeInScope($employee, $request);
+        } catch (InvalidArgumentException $e) {
+            return $this->departmentScopeError($e);
+        }
+
         return response()->json(['data' => $this->employeePayload($employee)]);
     }
 
     public function update(UpdateEmployeeRequest $request, Employee $employee): JsonResponse
     {
         try {
+            $this->assertEmployeeInScope($employee, $request);
             $employee = $this->employees->update($employee, $request->validated());
         } catch (InvalidArgumentException $e) {
-            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+            return $this->departmentScopeError($e);
         }
 
         return response()->json(['data' => $this->employeePayload($employee)]);
@@ -60,9 +72,10 @@ class EmployeeController extends Controller
     public function archive(Request $request, Employee $employee): JsonResponse
     {
         try {
+            $this->assertEmployeeInScope($employee, $request);
             $employee = $this->employees->archive($employee, $request->input('reason'));
         } catch (InvalidArgumentException $e) {
-            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+            return $this->departmentScopeError($e);
         }
 
         return response()->json(['data' => $this->employeePayload($employee)]);

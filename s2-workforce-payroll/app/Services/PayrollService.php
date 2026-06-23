@@ -7,6 +7,9 @@ use App\Models\Employee;
 use App\Models\EmployeeDeduction;
 use App\Models\PayrollLine;
 use App\Models\PayrollRun;
+use App\Services\Payroll\OvertimeCalculatorService;
+use App\Services\Payroll\PensionService;
+use App\Services\Payroll\TaxCalculatorService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,10 @@ class PayrollService
     public function __construct(
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
+        private readonly TaxCalculatorService $taxCalculator,
+        private readonly PensionService $pensionService,
+        private readonly OvertimeCalculatorService $overtimeCalculator,
+        private readonly LoanService $loanService,
     ) {
     }
 
@@ -25,7 +32,10 @@ class PayrollService
      */
     public function createRun(array $data): PayrollRun
     {
-        $employees = Employee::query()->where('status', 'active')->get();
+        $employees = Employee::query()
+            ->with('position')
+            ->where('status', 'active')
+            ->get();
 
         if ($employees->isEmpty()) {
             throw new InvalidArgumentException('No active employees available for payroll.');
@@ -44,12 +54,25 @@ class PayrollService
 
             $totalGross = 0.0;
             $totalNet = 0.0;
+            $overtimeRecordIds = [];
 
             foreach ($employees as $employee) {
                 $attendanceFactor = $this->attendancePayFactor($employee, $periodStart, $periodEnd);
-                $effectiveGross = round((float) $employee->base_salary * $attendanceFactor, 2);
+                $basicComponent = round((float) $employee->base_salary * $attendanceFactor, 2);
+                $allowances = $this->positionAllowances($employee, $attendanceFactor);
+                $overtime = $this->overtimeCalculator->calculateForPeriod($employee, $periodStart, $periodEnd);
+                $overtimeRecordIds = array_merge($overtimeRecordIds, $overtime['record_ids']);
+
+                $gross = round($basicComponent + $allowances + $overtime['amount'], 2);
                 $otherDeductions = $this->unappliedDeductionTotal($employee->id, $periodEnd);
-                $amounts = $this->calculateAmounts($effectiveGross, $otherDeductions);
+                $loan = $this->loanService->repaymentForPayroll($employee);
+                $amounts = $this->calculateAmounts(
+                    $employee,
+                    $gross,
+                    $overtime['amount'],
+                    $loan['amount'],
+                    $otherDeductions,
+                );
 
                 PayrollLine::query()->create([
                     'payroll_run_id' => $run->id,
@@ -66,14 +89,28 @@ class PayrollService
                 'total_net' => round($totalNet, 2),
             ]);
 
-            return $run->fresh('lines.employee');
+            $run->setRelation('lines', PayrollLine::query()->where('payroll_run_id', $run->id)->with('employee')->get());
+            $run->setAttribute('_overtime_record_ids', $overtimeRecordIds);
+
+            return $run;
         });
+    }
+
+    public function submit(PayrollRun $run): PayrollRun
+    {
+        if ($run->status !== 'draft') {
+            throw new InvalidArgumentException('Only draft payroll runs can be submitted.');
+        }
+
+        $run->update(['status' => 'pending_approval']);
+
+        return $run->fresh('lines.employee');
     }
 
     public function approve(PayrollRun $run, int $approvedBy): PayrollRun
     {
-        if ($run->status !== 'draft') {
-            throw new InvalidArgumentException('Only draft payroll runs can be approved.');
+        if ($run->status !== 'pending_approval') {
+            throw new InvalidArgumentException('Only pending_approval payroll runs can be approved.');
         }
 
         $run->load('lines');
@@ -87,9 +124,10 @@ class PayrollService
         $employerPension = round((float) $run->lines->sum('employer_pension'), 2);
         $incomeTax = round((float) $run->lines->sum('income_tax'), 2);
         $otherDeductions = round((float) $run->lines->sum('other_deductions'), 2);
+        $loanRepayment = round((float) $run->lines->sum('loan_repayment'), 2);
         $net = round((float) $run->lines->sum('net_pay'), 2);
 
-        return DB::transaction(function () use ($run, $approvedBy, $gross, $employeePension, $employerPension, $incomeTax, $otherDeductions, $net) {
+        return DB::transaction(function () use ($run, $approvedBy, $gross, $employeePension, $employerPension, $incomeTax, $otherDeductions, $loanRepayment, $net) {
             $lines = [
                 ['account_code' => '5001', 'debit' => $gross, 'credit' => 0],
                 ['account_code' => '5002', 'debit' => $employerPension, 'credit' => 0],
@@ -103,6 +141,10 @@ class PayrollService
                 $lines[] = ['account_code' => '1102', 'debit' => 0, 'credit' => $otherDeductions];
             }
 
+            if ($loanRepayment > 0) {
+                $lines[] = ['account_code' => '1102', 'debit' => $loanRepayment, 'credit' => 0];
+            }
+
             $journal = $this->s4->postJournal([
                 'description' => 'Payroll '.$run->run_number,
                 'source_module' => 's2',
@@ -113,13 +155,15 @@ class PayrollService
             $journalId = (string) ($journal['data']['id'] ?? '');
 
             $run->update([
-                'status' => 'posted',
+                'status' => 'approved',
                 's4_journal_entry_id' => $journalId,
                 'approved_by' => $approvedBy,
                 'approved_at' => now(),
             ]);
 
             $this->linkDeductionsToRun($run);
+            $this->applyLoanRepayments($run);
+            $this->markOvertimePaid($run);
 
             $this->outbox->enqueue(config('events.channels.payroll_run_approved'), [
                 'payroll_run_id' => $run->id,
@@ -132,6 +176,66 @@ class PayrollService
 
             return $run->fresh('lines.employee');
         });
+    }
+
+    public function lock(PayrollRun $run): PayrollRun
+    {
+        if ($run->status !== 'approved') {
+            throw new InvalidArgumentException('Only approved payroll runs can be locked.');
+        }
+
+        $run->update(['status' => 'locked']);
+
+        return $run->fresh('lines.employee');
+    }
+
+    private function markOvertimePaid(PayrollRun $run): void
+    {
+        $employeeIds = $run->lines->pluck('employee_id')->all();
+
+        \App\Models\OvertimeRecord::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->where('status', 'approved')
+            ->whereNull('payroll_run_id')
+            ->whereDate('work_date', '>=', $run->period_start)
+            ->whereDate('work_date', '<=', $run->period_end)
+            ->update([
+                'status' => 'paid',
+                'payroll_run_id' => $run->id,
+            ]);
+    }
+
+    private function applyLoanRepayments(PayrollRun $run): void
+    {
+        foreach ($run->lines as $line) {
+            if ((float) $line->loan_repayment <= 0) {
+                continue;
+            }
+
+            $loan = \App\Models\LoanRecord::query()
+                ->where('employee_id', $line->employee_id)
+                ->where('status', 'active')
+                ->orderBy('id')
+                ->first();
+
+            if ($loan !== null) {
+                $this->loanService->applyRepayment($loan->id, (float) $line->loan_repayment);
+            }
+        }
+    }
+
+    private function positionAllowances(Employee $employee, float $attendanceFactor): float
+    {
+        $position = $employee->position;
+
+        if ($position === null) {
+            return 0.0;
+        }
+
+        $transport = (float) $position->transport_allowance;
+        $housing = (float) $position->housing_allowance;
+
+        return round(($transport + $housing) * $attendanceFactor, 2);
     }
 
     private function attendancePayFactor(Employee $employee, string $periodStart, string $periodEnd): float
@@ -193,21 +297,29 @@ class PayrollService
     }
 
     /**
-     * @return array{gross_salary: float, employee_pension: float, employer_pension: float, income_tax: float, other_deductions: float, net_pay: float}
+     * @return array{gross_salary: float, overtime_pay: float, loan_repayment: float, employee_pension: float, employer_pension: float, income_tax: float, other_deductions: float, net_pay: float}
      */
-    private function calculateAmounts(float $gross, float $otherDeductions = 0.0): array
-    {
-        $employeeRate = config('payroll.employee_pension_rate');
-        $employerRate = config('payroll.employer_pension_rate');
-        $taxRate = config('payroll.income_tax_rate');
+    private function calculateAmounts(
+        Employee $employee,
+        float $gross,
+        float $overtimePay,
+        float $loanRepayment,
+        float $otherDeductions,
+    ): array {
+        $pension = $this->pensionService->calculate(
+            $employee->pension_category ?? 'covered',
+            (float) $employee->base_salary,
+        );
 
         $gross = round($gross, 2);
+        $overtimePay = round($overtimePay, 2);
+        $loanRepayment = round(max(0, $loanRepayment), 2);
         $otherDeductions = round(max(0, $otherDeductions), 2);
-        $employeePension = round($gross * $employeeRate, 2);
-        $employerPension = round($gross * $employerRate, 2);
+        $employeePension = $pension['employee'];
+        $employerPension = $pension['employer'];
         $taxable = $gross - $employeePension;
-        $incomeTax = round($taxable * $taxRate, 2);
-        $net = round($gross - $employeePension - $incomeTax - $otherDeductions, 2);
+        $incomeTax = $this->taxCalculator->calculate($taxable);
+        $net = round($gross - $employeePension - $incomeTax - $otherDeductions - $loanRepayment, 2);
 
         if ($net < 0) {
             throw new InvalidArgumentException('Employee deductions exceed net pay for gross salary '.$gross.'.');
@@ -215,6 +327,8 @@ class PayrollService
 
         return [
             'gross_salary' => $gross,
+            'overtime_pay' => $overtimePay,
+            'loan_repayment' => $loanRepayment,
             'employee_pension' => $employeePension,
             'employer_pension' => $employerPension,
             'income_tax' => $incomeTax,

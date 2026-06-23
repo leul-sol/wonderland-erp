@@ -29,6 +29,10 @@ events:
     emitted_by: S2
     consumed_by: [S4]
 
+  - channel: wh.events.s2.severance.paid
+    emitted_by: S2
+    consumed_by: [S4]
+
   - channel: wh.events.s2.leave.approved
     emitted_by: S2
     consumed_by: [S4]

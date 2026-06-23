@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('payroll_run_id')->constrained('payroll_runs');
             $table->foreignId('employee_id')->constrained('employees');
             $table->decimal('gross_salary', 12, 2);
+            $table->decimal('overtime_pay', 12, 2)->default(0);
+            $table->decimal('loan_repayment', 12, 2)->default(0);
             $table->decimal('employee_pension', 12, 2);
             $table->decimal('employer_pension', 12, 2);
             $table->decimal('income_tax', 12, 2);

@@ -22,6 +22,6 @@ class PermissionCatalogTest extends TestCase
         }
 
         $this->assertDatabaseCount('permissions', $expected);
-        $this->assertSame(80, $expected);
+        $this->assertSame(104, $expected);
     }
 }

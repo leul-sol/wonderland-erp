@@ -11,12 +11,34 @@ permissions:
     default_roles: [super_admin, hr_manager]
   - action: S2.workforce.employees.archive
     default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.positions.read
+    default_roles: [super_admin, general_manager, hr_manager, report_viewer]
+  - action: S2.workforce.positions.create
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.positions.update
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.positions.delete
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.offboarding.read
+    default_roles: [super_admin, general_manager, hr_manager]
+  - action: S2.workforce.offboarding.create
+    default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.offboarding.update
+    default_roles: [super_admin, hr_manager]
   - action: S2.workforce.payroll_runs.read
     default_roles: [super_admin, general_manager, hr_manager, payroll_officer]
   - action: S2.workforce.payroll_runs.create
     default_roles: [super_admin, payroll_officer]
   - action: S2.workforce.payroll_runs.approve
     default_roles: [super_admin, payroll_officer]
+  - action: S2.workforce.loans.read
+    default_roles: [super_admin, general_manager, payroll_officer]
+  - action: S2.workforce.loans.create
+    default_roles: [super_admin, payroll_officer]
+  - action: S2.workforce.leave_types.read
+    default_roles: [super_admin, general_manager, hr_manager, report_viewer]
+  - action: S2.workforce.leave_balances.read
+    default_roles: [super_admin, general_manager, hr_manager, report_viewer]
   - action: S2.workforce.leave_requests.read
     default_roles: [super_admin, general_manager, hr_manager, report_viewer]
   - action: S2.workforce.leave_requests.create
@@ -24,6 +46,14 @@ permissions:
   - action: S2.workforce.leave_requests.approve
     default_roles: [super_admin, hr_manager, general_manager]
   - action: S2.workforce.leave_requests.reject
+    default_roles: [super_admin, hr_manager, general_manager]
+  - action: S2.workforce.overtime.read
+    default_roles: [super_admin, general_manager, hr_manager, payroll_officer]
+  - action: S2.workforce.overtime.create
+    default_roles: [super_admin, hr_manager, payroll_officer]
+  - action: S2.workforce.overtime.update
+    default_roles: [super_admin, payroll_officer]
+  - action: S2.workforce.overtime.approve
     default_roles: [super_admin, hr_manager, general_manager]
   - action: S2.workforce.attendance.read
     default_roles: [super_admin, general_manager, hr_manager, payroll_officer, report_viewer]
@@ -35,3 +65,23 @@ permissions:
     default_roles: [super_admin, hr_manager]
   - action: S2.workforce.severance.pay
     default_roles: [super_admin, finance_manager, hr_manager]
+
+  # SDD §6.1 — HR & payroll document permissions
+  - action: S2.hr.departments.read
+    default_roles: [super_admin, general_manager, hr_manager, report_viewer]
+  - action: S2.hr.departments.write
+    default_roles: [super_admin, hr_manager]
+  - action: S2.hr.disciplinary.read
+    default_roles: [super_admin, general_manager, hr_manager]
+  - action: S2.hr.disciplinary.write
+    default_roles: [super_admin, hr_manager]
+  - action: S2.hr.assets.read
+    default_roles: [super_admin, general_manager, hr_manager]
+  - action: S2.hr.assets.write
+    default_roles: [super_admin, hr_manager]
+  - action: S2.hr.guarantors.read
+    default_roles: [super_admin, hr_manager]
+  - action: S2.hr.guarantors.write
+    default_roles: [super_admin, hr_manager]
+  - action: S2.payroll.payslips.read
+    default_roles: [super_admin, payroll_officer]

@@ -11,6 +11,8 @@ class PayrollLine extends Model
         'payroll_run_id',
         'employee_id',
         'gross_salary',
+        'overtime_pay',
+        'loan_repayment',
         'employee_pension',
         'employer_pension',
         'income_tax',
@@ -22,6 +24,8 @@ class PayrollLine extends Model
     {
         return [
             'gross_salary' => 'decimal:2',
+            'overtime_pay' => 'decimal:2',
+            'loan_repayment' => 'decimal:2',
             'employee_pension' => 'decimal:2',
             'employer_pension' => 'decimal:2',
             'income_tax' => 'decimal:2',

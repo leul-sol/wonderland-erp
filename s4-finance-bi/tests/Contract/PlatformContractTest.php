@@ -45,6 +45,7 @@ class PlatformContractTest extends TestCase
             'wh.events.s1.permission.changed',
             'wh.events.s2.payroll_run.approved',
             'wh.events.s2.severance.calculated',
+            'wh.events.s2.severance.paid',
             'wh.events.s2.leave.approved',
             'wh.events.s3.goods.received',
             'wh.events.s3.purchase_order.approved',

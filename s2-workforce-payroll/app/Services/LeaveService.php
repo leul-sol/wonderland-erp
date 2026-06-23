@@ -4,14 +4,24 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\LeaveType;
+use App\Services\Leave\LeaveBalanceService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class LeaveService
 {
-    public function __construct(private readonly OutboxService $outbox)
-    {
+    private const PAID_LEAVE_CODES = [
+        'annual' => 'AL',
+        'sick' => 'SL',
+        'maternity' => 'ML',
+    ];
+
+    public function __construct(
+        private readonly OutboxService $outbox,
+        private readonly LeaveBalanceService $leaveBalances,
+    ) {
     }
 
     /**
@@ -38,9 +48,12 @@ class LeaveService
             throw new InvalidArgumentException('days_requested must be at least 1.');
         }
 
+        $leaveType = $this->resolveLeaveType($data['leave_type'] ?? 'annual');
+
         return LeaveRequest::query()->create([
             'request_number' => $this->nextRequestNumber(),
             'employee_id' => $employee->id,
+            'leave_type_id' => $leaveType?->id,
             'leave_type' => $data['leave_type'],
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
@@ -65,12 +78,20 @@ class LeaveService
             ]);
 
             $request->load('employee.department');
+            $employee = $request->employee;
+            $code = self::PAID_LEAVE_CODES[$request->leave_type] ?? null;
+
+            if ($employee !== null && $code !== null) {
+                $employee->update(['status' => 'on_leave']);
+                $this->leaveBalances->deductDays($employee, $code, (float) $request->days_requested);
+            }
 
             $this->outbox->enqueue(config('events.channels.leave_approved'), [
                 'leave_request_id' => $request->id,
                 'request_number' => $request->request_number,
                 'employee_id' => $request->employee_id,
                 'leave_type' => $request->leave_type,
+                'leave_type_code' => $code ?? strtoupper(substr($request->leave_type, 0, 2)),
                 'start_date' => $request->start_date?->toDateString(),
                 'end_date' => $request->end_date?->toDateString(),
                 'days_requested' => $request->days_requested,
@@ -92,6 +113,24 @@ class LeaveService
         ]);
 
         return $leaveRequest->fresh(['employee.department']);
+    }
+
+    public function cancel(LeaveRequest $leaveRequest): LeaveRequest
+    {
+        if ($leaveRequest->status !== 'pending') {
+            throw new InvalidArgumentException('Only pending leave requests can be cancelled.');
+        }
+
+        $leaveRequest->update(['status' => 'cancelled']);
+
+        return $leaveRequest->fresh(['employee.department']);
+    }
+
+    private function resolveLeaveType(string $leaveType): ?LeaveType
+    {
+        $code = self::PAID_LEAVE_CODES[$leaveType] ?? strtoupper(substr($leaveType, 0, 2));
+
+        return LeaveType::query()->where('code', $code)->first();
     }
 
     private function nextRequestNumber(): string

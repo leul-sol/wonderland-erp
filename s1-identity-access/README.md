@@ -52,7 +52,9 @@ S4 reads `users`, `roles`, and `audit-logs` via `X-Service-Key`.
 
 ## Remaining (cross-system / ops)
 
-1. D12 contract/integration test stack
-2. PHPStan + production DR runbook items
+1. PHPStan in CI (baseline config at repo root when enabled)
+2. Production DR runbook (D14)
 
 Permission catalogs for S1–S4 are loaded from `../specs/*/permissions.yaml` via `CatalogPermissionsSeeder`.
+
+Contract smoke tests: `tests/Contract/PlatformContractTest.php`.
