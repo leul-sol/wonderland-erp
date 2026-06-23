@@ -20,7 +20,7 @@ class AdminApiTest extends TestCase
 
         $login = $this->postJson('/api/v1/auth/login', [
             'username' => 'super.admin',
-            'password' => 'ChangeMeNow!10',
+            'password' => $this->superAdminPassword(),
         ]);
 
         $login->assertOk();
@@ -94,7 +94,7 @@ class AdminApiTest extends TestCase
 
         $this->getJson('/api/v1/permissions', $this->authHeaders())
             ->assertOk()
-            ->assertJsonPath('meta.total', 79);
+            ->assertJsonPath('meta.total', 80);
     }
 
     public function test_audit_logs_index(): void

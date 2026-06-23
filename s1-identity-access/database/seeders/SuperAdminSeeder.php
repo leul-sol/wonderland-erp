@@ -14,10 +14,10 @@ class SuperAdminSeeder extends Seeder
             ['username' => 'super.admin'],
             [
                 'email' => 'super.admin@wonderlandhotel.local',
-                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'ChangeMeNow!10')),
+                'password' => Hash::make((string) config('seeding.super_admin_password')),
                 'display_name' => 'Super Administrator',
                 'is_active' => true,
-                'must_change_password' => true,
+                'must_change_password' => (bool) config('seeding.admin_must_change_password'),
                 'password_changed_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),

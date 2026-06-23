@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use Database\Seeders\CatalogPermissionsSeeder;
 use Illuminate\Console\Command;
 
 class EnsureSeeded extends Command
@@ -15,9 +16,7 @@ class EnsureSeeded extends Command
     {
         $this->call('migrate', ['--force' => true]);
 
-        $this->call(\Database\Seeders\S4PermissionsSeeder::class);
-        $this->call(\Database\Seeders\S3PermissionsSeeder::class);
-        $this->call(\Database\Seeders\S2PermissionsSeeder::class);
+        $this->call(CatalogPermissionsSeeder::class);
 
         if (User::query()->where('username', 'super.admin')->exists()) {
             $this->comment('Admin user already present — skipping seed.');

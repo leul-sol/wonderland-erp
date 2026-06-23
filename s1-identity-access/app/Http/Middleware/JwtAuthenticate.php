@@ -33,6 +33,12 @@ class JwtAuthenticate
             return $this->error('UNAUTHENTICATED', 'Invalid token.', 401);
         }
 
+        $user = \App\Models\User::query()->find((int) ($payload->sub ?? 0));
+
+        if ($user === null || ! $user->is_active) {
+            return $this->error('FORBIDDEN', 'Account is deactivated.', 403);
+        }
+
         $request->attributes->set('auth_user_id', (int) $payload->sub);
         $request->attributes->set('auth_permissions', $payload->permissions ?? []);
         $request->attributes->set('auth_roles', $payload->roles ?? []);

@@ -52,6 +52,7 @@ S4 reads `users`, `roles`, and `audit-logs` via `X-Service-Key`.
 
 ## Remaining (cross-system / ops)
 
-1. Seed S2/S3/S4 permission catalogs when YAML specs are added
-2. D12 contract/integration test stack
-3. PHPStan + production DR runbook items
+1. D12 contract/integration test stack
+2. PHPStan + production DR runbook items
+
+Permission catalogs for S1–S4 are loaded from `../specs/*/permissions.yaml` via `CatalogPermissionsSeeder`.

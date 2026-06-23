@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'service.key' => \App\Http\Middleware\ServiceKeyAuthenticate::class,
             'access' => \App\Http\Middleware\AuthorizeAccess::class,
             'throttle.login' => \App\Http\Middleware\ThrottleFailedLogins::class,
+            'password.change' => \App\Http\Middleware\EnforcePasswordChange::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

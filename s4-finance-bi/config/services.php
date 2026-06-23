@@ -7,6 +7,7 @@ return [
     's2_url' => env('S2_SERVICE_URL', 'http://s2-workforce:9002'),
     's3_url' => env('S3_SERVICE_URL', 'http://s3-hospitality:9003'),
     'cache_ttl' => [
+        's1_read' => (int) env('S4_CACHE_S1_SECONDS', 300),
         's2_read' => (int) env('S4_CACHE_S2_SECONDS', 300),
         's3_read' => (int) env('S4_CACHE_S3_SECONDS', 60),
     ],

@@ -60,7 +60,6 @@ class AuthController extends Controller
 
         if ($this->passwordPolicy->isExpired($user)) {
             $user->must_change_password = true;
-            $user->save();
         }
 
         $user->failed_login_count = 0;
@@ -101,6 +100,11 @@ class AuthController extends Controller
             return $this->error('FORBIDDEN', 'Account is deactivated.', 403);
         }
 
+        if ($user->must_change_password || $this->passwordPolicy->isExpired($user)) {
+            $user->must_change_password = true;
+            $user->save();
+        }
+
         return response()->json([
             'access_token' => $this->jwt->issueAccessToken($user),
             'refresh_token' => $newRefresh,
@@ -127,6 +131,12 @@ class AuthController extends Controller
             return response()->json(['valid' => false], 401);
         }
 
+        $user = User::query()->find((int) ($payload->sub ?? 0));
+
+        if ($user === null || ! $user->is_active) {
+            return response()->json(['valid' => false, 'reason' => 'deactivated'], 401);
+        }
+
         return response()->json([
             'valid' => true,
             'user' => [
@@ -137,6 +147,7 @@ class AuthController extends Controller
                 'dept_scope' => $payload->dept_scope ?? null,
                 'sub' => $payload->sub ?? null,
                 'username' => $payload->username ?? null,
+                'must_change_password' => (bool) $user->must_change_password,
             ],
         ]);
     }

@@ -43,7 +43,19 @@ class BiCacheService
 
     public function invalidateIntegrationCaches(): void
     {
+        $this->invalidateS1Caches();
         $this->invalidateS2Caches();
         $this->invalidateS3Caches();
+    }
+
+    public function invalidateS1Caches(): void
+    {
+        if (config('cache.default') === 'array') {
+            return;
+        }
+
+        foreach (['s1.users', 's1.roles', 's1.audit_logs'] as $key) {
+            Cache::forget($key);
+        }
     }
 }

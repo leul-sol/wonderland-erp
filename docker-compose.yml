@@ -39,6 +39,7 @@ services:
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMeNow!10}
     volumes:
       - ./s1-identity-access:/var/www/html
+      - ./specs:/var/www/html/specs:ro
     networks:
       - wh-internal
     healthcheck:
@@ -101,6 +102,7 @@ services:
       INTERNAL_KEY_CURRENT: ${INTERNAL_KEY_CURRENT:-dev-internal-key-change-in-prod}
     volumes:
       - ./s1-identity-access:/var/www/html
+      - ./specs:/var/www/html/specs:ro
     depends_on:
       wh-mysql:
         condition: service_healthy

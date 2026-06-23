@@ -25,7 +25,7 @@ class S1IntegrationTest extends TestCase
         $this->getJson('/api/v1/openapi.json')
             ->assertOk()
             ->assertJsonPath('openapi', '3.0.3')
-            ->assertJsonStructure(['paths' => ['/auth/verify']]);
+            ->assertJsonStructure(['paths' => ['/auth/verify'], 'components' => ['schemas' => ['LoginRequest', 'TokenResponse']]]);
     }
 
     public function test_permissions_by_domain_route(): void
@@ -135,7 +135,7 @@ class S1IntegrationTest extends TestCase
     {
         return $this->postJson('/api/v1/auth/login', [
             'username' => 'super.admin',
-            'password' => 'ChangeMeNow!10',
+            'password' => $this->superAdminPassword(),
         ])->json('access_token');
     }
 

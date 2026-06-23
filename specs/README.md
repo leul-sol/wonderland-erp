@@ -13,7 +13,7 @@ Machine-readable contracts extracted from the S0–S4 SDDs. **PDFs in `documents
 ## Rules
 
 1. Change cross-system behavior in **S0 narrative + these YAML files** in the same PR.
-2. S1 seeds all permissions from `s1/permissions.yaml` plus catalogs from S2–S4 (added later).
+2. S1 seeds all permissions from `s1/permissions.yaml` plus catalogs from S2–S4 via `CatalogPermissionsSeeder`.
 3. Contract tests validate implementations against `cross-system-calls.yaml` and `events.yaml`.
 
 ## Known SDD conflicts (track in code comments until errata)

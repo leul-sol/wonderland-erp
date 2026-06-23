@@ -11,6 +11,7 @@ class BiReportService
 {
     public function __construct(
         private readonly ReportService $reports,
+        private readonly S1IdentityClient $s1,
         private readonly S2WorkforceClient $s2,
         private readonly S3HospitalityClient $s3,
         private readonly BudgetService $budgets,
@@ -305,12 +306,20 @@ class BiReportService
         $executive = $this->reports->executiveDashboard($fiscalPeriodId, $from, $to);
         $hospitality = $this->hospitalitySnapshot();
         $payroll = $this->payrollSnapshot();
+        $users = collect($this->s1->users());
+        $roles = collect($this->s1->roles());
+        $auditLogs = collect($this->s1->auditLogs());
 
         return [
             'report' => 'kpi_scorecard',
             'finance' => $executive['kpis'],
             'occupancy_rate' => $hospitality['rooms']['occupancy_rate'],
             'active_employees' => $payroll['active_employees'],
+            'identity' => [
+                'active_users' => $users->where('is_active', true)->count(),
+                'roles' => $roles->count(),
+                'recent_audit_events' => $auditLogs->take(5)->values()->all(),
+            ],
             'generated_at' => now()->toIso8601String(),
         ];
     }

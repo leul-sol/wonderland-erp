@@ -65,8 +65,13 @@ class PlatformContractTest extends TestCase
 
     public function test_s4_bi_client_paths_match_cross_system_calls(): void
     {
+        $s1Client = file_get_contents($this->repoRoot().'/s4-finance-bi/app/Services/S1IdentityClient.php');
         $s2Client = file_get_contents($this->repoRoot().'/s4-finance-bi/app/Services/S2WorkforceClient.php');
         $s3Client = file_get_contents($this->repoRoot().'/s4-finance-bi/app/Services/S3HospitalityClient.php');
+
+        foreach (['users', 'roles', 'audit-logs'] as $path) {
+            $this->assertStringContainsString("'{$path}'", $s1Client);
+        }
 
         foreach (['employees', 'payroll-runs', 'leave-requests', 'attendance-records'] as $path) {
             $this->assertStringContainsString("'{$path}'", $s2Client);

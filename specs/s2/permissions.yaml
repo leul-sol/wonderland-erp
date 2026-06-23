@@ -33,3 +33,5 @@ permissions:
     default_roles: [super_admin, general_manager, hr_manager, payroll_officer]
   - action: S2.workforce.severance.calculate
     default_roles: [super_admin, hr_manager]
+  - action: S2.workforce.severance.pay
+    default_roles: [super_admin, finance_manager, hr_manager]
