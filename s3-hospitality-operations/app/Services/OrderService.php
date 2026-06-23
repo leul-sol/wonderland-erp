@@ -17,6 +17,7 @@ class OrderService
         private readonly InventoryService $inventory,
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
+        private readonly TaxBreakdownService $tax,
     ) {
     }
 
@@ -98,8 +99,9 @@ class OrderService
 
         $accounts = config('hospitality.accounts');
         $subtotal = round((float) $order->subtotal, 2);
+        $breakdown = $this->tax->compute($subtotal);
 
-        return DB::transaction(function () use ($order, $accounts, $subtotal) {
+        return DB::transaction(function () use ($order, $accounts, $subtotal, $breakdown) {
             $cogsTotal = 0.0;
 
             foreach ($order->lines as $line) {
@@ -127,10 +129,7 @@ class OrderService
                     'description' => 'F&B order '.$order->order_number,
                     'source_module' => 's3',
                     'source_reference' => $revenueReference,
-                    'lines' => [
-                        ['account_code' => $debitAccount, 'debit' => $subtotal, 'credit' => 0],
-                        ['account_code' => $accounts['fb_revenue'], 'debit' => 0, 'credit' => $subtotal],
-                    ],
+                    'lines' => $this->tax->revenueJournalLines($debitAccount, $accounts['fb_revenue'], $breakdown),
                 ], 'order-'.$order->id.'-revenue');
             }
 
@@ -156,16 +155,24 @@ class OrderService
                     'line_type' => 'charge',
                     'charge_category' => 'fb',
                     'description' => 'Restaurant order '.$order->order_number,
-                    'amount' => $subtotal,
+                    'subtotal' => $breakdown['subtotal'],
+                    'service_charge_rate' => $breakdown['service_charge_rate'],
+                    'service_charge_amount' => $breakdown['service_charge_amount'],
+                    'vat_rate' => $breakdown['vat_rate'],
+                    'vat_amount' => $breakdown['vat_amount'],
+                    'amount' => $breakdown['total_amount'],
                     's4_journal_entry_id' => (string) ($revenueJournal['data']['id'] ?? ''),
                     'idempotency_key' => 'order-'.$order->id.'-folio',
                     'posted_at' => now(),
                 ]);
-                $folio->increment('total_charges', $subtotal);
+                $folio->increment('total_charges', $breakdown['total_amount']);
             }
 
             $order->update([
                 'status' => 'finalized',
+                'service_charge_amount' => $breakdown['service_charge_amount'],
+                'vat_amount' => $breakdown['vat_amount'],
+                'total_amount' => $breakdown['total_amount'],
                 'cogs_total' => $cogsTotal,
                 'revenue_journal_entry_id' => $revenueJournal !== null
                     ? (string) ($revenueJournal['data']['id'] ?? '')
@@ -183,6 +190,7 @@ class OrderService
                 'order_number' => $order->order_number,
                 'folio_id' => $order->folio_id,
                 'subtotal' => (string) $subtotal,
+                'total_amount' => (string) $breakdown['total_amount'],
                 'cogs_total' => (string) $cogsTotal,
                 'revenue_journal_entry_id' => $order->revenue_journal_entry_id,
                 'cogs_journal_entry_id' => $order->cogs_journal_entry_id,
@@ -197,7 +205,7 @@ class OrderService
         $total = (float) RestaurantOrder::query()
             ->where('employee_consumption_period_id', $periodId)
             ->where('status', 'finalized')
-            ->sum('subtotal');
+            ->sum('total_amount');
 
         EmployeeConsumptionPeriod::query()
             ->whereKey($periodId)

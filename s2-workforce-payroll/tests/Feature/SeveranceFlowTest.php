@@ -55,4 +55,41 @@ class SeveranceFlowTest extends TestCase
             'event' => 'wh.events.s2.severance.calculated',
         ]);
     }
+
+    public function test_severance_payout_posts_liability_and_cash_journal(): void
+    {
+        $headers = $this->authHeaders();
+
+        $employeeId = $this->postJson('/api/v1/employees', [
+            'full_name' => 'Payable Staff',
+            'base_salary' => 20000,
+            'hire_date' => '2023-06-01',
+        ], $headers)->json('data.id');
+
+        $calculationId = $this->postJson("/api/v1/employees/{$employeeId}/severance/calculate", [], $headers)
+            ->json('data.id');
+
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 99, 'entry_number' => 'JE-00099']], 201),
+        ]);
+
+        $response = $this->postJson("/api/v1/severance-calculations/{$calculationId}/pay", [], $headers);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'paid')
+            ->assertJsonPath('data.s4_payout_journal_entry_id', '99');
+
+        Http::assertSent(function ($request) {
+            $body = $request->data();
+
+            return str_contains($request->url(), '/api/v1/journal-entries')
+                && str_contains((string) ($body['source_reference'] ?? ''), 'SEVERANCE-PAY-')
+                && ($body['lines'][0]['account_code'] ?? '') === '2100'
+                && ($body['lines'][1]['account_code'] ?? '') === '1001';
+        });
+
+        $this->assertDatabaseHas('event_outbox', [
+            'event' => 'wh.events.s2.severance.paid',
+        ]);
+    }
 }

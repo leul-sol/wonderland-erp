@@ -61,4 +61,40 @@ class SeveranceService
             return $calculation->fresh(['employee.department']);
         });
     }
+
+    public function pay(SeveranceCalculation $calculation): SeveranceCalculation
+    {
+        if ($calculation->status !== 'calculated') {
+            throw new InvalidArgumentException('Only calculated severance can be paid.');
+        }
+
+        return DB::transaction(function () use ($calculation) {
+            $amount = (float) $calculation->amount;
+
+            $journal = $this->s4->postJournal([
+                'description' => 'Severance payout '.$calculation->id,
+                'source_module' => 's2',
+                'source_reference' => 'SEVERANCE-PAY-'.$calculation->id,
+                'lines' => [
+                    ['account_code' => '2100', 'debit' => $amount, 'credit' => 0],
+                    ['account_code' => '1001', 'debit' => 0, 'credit' => $amount],
+                ],
+            ], 'severance-pay-'.$calculation->id);
+
+            $calculation->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                's4_payout_journal_entry_id' => (string) ($journal['data']['id'] ?? ''),
+            ]);
+
+            $this->outbox->enqueue(config('events.channels.severance_paid'), [
+                'severance_id' => $calculation->id,
+                'employee_id' => $calculation->employee_id,
+                'amount' => (string) $amount,
+                's4_payout_journal_entry_id' => $calculation->s4_payout_journal_entry_id,
+            ]);
+
+            return $calculation->fresh(['employee.department']);
+        });
+    }
 }

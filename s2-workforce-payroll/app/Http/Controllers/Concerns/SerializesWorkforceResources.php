@@ -134,6 +134,8 @@ trait SerializesWorkforceResources
             'calculation_date' => $calculation->calculation_date?->toDateString(),
             'status' => $calculation->status,
             's4_journal_entry_id' => $calculation->s4_journal_entry_id,
+            's4_payout_journal_entry_id' => $calculation->s4_payout_journal_entry_id,
+            'paid_at' => $calculation->paid_at?->toIso8601String(),
         ];
     }
 }

@@ -28,6 +28,7 @@ trait MocksS2Auth
             'S2.workforce.attendance.create',
             'S2.workforce.severance.read',
             'S2.workforce.severance.calculate',
+            'S2.workforce.severance.pay',
         ];
 
         if (! $this->s2AuthMocked) {

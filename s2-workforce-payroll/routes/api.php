@@ -54,4 +54,6 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S2.workforce.severance.read');
     Route::post('/employees/{employee}/severance/calculate', [EmployeeDeductionController::class, 'calculateSeverance'])
         ->middleware('permission:S2.workforce.severance.calculate');
+    Route::post('/severance-calculations/{severanceCalculation}/pay', [EmployeeDeductionController::class, 'paySeverance'])
+        ->middleware('permission:S2.workforce.severance.pay');
 });

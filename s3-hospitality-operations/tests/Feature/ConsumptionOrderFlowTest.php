@@ -26,7 +26,7 @@ class ConsumptionOrderFlowTest extends TestCase
         Http::fake([
             '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 77]], 201),
             'http://s2.test/api/v1/employees/*/deductions' => Http::response([
-                'data' => ['id' => 1, 'amount' => '350.00', 'status' => 'applied'],
+                'data' => ['id' => 1, 'amount' => '442.75', 'status' => 'applied'],
             ], 201),
         ]);
     }
@@ -62,7 +62,7 @@ class ConsumptionOrderFlowTest extends TestCase
 
         $this->postJson("/api/v1/employee-consumption-periods/{$periodId}/close", [], $headers)
             ->assertOk()
-            ->assertJsonPath('data.total_amount', '350.00');
+            ->assertJsonPath('data.total_amount', '442.75');
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/deductions'));
     }

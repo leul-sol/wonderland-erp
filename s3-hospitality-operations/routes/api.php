@@ -63,6 +63,8 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S3.hospitality.purchase_orders.create');
     Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
         ->middleware('permission:S3.hospitality.purchase_orders.read');
+    Route::post('/purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit'])
+        ->middleware('permission:S3.hospitality.purchase_orders.create');
     Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
         ->middleware('permission:S3.hospitality.purchase_orders.approve');
     Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])

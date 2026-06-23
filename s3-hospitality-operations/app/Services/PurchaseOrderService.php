@@ -32,6 +32,7 @@ class PurchaseOrderService
                 'vendor_name' => $vendorName,
                 'status' => 'draft',
                 'total_amount' => 0,
+                'approval_tier' => 1,
             ]);
 
             $total = 0.0;
@@ -52,30 +53,62 @@ class PurchaseOrderService
                 ]);
             }
 
-            $po->update(['total_amount' => round($total, 2)]);
+            $total = round($total, 2);
+            $po->update([
+                'total_amount' => $total,
+                'approval_tier' => $this->requiredApprovalTier($total),
+            ]);
 
             return $po->fresh('lines.inventoryItem');
         });
     }
 
-    public function approve(PurchaseOrder $po, int $approvedBy): PurchaseOrder
+    public function submit(PurchaseOrder $po): PurchaseOrder
     {
         if ($po->status !== 'draft') {
-            throw new InvalidArgumentException('Only draft purchase orders can be approved.');
+            throw new InvalidArgumentException('Only draft purchase orders can be submitted.');
         }
 
         $po->update([
-            'status' => 'approved',
-            'approved_by' => $approvedBy,
-            'approved_at' => now(),
+            'status' => 'pending_dept_head',
+            'approval_tier' => $this->requiredApprovalTier((float) $po->total_amount),
         ]);
 
-        $this->outbox->enqueue(config('events.channels.purchase_order_approved'), [
-            'purchase_order_id' => $po->id,
-            'po_number' => $po->po_number,
-            'vendor_name' => $po->vendor_name,
-            'total_amount' => (string) $po->total_amount,
-        ]);
+        return $po->fresh('lines.inventoryItem');
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    public function approve(PurchaseOrder $po, int $approvedBy, array $roles): PurchaseOrder
+    {
+        if ($po->status === 'draft') {
+            $po = $this->submit($po);
+        }
+
+        if (! in_array($po->status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true)) {
+            throw new InvalidArgumentException('Purchase order is not awaiting approval.');
+        }
+
+        $isSuperAdmin = in_array('super_admin', $roles, true);
+
+        do {
+            if (! $this->canApproveCurrentStep($po->status, $roles)) {
+                throw new InvalidArgumentException('Insufficient role for current approval step.');
+            }
+
+            $po = $this->advanceApprovalStep($po, $approvedBy);
+        } while ($isSuperAdmin && in_array($po->status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true));
+
+        if ($po->status === 'approved') {
+            $this->outbox->enqueue(config('events.channels.purchase_order_approved'), [
+                'purchase_order_id' => $po->id,
+                'po_number' => $po->po_number,
+                'vendor_name' => $po->vendor_name,
+                'total_amount' => (string) $po->total_amount,
+                'approval_tier' => $po->approval_tier,
+            ]);
+        }
 
         return $po->fresh('lines.inventoryItem');
     }
@@ -125,6 +158,73 @@ class PurchaseOrderService
 
             return $po->fresh('lines.inventoryItem');
         });
+    }
+
+    private function requiredApprovalTier(float $totalAmount): int
+    {
+        $financeThreshold = (float) config('hospitality.po_finance_threshold', 50000);
+        $deptThreshold = (float) config('hospitality.po_dept_head_threshold', 5000);
+
+        if ($totalAmount >= $financeThreshold) {
+            return 3;
+        }
+
+        if ($totalAmount >= $deptThreshold) {
+            return 2;
+        }
+
+        return 1;
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    private function canApproveCurrentStep(string $status, array $roles): bool
+    {
+        if (in_array('super_admin', $roles, true)) {
+            return true;
+        }
+
+        return match ($status) {
+            'pending_dept_head' => $this->hasAnyRole($roles, ['department_head', 'general_manager']),
+            'pending_finance' => $this->hasAnyRole($roles, ['finance_manager']),
+            'pending_gm' => $this->hasAnyRole($roles, ['general_manager']),
+            default => false,
+        };
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    private function hasAnyRole(array $roles, array $allowed): bool
+    {
+        foreach ($allowed as $role) {
+            if (in_array($role, $roles, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function advanceApprovalStep(PurchaseOrder $po, int $approvedBy): PurchaseOrder
+    {
+        $tier = (int) $po->approval_tier;
+
+        $nextStatus = match ($po->status) {
+            'pending_dept_head' => $tier === 1 ? 'approved' : 'pending_finance',
+            'pending_finance' => $tier === 2 ? 'approved' : 'pending_gm',
+            'pending_gm' => 'approved',
+            default => throw new InvalidArgumentException('Purchase order is not awaiting approval.'),
+        };
+
+        $po->update([
+            'status' => $nextStatus,
+            'approved_by' => $approvedBy,
+            'approved_at' => $nextStatus === 'approved' ? now() : $po->approved_at,
+        ]);
+
+        return $po;
     }
 
     private function nextPoNumber(): string

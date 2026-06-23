@@ -14,6 +14,8 @@ class SeveranceCalculation extends Model
         'calculation_date',
         'status',
         's4_journal_entry_id',
+        's4_payout_journal_entry_id',
+        'paid_at',
     ];
 
     protected function casts(): array
@@ -21,6 +23,7 @@ class SeveranceCalculation extends Model
         return [
             'amount' => 'decimal:2',
             'calculation_date' => 'date',
+            'paid_at' => 'datetime',
         ];
     }
 

@@ -10,7 +10,7 @@ trait MocksS3Auth
      * @param  list<string>  $permissions
      * @return array<string, string>
      */
-    protected function authHeaders(array $permissions = []): array
+    protected function authHeaders(array $permissions = [], array $roles = ['super_admin']): array
     {
         $defaults = [
             'S3.hospitality.rooms.read',
@@ -40,13 +40,13 @@ trait MocksS3Auth
         ];
 
         if (! $this->s3AuthMocked) {
-            $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($permissions, $defaults) {
+            $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($permissions, $defaults, $roles) {
                 $mock->shouldReceive('verify')->andReturn([
                     'valid' => true,
                     'user' => [
                         'sub' => 1,
                         'permissions' => $permissions === [] ? $defaults : $permissions,
-                        'roles' => ['restaurant_manager'],
+                        'roles' => $roles,
                     ],
                 ]);
             });

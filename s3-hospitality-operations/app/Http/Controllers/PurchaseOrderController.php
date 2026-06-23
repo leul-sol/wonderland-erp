@@ -54,9 +54,21 @@ class PurchaseOrderController extends Controller
     public function approve(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $roles = $request->attributes->get('auth_roles', []);
 
         try {
-            $po = $this->purchaseOrders->approve($purchaseOrder, $userId);
+            $po = $this->purchaseOrders->approve($purchaseOrder, $userId, is_array($roles) ? $roles : []);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->purchaseOrderPayload($po)]);
+    }
+
+    public function submit(PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        try {
+            $po = $this->purchaseOrders->submit($purchaseOrder);
         } catch (\InvalidArgumentException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
         }

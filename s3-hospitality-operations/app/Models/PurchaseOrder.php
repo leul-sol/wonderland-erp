@@ -13,6 +13,7 @@ class PurchaseOrder extends Model
         'vendor_name',
         'status',
         'total_amount',
+        'approval_tier',
         'approved_by',
         'approved_at',
         'received_at',

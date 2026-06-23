@@ -17,5 +17,6 @@ return [
         'payroll_run_approved' => 'wh.events.s2.payroll_run.approved',
         'leave_approved' => 'wh.events.s2.leave.approved',
         'severance_calculated' => 'wh.events.s2.severance.calculated',
+        'severance_paid' => 'wh.events.s2.severance.paid',
     ],
 ];

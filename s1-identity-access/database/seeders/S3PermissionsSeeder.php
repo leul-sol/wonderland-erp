@@ -21,7 +21,7 @@ class S3PermissionsSeeder extends Seeder
             ['action' => 'S3.hospitality.items.read', 'display_name' => 'Read inventory items', 'roles' => ['super_admin', 'general_manager', 'inventory_manager', 'restaurant_manager', 'cashier', 'report_viewer']],
             ['action' => 'S3.hospitality.purchase_orders.read', 'display_name' => 'Read purchase orders', 'roles' => ['super_admin', 'general_manager', 'finance_manager', 'inventory_manager', 'report_viewer']],
             ['action' => 'S3.hospitality.purchase_orders.create', 'display_name' => 'Create purchase orders', 'roles' => ['super_admin', 'inventory_manager']],
-            ['action' => 'S3.hospitality.purchase_orders.approve', 'display_name' => 'Approve purchase orders', 'roles' => ['super_admin', 'general_manager', 'finance_manager']],
+            ['action' => 'S3.hospitality.purchase_orders.approve', 'display_name' => 'Approve purchase orders', 'roles' => ['super_admin', 'general_manager', 'finance_manager', 'department_head']],
             ['action' => 'S3.hospitality.purchase_orders.receive', 'display_name' => 'Receive purchase orders', 'roles' => ['super_admin', 'inventory_manager']],
             ['action' => 'S3.hospitality.menu_items.read', 'display_name' => 'Read menu items', 'roles' => ['super_admin', 'restaurant_manager', 'cashier', 'receptionist', 'report_viewer']],
             ['action' => 'S3.hospitality.orders.read', 'display_name' => 'Read restaurant orders', 'roles' => ['super_admin', 'restaurant_manager', 'cashier', 'receptionist', 'report_viewer']],

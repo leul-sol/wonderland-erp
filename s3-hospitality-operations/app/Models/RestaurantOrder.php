@@ -15,6 +15,9 @@ class RestaurantOrder extends Model
         'status',
         'payment_context',
         'subtotal',
+        'service_charge_amount',
+        'vat_amount',
+        'total_amount',
         'cogs_total',
         'revenue_journal_entry_id',
         'cogs_journal_entry_id',
@@ -25,6 +28,9 @@ class RestaurantOrder extends Model
     {
         return [
             'subtotal' => 'decimal:2',
+            'service_charge_amount' => 'decimal:2',
+            'vat_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
             'cogs_total' => 'decimal:2',
             'finalized_at' => 'datetime',
         ];

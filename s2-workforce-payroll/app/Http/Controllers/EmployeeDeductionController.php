@@ -52,6 +52,17 @@ class EmployeeDeductionController extends Controller
         return response()->json(['data' => $this->severancePayload($calculation)], 201);
     }
 
+    public function paySeverance(SeveranceCalculation $severanceCalculation): JsonResponse
+    {
+        try {
+            $calculation = $this->severance->pay($severanceCalculation);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->severancePayload($calculation)]);
+    }
+
     public function severanceIndex(Request $request): JsonResponse
     {
         $query = SeveranceCalculation::query()->with('employee')->orderByDesc('id');

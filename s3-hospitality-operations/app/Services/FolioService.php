@@ -6,13 +6,13 @@ use App\Models\Folio;
 use App\Models\FolioLine;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use RuntimeException;
 
 class FolioService
 {
     public function __construct(
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
+        private readonly TaxBreakdownService $tax,
     ) {
     }
 
@@ -27,22 +27,22 @@ class FolioService
         }
 
         $idempotencyKey = 'folio-'.$folio->id.'-charge-'.(FolioLine::query()->where('folio_id', $folio->id)->where('line_type', 'charge')->count() + 1);
+        $accounts = config('hospitality.accounts');
 
         $revenueAccount = match ($category) {
-            'fb' => '4002',
-            'other' => '4003',
-            default => '4001',
+            'fb' => $accounts['fb_revenue'],
+            'other' => $accounts['service_charge_revenue'],
+            default => $accounts['room_revenue'],
         };
 
-        return DB::transaction(function () use ($folio, $description, $amount, $category, $idempotencyKey, $revenueAccount) {
+        $breakdown = $this->tax->compute($amount);
+
+        return DB::transaction(function () use ($folio, $description, $amount, $category, $idempotencyKey, $revenueAccount, $breakdown, $accounts) {
             $journal = $this->s4->postJournal([
                 'description' => $description,
                 'source_module' => 's3',
                 'source_reference' => 'FOLIO-'.$folio->id,
-                'lines' => [
-                    ['account_code' => '1100', 'debit' => $amount, 'credit' => 0],
-                    ['account_code' => $revenueAccount, 'debit' => 0, 'credit' => $amount],
-                ],
+                'lines' => $this->tax->revenueJournalLines($accounts['ar_guest'], $revenueAccount, $breakdown),
             ], $idempotencyKey);
 
             $journalId = (string) ($journal['data']['id'] ?? '');
@@ -52,13 +52,18 @@ class FolioService
                 'line_type' => 'charge',
                 'charge_category' => $category,
                 'description' => $description,
-                'amount' => $amount,
+                'subtotal' => $breakdown['subtotal'],
+                'service_charge_rate' => $breakdown['service_charge_rate'],
+                'service_charge_amount' => $breakdown['service_charge_amount'],
+                'vat_rate' => $breakdown['vat_rate'],
+                'vat_amount' => $breakdown['vat_amount'],
+                'amount' => $breakdown['total_amount'],
                 's4_journal_entry_id' => $journalId,
                 'idempotency_key' => $idempotencyKey,
                 'posted_at' => now(),
             ]);
 
-            $folio->increment('total_charges', $amount);
+            $folio->increment('total_charges', $breakdown['total_amount']);
 
             return $line;
         });

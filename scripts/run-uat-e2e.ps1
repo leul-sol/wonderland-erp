@@ -199,6 +199,33 @@ $po = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders" -RequestHeaders $au
 $poId = $po.data.id
 Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/approve" -RequestHeaders $auth | Out-Null
 Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$poId/receive" -RequestHeaders $auth | Out-Null
+
+$payables = Invoke-Api -Method GET -Url "$BaseS4/payables?status=open&per_page=100" -RequestHeaders $auth
+$openPayable = $payables.data | Where-Object { [decimal]$_.balance -gt 0 } | Select-Object -First 1
+if ($null -ne $openPayable) {
+    $apBalance = [decimal]$openPayable.balance
+    Invoke-Api -Method POST -Url "$BaseS4/payables/$($openPayable.id)/settle" -RequestHeaders $auth -Payload @{
+        amount         = $apBalance
+        payment_method = "bank"
+    } | Out-Null
+    Record-Uat -ScenarioKey "UAT-S4-009" -Status "passed" -Notes "Open payable settled via bank payment." -Token $token
+}
+
+Write-Step "S3 PO tiered approval (UAT-S3-006)"
+$tierPo = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders" -RequestHeaders $auth -Payload @{
+    vendor_name = "E2E Capital Vendor"
+    lines       = @(
+        @{ inventory_item_id = $beef.id; quantity = 200; unit_cost = 300 }
+    )
+}
+$tierPoId = $tierPo.data.id
+Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$tierPoId/submit" -RequestHeaders $auth | Out-Null
+$tierApproved = Invoke-Api -Method POST -Url "$BaseS3/purchase-orders/$tierPoId/approve" -RequestHeaders $auth
+if ($tierApproved.data.status -ne "approved" -or [int]$tierApproved.data.approval_tier -lt 3) {
+    throw "Tier-3 PO approval failed (status=$($tierApproved.data.status), tier=$($tierApproved.data.approval_tier))."
+}
+Record-Uat -ScenarioKey "UAT-S3-006" -Status "passed" -Notes "PO >= 50k approved through tiered workflow." -Token $token
+
 $menu = Invoke-Api -Method GET -Url "$BaseS3/menu-items" -RequestHeaders $auth
 $burger = $menu.data | Where-Object { $_.code -eq "BURGER-CL" } | Select-Object -First 1
 if ($null -eq $burger) {
@@ -240,8 +267,8 @@ $closedPeriod = Invoke-Api -Method POST -Url "$BaseS3/employee-consumption-perio
 if ($closedPeriod.data.status -ne "closed") {
     throw "Consumption period close failed."
 }
-if ([decimal]$closedPeriod.data.total_amount -ne 350) {
-    throw "Expected consumption total 350, got $($closedPeriod.data.total_amount)."
+if ([decimal]$closedPeriod.data.total_amount -ne 442.75) {
+    throw "Expected consumption total 442.75 (incl. SC+VAT), got $($closedPeriod.data.total_amount)."
 }
 Record-Uat -ScenarioKey "UAT-S3-004" -Status "passed" -Notes "Employee meal order closed; S2 staff_meal deduction posted." -Token $token
 
@@ -250,6 +277,24 @@ Invoke-Api -Method POST -Url "$BaseS3/folios/$folioId/charges" -RequestHeaders $
     amount           = 2500
     charge_category  = "room"
 } | Out-Null
+
+$folioWithTax = Invoke-Api -Method GET -Url "$BaseS3/folios/$folioId" -RequestHeaders $auth
+$roomLine = $folioWithTax.data.lines | Where-Object { $_.description -eq "E2E room night" } | Select-Object -First 1
+if ($null -eq $roomLine -or [decimal]$roomLine.vat_amount -le 0) {
+    throw "Room charge missing VAT breakdown on folio line."
+}
+Record-Uat -ScenarioKey "UAT-S3-007" -Status "passed" -Notes "Folio charge posted with 10% SC and 15% VAT." -Token $token
+
+$openReceivables = Invoke-Api -Method GET -Url "$BaseS4/receivables?status=open&per_page=100" -RequestHeaders $auth
+$arEntry = $openReceivables.data | Where-Object { [decimal]$_.balance -gt 0 } | Select-Object -First 1
+if ($null -ne $arEntry) {
+    $arBalance = [decimal]$arEntry.balance
+    Invoke-Api -Method POST -Url "$BaseS4/receivables/$($arEntry.id)/settle" -RequestHeaders $auth -Payload @{
+        amount         = $arBalance
+        payment_method = "cash"
+    } | Out-Null
+    Record-Uat -ScenarioKey "UAT-S4-008" -Status "passed" -Notes "Open receivable settled via cash." -Token $token
+}
 
 Record-Uat -ScenarioKey "UAT-S3-001" -Status "passed" -Notes "Reservation, check-in, folio charge completed." -Token $token
 
@@ -417,6 +462,37 @@ if ([decimal]$severance.data.amount -le 0) {
 }
 Record-Uat -ScenarioKey "UAT-S2-004" -Status "passed" -Notes "Severance accrual posted DR 5005 / CR 2100 in S4." -Token $token
 
+Write-Step "S2 severance payout (UAT-S2-005)"
+$severancePaid = Invoke-Api -Method POST -Url "$BaseS2/severance-calculations/$($severance.data.id)/pay" -RequestHeaders $auth
+if ($severancePaid.data.status -ne "paid") {
+    throw "Severance payout failed."
+}
+if ([string]::IsNullOrWhiteSpace($severancePaid.data.s4_payout_journal_entry_id)) {
+    throw "Severance payout did not return an S4 journal entry id."
+}
+Record-Uat -ScenarioKey "UAT-S2-005" -Status "passed" -Notes "Severance paid; DR 2100 / CR 1001 in S4." -Token $token
+
+Write-Step "S2 employee provisions S1 user (UAT-S2-006)"
+$provisionEmployee = Invoke-Api -Method POST -Url "$BaseS2/employees" -RequestHeaders $auth -Payload @{
+    full_name    = "E2E Provision Staff"
+    base_salary  = 15000
+    default_role = "report_viewer"
+}
+$provisionEmployeeId = $provisionEmployee.data.id
+$provisionUser = $null
+for ($attempt = 1; $attempt -le 20; $attempt++) {
+  Start-Sleep -Seconds 2
+  $userList = Invoke-Api -Method GET -Url "$BaseS1/users?search=E2E%20Provision&per_page=100" -RequestHeaders $auth
+  $provisionUser = $userList.data | Where-Object { $_.employee_id -eq $provisionEmployeeId } | Select-Object -First 1
+  if ($null -ne $provisionUser) {
+    break
+  }
+}
+if ($null -eq $provisionUser) {
+    throw "S1 user was not provisioned for employee $provisionEmployeeId within timeout."
+}
+Record-Uat -ScenarioKey "UAT-S2-006" -Status "passed" -Notes "S2 employee.created consumed; S1 user $($provisionUser.username) linked." -Token $token
+
 Write-Step "S4 finance reports (UAT-S4-001 .. UAT-S4-005)"
 $periods = Invoke-Api -Method GET -Url "$BaseS4/fiscal-periods" -RequestHeaders $auth
 $today = (Get-Date).ToString("yyyy-MM-dd")
@@ -450,6 +526,12 @@ $journalId = $manualJournal.data.id
 Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$journalId/approve" -RequestHeaders $auth | Out-Null
 Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$journalId/post" -RequestHeaders $auth | Out-Null
 Record-Uat -ScenarioKey "UAT-S4-002" -Status "passed" -Notes "Manual journal approved and posted." -Token $token
+
+$executiveDashboard = Invoke-Api -Method GET -Url "$BaseS4/dashboards/executive?fiscal_period_id=$periodId" -RequestHeaders $auth
+if ($null -eq $executiveDashboard.data.net_income) {
+    throw "Executive dashboard missing net_income."
+}
+Record-Uat -ScenarioKey "UAT-S4-007" -Status "passed" -Notes "Executive dashboard returned P&L summary." -Token $token
 
 $opsDashboard = Invoke-Api -Method GET -Url "$BaseS4/dashboards/operations?fiscal_period_id=$periodId" -RequestHeaders $auth
 if ($null -eq $opsDashboard.data.dashboard) {
