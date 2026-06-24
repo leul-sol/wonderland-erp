@@ -297,7 +297,7 @@ class ReportService
             $cashPosition += $this->signedBalance($account, (float) $totals['debit'], (float) $totals['credit']);
         }
 
-        $arOutstanding = (float) Receivable::query()->where('status', 'open')->sum('balance');
+        $arOutstanding = (float) Receivable::query()->whereIn('status', ['open', 'partial'])->sum('balance');
         $apOutstanding = (float) Payable::query()->where('status', 'open')->sum('balance');
 
         return [
@@ -364,9 +364,78 @@ class ReportService
     /**
      * @return array<string, mixed>
      */
+    public function departmental(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $range = $this->resolveDateRange($fiscalPeriodId, $from, $to);
+        $revenueCodes = config('finance.revenue_account_codes', ['4001', '4002', '4003', '4004']);
+
+        $rows = JournalLine::query()
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->join('accounts', 'accounts.id', '=', 'journal_lines.account_id')
+            ->where('journal_entries.status', 'posted')
+            ->whereIn('accounts.code', $revenueCodes)
+            ->whereDate('journal_entries.entry_date', '>=', $range['from'])
+            ->whereDate('journal_entries.entry_date', '<=', $range['to'])
+            ->select([
+                'journal_entries.source_module',
+                'accounts.code as account_code',
+                'accounts.name as account_name',
+                DB::raw('SUM(journal_lines.credit - journal_lines.debit) as revenue'),
+            ])
+            ->groupBy('journal_entries.source_module', 'accounts.code', 'accounts.name')
+            ->orderBy('journal_entries.source_module')
+            ->orderBy('accounts.code')
+            ->get();
+
+        $lines = $rows->map(fn ($row) => [
+            'source_module' => $row->source_module,
+            'account_code' => $row->account_code,
+            'account_name' => $row->account_name,
+            'revenue' => $this->formatMoney((float) $row->revenue),
+        ])->values()->all();
+
+        $total = $rows->sum(fn ($row) => (float) $row->revenue);
+
+        return [
+            'report' => 'departmental',
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'fiscal_period' => $this->periodMeta($range['fiscal_period']),
+            'lines' => $lines,
+            'total_revenue' => $this->formatMoney($total),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function financeDashboard(?int $fiscalPeriodId, ?string $from, ?string $to): array
+    {
+        $range = $this->resolveDateRange($fiscalPeriodId, $from, $to);
+        $executive = $this->executiveDashboard($fiscalPeriodId, $range['from'], $range['to']);
+        $period = $range['fiscal_period'];
+
+        return [
+            'dashboard' => 'finance',
+            'from' => $range['from'],
+            'to' => $range['to'],
+            'fiscal_period' => $this->periodMeta($period),
+            'kpis' => $executive['kpis'],
+            'period_status' => $period?->status,
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function arAging(): array
     {
-        $receivables = Receivable::query()->with('account')->where('status', 'open')->orderByDesc('balance')->get();
+        $receivables = Receivable::query()
+            ->with('account')
+            ->whereIn('status', ['open', 'partial'])
+            ->orderByDesc('balance')
+            ->get();
 
         return [
             'report' => 'ar_aging',
@@ -406,7 +475,7 @@ class ReportService
     /**
      * @return Collection<int, array{debit: float, credit: float}>
      */
-    private function aggregateActivity(?string $from, string $to): Collection
+    public function aggregateActivity(?string $from, string $to): Collection
     {
         $query = JournalLine::query()
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
@@ -433,7 +502,7 @@ class ReportService
             ]);
     }
 
-    private function signedBalance(Account $account, float $debit, float $credit): float
+    public function signedBalance(Account $account, float $debit, float $credit): float
     {
         if ($account->normal_balance === 'credit') {
             return round($credit - $debit, 2);

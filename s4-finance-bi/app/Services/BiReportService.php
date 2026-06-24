@@ -301,6 +301,30 @@ class BiReportService
         ];
     }
 
+    public function hotelDashboard(): array
+    {
+        $snapshot = $this->hospitalitySnapshot();
+
+        return [
+            'dashboard' => 'hotel',
+            'rooms' => $snapshot['rooms'],
+            'reservations' => $snapshot['reservations'],
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    public function restaurantDashboard(): array
+    {
+        $fb = $this->fbSalesReport();
+
+        return [
+            'dashboard' => 'restaurant',
+            'order_count' => $fb['order_count'],
+            'total_revenue' => $fb['total_revenue'],
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
     public function kpiScorecard(?int $fiscalPeriodId, ?string $from, ?string $to): array
     {
         $executive = $this->reports->executiveDashboard($fiscalPeriodId, $from, $to);

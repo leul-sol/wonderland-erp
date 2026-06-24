@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\RespondsWithApiErrors;
+use App\Http\Requests\WriteOffReceivableRequest;
 use App\Http\Requests\SettleReceivableRequest;
 use App\Models\Receivable;
 use App\Services\ReceivableService;
@@ -62,6 +63,23 @@ class ReceivableController extends Controller
         return response()->json(['data' => $this->receivablePayload($updated)]);
     }
 
+    public function writeOff(WriteOffReceivableRequest $request, Receivable $receivable): JsonResponse
+    {
+        $userId = (int) $request->attributes->get('auth_user_id', 0);
+
+        try {
+            $updated = $this->receivables->writeOff(
+                $receivable,
+                $userId,
+                $request->validated('reason')
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $this->receivablePayload($updated)]);
+    }
+
     private function receivablePayload(Receivable $receivable): array
     {
         $receivable->loadMissing('account');
@@ -75,6 +93,7 @@ class ReceivableController extends Controller
             'source_module' => $receivable->source_module,
             'original_amount' => (string) $receivable->original_amount,
             'balance' => (string) $receivable->balance,
+            'due_date' => $receivable->due_date?->toDateString(),
             'status' => $receivable->status,
             'journal_entry_id' => $receivable->journal_entry_id,
             'settled_at' => $receivable->settled_at?->toIso8601String(),

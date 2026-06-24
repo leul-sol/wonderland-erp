@@ -39,7 +39,7 @@ class RtmSeeder extends Seeder
             ['S4', 'bi', 'S4-BI-002', 'CSV and PDF report export', 'S4 §6.2', 'implemented', 'medium', 'POST /bi/exports'],
             ['S4', 'bi', 'S4-BI-003', 'RTM and UAT tracking', 'S4 §6.3', 'implemented', 'medium', 'GET/PATCH /bi/rtm and /bi/uat'],
             ['S4', 'bi', 'S4-BI-004', 'Full 24-report catalog', 'S4 §6.2', 'implemented', 'medium', 'GET /bi/reports and /bi/reports/{slug}'],
-            ['S4', 'platform', 'S4-EVT-001', 'Cross-system event consumer', 'S0 §5.2', 'implemented', 'high', 'php artisan events:consume logs + cache bust'],
+            ['S4', 'platform', 'S4-EVT-001', 'S4 journal and period outbox events', 'S4 §8.1', 'implemented', 'high', 'event_outbox + php artisan outbox:publish'],
         ];
 
         foreach ($entries as [$system, $domain, $key, $title, $spec, $status, $priority, $description]) {

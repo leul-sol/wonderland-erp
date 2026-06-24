@@ -86,11 +86,14 @@ class JournalController extends Controller
     public function approve(Request $request, JournalEntry $journalEntry): JsonResponse
     {
         $userId = (int) $request->attributes->get('auth_user_id', 0);
+        $roles = $request->attributes->get('auth_roles', []);
 
         try {
-            $entry = $this->journals->approve($journalEntry, $userId);
+            $entry = $this->journals->approve($journalEntry, $userId, is_array($roles) ? $roles : []);
         } catch (InvalidJournalStateException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        } catch (ClosedPeriodException $e) {
+            return $this->error('UNPROCESSABLE', $e->getMessage(), 422);
         }
 
         return response()->json(['data' => $this->journalPayload($entry)]);
@@ -107,6 +110,19 @@ class JournalController extends Controller
         }
 
         return response()->json(['data' => $this->journalPayload($entry)]);
+    }
+
+    public function destroy(Request $request, JournalEntry $journalEntry): JsonResponse
+    {
+        $userId = (int) $request->attributes->get('auth_user_id', 0);
+
+        try {
+            $this->journals->deleteDraft($journalEntry, $userId);
+        } catch (InvalidJournalStateException $e) {
+            return $this->error('INVALID_STATE', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => ['deleted' => true]]);
     }
 
     public function reverse(Request $request, JournalEntry $journalEntry): JsonResponse

@@ -165,7 +165,7 @@ services:
       dockerfile: Dockerfile
     entrypoint: []
     command: >
-      sh -c "php artisan events:consume"
+      sh -c "while true; do php artisan outbox:publish; sleep 10; done"
     environment:
       APP_NAME: WH-S4-Finance-BI
       APP_ENV: local

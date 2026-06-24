@@ -58,14 +58,14 @@ function Invoke-Api {
         $reqHeaders[$key] = $RequestHeaders[$key]
     }
 
-    $maxAttempts = 3
+    $maxAttempts = 6
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             if ($null -ne $Payload) {
-                return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders -ContentType "application/json" -Body ($Payload | ConvertTo-Json -Depth 8 -Compress)
+                return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders -ContentType "application/json" -Body ($Payload | ConvertTo-Json -Depth 8 -Compress) -TimeoutSec 120
             }
 
-            return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders
+            return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders -TimeoutSec 120
         }
         catch {
             $statusCode = $null
@@ -74,16 +74,19 @@ function Invoke-Api {
             }
 
             $isRetryable = $statusCode -in @(500, 502, 503, 504) -or $_.Exception.Message -match 'timed out|timeout|Unable to connect'
-            if (-not $isRetryable -or $attempt -eq $maxAttempts) {
-                $detail = $_.ErrorDetails.Message
-                if ([string]::IsNullOrWhiteSpace($detail)) {
-                    $detail = $_.Exception.Message
-                }
+            $detail = $_.ErrorDetails.Message
+            if ([string]::IsNullOrWhiteSpace($detail)) {
+                $detail = $_.Exception.Message
+            }
+            if ($detail -match 'SERVICE_UNAVAILABLE') {
+                $isRetryable = $true
+            }
 
+            if (-not $isRetryable -or $attempt -eq $maxAttempts) {
                 throw "$Method $Url failed: $detail"
             }
 
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds $attempt
         }
     }
 }
@@ -119,6 +122,29 @@ function Wait-GatewayHealth {
         catch {
             if ($i -eq $Attempts) {
                 throw "Gateway health check failed for $Url after $Attempts attempts."
+            }
+        }
+
+        Start-Sleep -Seconds 2
+    }
+}
+
+function Wait-ServiceHealth {
+    param(
+        [string]$Url,
+        [int]$Attempts = 15
+    )
+
+    for ($i = 1; $i -le $Attempts; $i++) {
+        try {
+            $health = Invoke-RestMethod -Method GET -Uri $Url -Headers @{ Accept = "application/json" } -TimeoutSec 10
+            if ($health.status -eq "ok") {
+                return
+            }
+        }
+        catch {
+            if ($i -eq $Attempts) {
+                throw "Service health check failed for $Url after $Attempts attempts."
             }
         }
 
@@ -534,6 +560,7 @@ if ($null -eq $provisionUser) {
 }
 Record-Uat -ScenarioKey "UAT-S2-006" -Status "passed" -Notes "S2 employee.created consumed; S1 user $($provisionUser.username) linked." -Token $token
 
+Wait-ServiceHealth -Url "$BaseS4/health"
 Write-Step "S4 finance reports (UAT-S4-001 .. UAT-S4-005)"
 $periods = Invoke-Api -Method GET -Url "$BaseS4/fiscal-periods" -RequestHeaders $auth
 $today = (Get-Date).ToString("yyyy-MM-dd")

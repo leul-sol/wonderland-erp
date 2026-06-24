@@ -42,8 +42,8 @@ class ReceivableService
 
     public function settle(Receivable $receivable, float $amount, string $paymentMethod, int $userId): Receivable
     {
-        if ($receivable->status !== 'open') {
-            throw new InvalidArgumentException('Receivable is already settled.');
+        if (! in_array($receivable->status, ['open', 'partial'], true)) {
+            throw new InvalidArgumentException('Receivable cannot be settled in its current status.');
         }
 
         if ($amount <= 0 || round($amount, 2) > round((float) $receivable->balance, 2)) {
@@ -59,7 +59,7 @@ class ReceivableService
 
         $accountCode = $receivable->account?->code ?? Account::query()->whereKey($receivable->account_id)->value('code');
 
-        return DB::transaction(function () use ($receivable, $amount, $paymentMethod, $userId, $cashAccount, $accountCode) {
+        return DB::transaction(function () use ($receivable, $amount, $userId, $cashAccount, $accountCode) {
             app(JournalService::class)->postImmediate([
                 'description' => 'AR settlement '.$receivable->source_reference,
                 'source_module' => 'manual',
@@ -69,6 +69,41 @@ class ReceivableService
                     ['account_code' => $accountCode, 'debit' => 0, 'credit' => $amount],
                 ],
             ], 'ar-settle-'.$receivable->id.'-'.now()->timestamp, $userId);
+
+            return $receivable->fresh('account');
+        });
+    }
+
+    public function writeOff(Receivable $receivable, int $userId, ?string $reason = null): Receivable
+    {
+        if (! in_array($receivable->status, ['open', 'partial'], true)) {
+            throw new InvalidArgumentException('Receivable cannot be written off in its current status.');
+        }
+
+        $balance = (float) $receivable->balance;
+        if ($balance <= 0) {
+            throw new InvalidArgumentException('Receivable has no outstanding balance to write off.');
+        }
+
+        $accountCode = $receivable->account?->code ?? Account::query()->whereKey($receivable->account_id)->value('code');
+        $expenseCode = '5004';
+
+        return DB::transaction(function () use ($receivable, $userId, $reason, $balance, $accountCode, $expenseCode) {
+            app(JournalService::class)->postImmediate([
+                'description' => 'AR write-off '.$receivable->source_reference.($reason ? ' — '.$reason : ''),
+                'source_module' => 'manual',
+                'source_reference' => 'WO-'.$receivable->source_reference,
+                'lines' => [
+                    ['account_code' => $expenseCode, 'debit' => $balance, 'credit' => 0],
+                    ['account_code' => $accountCode, 'debit' => 0, 'credit' => $balance],
+                ],
+            ], 'ar-writeoff-'.$receivable->id, $userId);
+
+            $receivable->update([
+                'balance' => 0,
+                'status' => 'written_off',
+                'settled_at' => now(),
+            ]);
 
             return $receivable->fresh('account');
         });
@@ -95,6 +130,10 @@ class ReceivableService
             return;
         }
 
+        if ($receivable->status === 'written_off') {
+            throw new RuntimeException('Cannot increase a written-off receivable.');
+        }
+
         $receivable->increment('balance', $amount);
         $receivable->update(['status' => 'open', 'settled_at' => null]);
     }
@@ -111,9 +150,11 @@ class ReceivableService
         }
 
         $newBalance = round((float) $receivable->balance - $amount, 2);
+        $status = $newBalance <= 0 ? 'settled' : 'partial';
+
         $receivable->update([
             'balance' => max(0, $newBalance),
-            'status' => $newBalance <= 0 ? 'settled' : 'open',
+            'status' => $status,
             'settled_at' => $newBalance <= 0 ? now() : null,
         ]);
     }

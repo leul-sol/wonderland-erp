@@ -11,6 +11,7 @@ class ExportService
     public function __construct(
         private readonly ReportCatalogService $catalog,
         private readonly PdfExportService $pdf,
+        private readonly ExcelExportService $excel,
     ) {
     }
 
@@ -35,6 +36,10 @@ class ExportService
 
         if ($format === 'pdf') {
             return $this->pdf->download((string) ($data['name'] ?? $report), $rows, $filename.'.pdf');
+        }
+
+        if ($format === 'excel') {
+            return $this->excel->download((string) ($data['name'] ?? $report), $rows, $filename.'.xls');
         }
 
         throw new InvalidArgumentException('Unsupported export format: '.$format);

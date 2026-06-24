@@ -24,6 +24,8 @@ class JournalEntry extends Model
         'reversal_of_id',
         'approved_by',
         'approved_at',
+        'second_approved_by',
+        'second_approved_at',
         'posted_at',
         'created_by',
     ];
@@ -35,6 +37,7 @@ class JournalEntry extends Model
             'total_debit' => 'decimal:2',
             'total_credit' => 'decimal:2',
             'approved_at' => 'datetime',
+            'second_approved_at' => 'datetime',
             'posted_at' => 'datetime',
         ];
     }

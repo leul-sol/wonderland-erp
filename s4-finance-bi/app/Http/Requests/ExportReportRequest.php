@@ -15,7 +15,7 @@ class ExportReportRequest extends FormRequest
     {
         return [
             'report' => ['required', 'string', 'max:60'],
-            'format' => ['required', 'in:csv,pdf'],
+            'format' => ['required', 'in:csv,pdf,excel'],
             'fiscal_period_id' => ['nullable', 'integer', 'exists:fiscal_periods,id'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],

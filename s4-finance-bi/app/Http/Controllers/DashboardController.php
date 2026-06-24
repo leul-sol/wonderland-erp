@@ -49,4 +49,41 @@ class DashboardController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
+    public function hotel(Request $request): JsonResponse
+    {
+        try {
+            $data = $this->biReports->hotelDashboard();
+        } catch (\RuntimeException $e) {
+            return $this->error('INTEGRATION_ERROR', $e->getMessage(), 502);
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function restaurant(Request $request): JsonResponse
+    {
+        try {
+            $data = $this->biReports->restaurantDashboard();
+        } catch (\RuntimeException $e) {
+            return $this->error('INTEGRATION_ERROR', $e->getMessage(), 502);
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function finance(Request $request): JsonResponse
+    {
+        try {
+            $data = $this->reports->financeDashboard(
+                $request->filled('fiscal_period_id') ? (int) $request->input('fiscal_period_id') : null,
+                $request->input('from'),
+                $request->input('to'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        }
+
+        return response()->json(['data' => $data]);
+    }
 }

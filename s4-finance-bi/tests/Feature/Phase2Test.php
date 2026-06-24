@@ -27,7 +27,7 @@ class Phase2Test extends TestCase
         ]);
     }
 
-    public function test_manual_journal_approve_and_post_workflow(): void
+    public function test_manual_journal_approve_auto_posts_under_threshold(): void
     {
         $create = $this->postJson('/api/v1/journal-entries', [
             'description' => 'Manual adjustment',
@@ -47,13 +47,59 @@ class Phase2Test extends TestCase
 
         $approve = $this->postJson("/api/v1/journal-entries/{$entryId}/approve", [], $this->authHeaders());
         $approve->assertOk()
-            ->assertJsonPath('data.status', 'approved')
-            ->assertJsonPath('data.approved_by', 1);
-
-        $post = $this->postJson("/api/v1/journal-entries/{$entryId}/post", [], $this->authHeaders());
-        $post->assertOk()
             ->assertJsonPath('data.status', 'posted')
+            ->assertJsonPath('data.approved_by', 1)
             ->assertJsonPath('data.posted_at', fn ($v) => $v !== null);
+
+        $this->assertDatabaseHas('event_outbox', [
+            'event' => 'wh.events.s4.journal.posted',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_large_manual_journal_requires_general_manager_approval(): void
+    {
+        $create = $this->postJson('/api/v1/journal-entries', [
+            'description' => 'Large adjustment',
+            'source_module' => 'manual',
+            'entry_date' => now()->toDateString(),
+            'lines' => [
+                ['account_code' => '1001', 'debit' => 60000, 'credit' => 0],
+                ['account_code' => '4001', 'debit' => 0, 'credit' => 60000],
+            ],
+        ], array_merge($this->authHeaders(), ['Idempotency-Key' => 'manual-adj-large']));
+
+        $entryId = $create->json('data.id');
+
+        $this->postJson("/api/v1/journal-entries/{$entryId}/approve", [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+
+        $this->putJson("/api/v1/journal-entries/{$entryId}/approve", [], $this->authHeaders(roles: ['general_manager']))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'posted')
+            ->assertJsonPath('data.second_approved_by', 1);
+    }
+
+    public function test_draft_manual_journal_can_be_deleted_by_creator(): void
+    {
+        $create = $this->postJson('/api/v1/journal-entries', [
+            'description' => 'Discard me',
+            'source_module' => 'manual',
+            'entry_date' => now()->toDateString(),
+            'lines' => [
+                ['account_code' => '1001', 'debit' => 50, 'credit' => 0],
+                ['account_code' => '4001', 'debit' => 0, 'credit' => 50],
+            ],
+        ], array_merge($this->authHeaders(), ['Idempotency-Key' => 'draft-delete']));
+
+        $entryId = $create->json('data.id');
+
+        $this->deleteJson("/api/v1/journal-entries/{$entryId}", [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+
+        $this->assertDatabaseMissing('journal_entries', ['id' => $entryId]);
     }
 
     public function test_closed_period_blocks_posting_approved_journal(): void
@@ -65,17 +111,23 @@ class Phase2Test extends TestCase
             'source_module' => 'manual',
             'entry_date' => $period->start_date->toDateString(),
             'lines' => [
-                ['account_code' => '1001', 'debit' => 100, 'credit' => 0],
-                ['account_code' => '4001', 'debit' => 0, 'credit' => 100],
+                ['account_code' => '1001', 'debit' => 60000, 'credit' => 0],
+                ['account_code' => '4001', 'debit' => 0, 'credit' => 60000],
             ],
         ], array_merge($this->authHeaders(), ['Idempotency-Key' => 'close-block-1']));
 
         $entryId = $create->json('data.id');
         $this->postJson("/api/v1/journal-entries/{$entryId}/approve", [], $this->authHeaders())->assertOk();
 
-        $this->postJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders())->assertOk();
+        $this->putJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'closing');
 
-        $post = $this->postJson("/api/v1/journal-entries/{$entryId}/post", [], $this->authHeaders());
+        $this->putJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'closed');
+
+        $post = $this->putJson("/api/v1/journal-entries/{$entryId}/approve", [], $this->authHeaders(roles: ['general_manager']));
         $post->assertStatus(422)
             ->assertJsonPath('error.code', 'UNPROCESSABLE');
     }
@@ -132,17 +184,55 @@ class Phase2Test extends TestCase
             ->assertJsonPath('data.status', 'settled');
     }
 
-    public function test_fiscal_period_close_and_lock(): void
+    public function test_receivable_write_off(): void
+    {
+        $this->postJson('/api/v1/journal-entries', [
+            'description' => 'Folio charge',
+            'source_module' => 's3',
+            'source_reference' => 'FOLIO-4001',
+            'entry_date' => now()->toDateString(),
+            'lines' => [
+                ['account_code' => '1100', 'debit' => 500, 'credit' => 0],
+                ['account_code' => '4001', 'debit' => 0, 'credit' => 500],
+            ],
+        ], [
+            'X-Service-Key' => 'test-service-key',
+            'Idempotency-Key' => 'folio-4001-charge',
+        ])->assertCreated();
+
+        $receivable = Receivable::query()->where('source_reference', 'FOLIO-4001')->firstOrFail();
+
+        $this->postJson("/api/v1/receivables/{$receivable->id}/write-off", [
+            'reason' => 'Uncollectible',
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'written_off')
+            ->assertJsonPath('data.balance', '0.00');
+    }
+
+    public function test_fiscal_period_two_step_close_and_lock(): void
     {
         $period = FiscalPeriod::query()->where('status', 'open')->firstOrFail();
 
-        $close = $this->postJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders());
-        $close->assertOk()
+        $this->putJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'closing');
+
+        $this->putJson("/api/v1/fiscal-periods/{$period->id}/close", [], $this->authHeaders())
+            ->assertOk()
             ->assertJsonPath('data.status', 'closed')
             ->assertJsonPath('data.closed_by', 1);
 
-        $lock = $this->postJson("/api/v1/fiscal-periods/{$period->id}/lock", [], $this->authHeaders());
-        $lock->assertOk()
+        $this->assertDatabaseHas('account_period_balances', [
+            'fiscal_period_id' => $period->id,
+        ]);
+
+        $this->assertDatabaseHas('event_outbox', [
+            'event' => 'wh.events.s4.period.closed',
+        ]);
+
+        $this->putJson("/api/v1/fiscal-periods/{$period->id}/lock", [], $this->authHeaders())
+            ->assertOk()
             ->assertJsonPath('data.status', 'locked');
     }
 }

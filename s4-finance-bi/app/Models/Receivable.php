@@ -14,6 +14,7 @@ class Receivable extends Model
         'source_module',
         'original_amount',
         'balance',
+        'due_date',
         'status',
         'journal_entry_id',
         'settled_at',
@@ -24,6 +25,7 @@ class Receivable extends Model
         return [
             'original_amount' => 'decimal:2',
             'balance' => 'decimal:2',
+            'due_date' => 'date',
             'settled_at' => 'datetime',
         ];
     }

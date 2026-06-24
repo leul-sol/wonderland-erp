@@ -6,12 +6,18 @@ trait MocksS4Auth
 {
     private bool $s4AuthMocked = false;
 
+    /** @var list<string> */
+    private array $authRoles = ['finance_manager'];
+
     /**
      * @param  list<string>  $permissions
+     * @param  list<string>  $roles
      * @return array<string, string>
      */
-    protected function authHeaders(array $permissions = []): array
+    protected function authHeaders(array $permissions = [], array $roles = ['finance_manager']): array
     {
+        $this->authRoles = $roles;
+
         $defaults = [
             'S4.finance.accounts.read',
             'S4.finance.accounts.create',
@@ -40,16 +46,20 @@ trait MocksS4Auth
             'S4.bi.uat.update',
         ];
 
+        $effectivePermissions = $permissions === [] ? $defaults : $permissions;
+
         if (! $this->s4AuthMocked) {
-            $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($permissions, $defaults) {
-                $mock->shouldReceive('verify')->andReturn([
-                    'valid' => true,
-                    'user' => [
-                        'sub' => 1,
-                        'permissions' => $permissions === [] ? $defaults : $permissions,
-                        'roles' => ['finance_manager'],
-                    ],
-                ]);
+            $this->mock(\App\Services\S1AuthService::class, function ($mock) use ($effectivePermissions) {
+                $mock->shouldReceive('verify')->andReturnUsing(function () use ($effectivePermissions) {
+                    return [
+                        'valid' => true,
+                        'user' => [
+                            'sub' => 1,
+                            'permissions' => $effectivePermissions,
+                            'roles' => $this->authRoles,
+                        ],
+                    ];
+                });
             });
             $this->s4AuthMocked = true;
         }

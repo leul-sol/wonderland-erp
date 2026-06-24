@@ -17,6 +17,7 @@ class JournalService
     public function __construct(
         private readonly FiscalPeriodService $fiscalPeriods,
         private readonly BiCacheService $biCache,
+        private readonly OutboxService $outbox,
     ) {
     }
 
@@ -33,8 +34,6 @@ class JournalService
     }
 
     /**
-     * Internal immediate post (settlements, reversals).
-     *
      * @param  array<string, mixed>  $payload
      */
     public function postImmediate(array $payload, ?string $idempotencyKey, ?int $createdBy = 0): JournalEntry
@@ -44,19 +43,57 @@ class JournalService
         return $this->post($payload, $idempotencyKey, $createdBy);
     }
 
-    public function approve(JournalEntry $entry, int $approvedBy): JournalEntry
+    /**
+     * @param  list<string>  $roles
+     */
+    public function approve(JournalEntry $entry, int $approvedBy, array $roles): JournalEntry
     {
-        if ($entry->status !== 'draft' || $entry->source_module !== 'manual') {
-            throw new \App\Exceptions\InvalidJournalStateException('Only draft manual entries can be approved.');
+        if ($entry->source_module !== 'manual') {
+            throw new \App\Exceptions\InvalidJournalStateException('Only manual entries support approval.');
         }
 
-        $entry->update([
-            'status' => 'approved',
-            'approved_by' => $approvedBy,
-            'approved_at' => now(),
-        ]);
+        $threshold = (float) config('finance.manual_journal_gm_threshold', 50000);
+        $requiresGm = (float) $entry->total_debit >= $threshold;
 
-        return $entry->fresh(['lines.account', 'fiscalPeriod']);
+        if ($entry->status === 'draft') {
+            if (! $this->hasAnyRole($roles, ['finance_manager', 'accountant', 'super_admin'])) {
+                throw new \App\Exceptions\InvalidJournalStateException('Finance manager approval is required.');
+            }
+
+            $entry->loadMissing('fiscalPeriod');
+            $this->fiscalPeriods->assertAllowsPosting($entry->fiscalPeriod);
+
+            $entry->update([
+                'status' => 'approved',
+                'approved_by' => $approvedBy,
+                'approved_at' => now(),
+            ]);
+
+            if (! $requiresGm) {
+                return $this->finalizePosting($entry->fresh(['lines.account', 'fiscalPeriod']));
+            }
+
+            return $entry->fresh(['lines.account', 'fiscalPeriod']);
+        }
+
+        if ($entry->status === 'approved' && $requiresGm) {
+            if (! $this->hasAnyRole($roles, ['general_manager', 'super_admin'])) {
+                throw new \App\Exceptions\InvalidJournalStateException('General manager approval is required for entries >= '.$threshold.' ETB.');
+            }
+
+            if ($entry->second_approved_by !== null) {
+                throw new \App\Exceptions\InvalidJournalStateException('Entry is already fully approved.');
+            }
+
+            $entry->update([
+                'second_approved_by' => $approvedBy,
+                'second_approved_at' => now(),
+            ]);
+
+            return $this->finalizePosting($entry->fresh(['lines.account', 'fiscalPeriod']));
+        }
+
+        throw new \App\Exceptions\InvalidJournalStateException('Entry cannot be approved in its current state.');
     }
 
     public function postApproved(JournalEntry $entry): JournalEntry
@@ -65,18 +102,28 @@ class JournalService
             throw new \App\Exceptions\InvalidJournalStateException('Only approved manual entries can be posted.');
         }
 
-        $this->fiscalPeriods->assertAllowsPosting($entry->fiscalPeriod);
+        $threshold = (float) config('finance.manual_journal_gm_threshold', 50000);
+        if ((float) $entry->total_debit >= $threshold && $entry->second_approved_by === null) {
+            throw new \App\Exceptions\InvalidJournalStateException('General manager approval is required before posting.');
+        }
 
-        $entry->update([
-            'status' => 'posted',
-            'posted_at' => now(),
-        ]);
+        return $this->finalizePosting($entry);
+    }
 
-        $entry = $entry->fresh(['lines.account', 'fiscalPeriod']);
-        $this->biCache->invalidate($entry->fiscal_period_id);
-        $this->applySubledgerHooks($entry);
+    public function deleteDraft(JournalEntry $entry, int $userId): void
+    {
+        if ($entry->status !== 'draft' || $entry->source_module !== 'manual') {
+            throw new \App\Exceptions\InvalidJournalStateException('Only draft manual entries can be deleted.');
+        }
 
-        return $entry;
+        if ($entry->created_by !== $userId && $userId !== 0) {
+            throw new \App\Exceptions\InvalidJournalStateException('Only the creator can delete a draft entry.');
+        }
+
+        DB::transaction(function () use ($entry) {
+            $entry->lines()->delete();
+            $entry->delete();
+        });
     }
 
     public function reverse(JournalEntry $entry, int $userId, ?string $reason = null): JournalEntry
@@ -109,7 +156,7 @@ class JournalService
         });
     }
 
-    /**
+  /**
      * @param  array<string, mixed>  $payload
      */
     private function createEntry(array $payload, ?string $idempotencyKey, ?int $createdBy, string $status): JournalEntry
@@ -173,19 +220,63 @@ class JournalService
             }
 
             if ($status === 'posted') {
-                $this->biCache->invalidate($period->id);
                 $entry = $entry->load('lines.account', 'fiscalPeriod');
-                $this->applySubledgerHooks($entry);
+                $this->afterPosted($entry);
             }
 
             return $entry->load('lines.account', 'fiscalPeriod');
         });
     }
 
+    private function finalizePosting(JournalEntry $entry): JournalEntry
+    {
+        $this->fiscalPeriods->assertAllowsPosting($entry->fiscalPeriod);
+
+        $entry->update([
+            'status' => 'posted',
+            'posted_at' => now(),
+        ]);
+
+        $entry = $entry->fresh(['lines.account', 'fiscalPeriod']);
+        $this->afterPosted($entry);
+
+        return $entry;
+    }
+
+    private function afterPosted(JournalEntry $entry): void
+    {
+        $this->biCache->invalidate($entry->fiscal_period_id);
+        $this->applySubledgerHooks($entry);
+        $this->outbox->enqueue(config('events.channels.journal_posted'), [
+            'journal_entry_id' => $entry->id,
+            'entry_number' => $entry->entry_number,
+            'entry_date' => $entry->entry_date->toDateString(),
+            'source_module' => $entry->source_module,
+            'source_reference' => $entry->source_reference,
+            'total_debit' => (string) $entry->total_debit,
+            'fiscal_period_id' => $entry->fiscal_period_id,
+        ]);
+    }
+
     private function applySubledgerHooks(JournalEntry $entry): void
     {
         app(ReceivableService::class)->applyPostedEntry($entry);
         app(PayableService::class)->applyPostedEntry($entry);
+    }
+
+    /**
+     * @param  list<string>  $roles
+     * @param  list<string>  $allowed
+     */
+    private function hasAnyRole(array $roles, array $allowed): bool
+    {
+        foreach ($allowed as $role) {
+            if (in_array($role, $roles, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveIdempotent(string $key, array $payload): ?JournalEntry

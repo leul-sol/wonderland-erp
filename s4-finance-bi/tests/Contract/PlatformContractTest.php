@@ -22,7 +22,7 @@ class PlatformContractTest extends TestCase
         $checks = [
             's2-workforce-payroll/routes/api.php' => ['/leave-requests', '/attendance-records', '/employees/{employee}/deductions'],
             's3-hospitality-operations/routes/api.php' => ['/rooms', '/reservations', '/group-bookings', '/orders', '/items', '/purchase-orders', '/employee-consumption-periods'],
-            's4-finance-bi/routes/api.php' => ['/journal-entries', '/finance/budgets', '/bi/operational-events'],
+            's4-finance-bi/routes/api.php' => ['/journal-entries', '/finance/budgets', '/reports/departmental', '/dashboard/finance'],
             's1-identity-access/routes/api.php' => ["'/verify'", '/users', '/roles', '/audit-logs'],
         ];
 
@@ -36,32 +36,22 @@ class PlatformContractTest extends TestCase
         }
     }
 
-    public function test_event_channels_configured_in_emitters_and_consumer(): void
+    public function test_s4_outbox_channels_configured(): void
     {
         $eventsYaml = file_get_contents($this->repoRoot().'/specs/platform/events.yaml');
         $this->assertIsString($eventsYaml);
 
-        $s4Channels = [
-            'wh.events.s1.permission.changed',
-            'wh.events.s2.payroll_run.approved',
-            'wh.events.s2.severance.calculated',
-            'wh.events.s2.severance.paid',
-            'wh.events.s2.leave.approved',
-            'wh.events.s3.goods.received',
-            'wh.events.s3.purchase_order.approved',
-            'wh.events.s3.order.finalized',
-            'wh.events.s3.employee_consumption_period.closed',
-            'wh.events.s3.guest.checked_in',
-            'wh.events.s3.guest.checked_out',
-            'wh.events.s3.folio.settled',
-        ];
-
-        $consumerConfig = file_get_contents($this->repoRoot().'/s4-finance-bi/config/events.php');
-        $this->assertIsString($consumerConfig);
-
-        foreach ($s4Channels as $channel) {
-            $this->assertStringContainsString($channel, $consumerConfig, "S4 consumer missing {$channel}");
+        foreach ([
+            'wh.events.s4.journal.posted',
+            'wh.events.s4.period.closed',
+        ] as $channel) {
+            $this->assertStringContainsString($channel, $eventsYaml, "events.yaml missing {$channel}");
         }
+
+        $s4Config = file_get_contents($this->repoRoot().'/s4-finance-bi/config/events.php');
+        $this->assertIsString($s4Config);
+        $this->assertStringContainsString('journal_posted', $s4Config);
+        $this->assertStringContainsString('period_closed', $s4Config);
     }
 
     public function test_s4_bi_client_paths_match_cross_system_calls(): void

@@ -7,6 +7,12 @@ use Carbon\Carbon;
 
 class FiscalPeriodService
 {
+    public function __construct(
+        private readonly AccountPeriodBalanceService $periodBalances,
+        private readonly OutboxService $outbox,
+    ) {
+    }
+
     public function forDate(Carbon|string $date): FiscalPeriod
     {
         $date = Carbon::parse($date)->startOfDay();
@@ -34,17 +40,35 @@ class FiscalPeriodService
 
     public function close(FiscalPeriod $period, int $closedBy): FiscalPeriod
     {
-        if ($period->status !== 'open') {
-            throw new \InvalidArgumentException('Only open fiscal periods can be closed.');
+        if ($period->status === 'open') {
+            $period->update(['status' => 'closing']);
+
+            return $period->fresh();
         }
 
-        $period->update([
-            'status' => 'closed',
-            'closed_by' => $closedBy,
-            'closed_at' => now(),
-        ]);
+        if ($period->status === 'closing') {
+            $this->periodBalances->closePeriod($period);
 
-        return $period->fresh();
+            $period->update([
+                'status' => 'closed',
+                'closed_by' => $closedBy,
+                'closed_at' => now(),
+            ]);
+
+            $period = $period->fresh();
+
+            $this->outbox->enqueue(config('events.channels.period_closed'), [
+                'fiscal_period_id' => $period->id,
+                'year' => $period->year,
+                'period_number' => $period->period_number,
+                'closed_by' => $closedBy,
+                'closed_at' => $period->closed_at?->toIso8601String(),
+            ]);
+
+            return $period;
+        }
+
+        throw new \InvalidArgumentException('Only open or closing fiscal periods can be closed.');
     }
 
     public function lock(FiscalPeriod $period): FiscalPeriod
