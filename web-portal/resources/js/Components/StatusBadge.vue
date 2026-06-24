@@ -23,6 +23,7 @@ const classes = computed(() => {
         pending_finance: 'bg-purple-50 text-purple-900 ring-purple-200',
         pending_gm: 'bg-rose-50 text-rose-900 ring-rose-200',
         approved: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        received: 'bg-blue-50 text-blue-800 ring-blue-200',
         draft: 'bg-slate-100 text-slate-700 ring-slate-200',
         posted: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
     };

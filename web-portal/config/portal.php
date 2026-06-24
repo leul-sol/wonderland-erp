@@ -34,7 +34,7 @@ return [
         [
             'key' => 'inventory',
             'label' => 'Inventory and procurement',
-            'route' => 'procurement.purchase-orders.index',
+            'route' => 'inventory.items.index',
             'permissions' => ['S3.inventory.items.read', 'S3.inventory.purchase_orders.read'],
             'phase' => 3,
         ],
@@ -57,9 +57,8 @@ return [
         [
             'key' => 'finance',
             'label' => 'Finance',
-            'route' => 'modules.placeholder',
-            'route_params' => ['module' => 'finance'],
-            'permissions' => ['S4.finance.reports.read', 'S4.finance.journal_entries.read'],
+            'route' => 'finance.payables.index',
+            'permissions' => ['S4.finance.payables.read', 'S4.finance.reports.read', 'S4.finance.journal_entries.read'],
             'phase' => 7,
         ],
         [
@@ -100,9 +99,23 @@ return [
         [
             'key' => 'approve_po',
             'label' => 'Approve purchase order',
-            'route' => 'procurement.purchase-orders.index',
+            'route' => 'inventory.purchase-orders.index',
             'module' => 'inventory',
             'permissions' => ['S3.inventory.purchase_orders.approve'],
+        ],
+        [
+            'key' => 'create_po',
+            'label' => 'Create purchase order',
+            'route' => 'inventory.purchase-orders.create',
+            'module' => 'inventory',
+            'permissions' => ['S3.inventory.purchase_orders.write'],
+        ],
+        [
+            'key' => 'settle_payables',
+            'label' => 'Settle payables',
+            'route' => 'finance.payables.index',
+            'module' => 'finance',
+            'permissions' => ['S4.finance.payables.settle', 'S4.finance.payables.read'],
         ],
         [
             'key' => 'post_fb_to_folio',

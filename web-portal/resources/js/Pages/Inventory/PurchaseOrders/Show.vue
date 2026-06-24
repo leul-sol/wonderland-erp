@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import ApprovalStepper from '../../../Components/ApprovalStepper.vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
@@ -10,10 +10,14 @@ const props = defineProps({
     purchaseOrder: { type: Object, required: true },
     approvalSteps: { type: Array, default: () => [] },
     approvalCurrentStep: { type: String, default: '' },
+    canSubmit: { type: Boolean, default: false },
     canApprove: { type: Boolean, default: false },
+    canReceive: { type: Boolean, default: false },
 });
 
+const submitForm = useForm({});
 const approveForm = useForm({});
+const receiveForm = useForm({});
 
 const lineColumns = [
     { key: 'sku', label: 'SKU' },
@@ -28,10 +32,16 @@ function formatMoney(value) {
     return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
+function submitPo() {
+    submitForm.post(`/inventory/purchase-orders/${props.purchaseOrder.id}/submit`, { preserveScroll: true });
+}
+
 function approve() {
-    approveForm.post(`/procurement/purchase-orders/${props.purchaseOrder.id}/approve`, {
-        preserveScroll: true,
-    });
+    approveForm.post(`/inventory/purchase-orders/${props.purchaseOrder.id}/approve`, { preserveScroll: true });
+}
+
+function receive() {
+    receiveForm.post(`/inventory/purchase-orders/${props.purchaseOrder.id}/receive`, { preserveScroll: true });
 }
 </script>
 
@@ -43,15 +53,40 @@ function approve() {
         >
             <template #actions>
                 <StatusBadge :status="purchaseOrder.status" />
+                <Link href="/finance/payables" class="wh-btn-secondary text-xs">Payables</Link>
             </template>
         </PageHeader>
 
         <section class="wh-card mb-6 p-4">
             <h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">Approval workflow</h3>
             <ApprovalStepper :steps="approvalSteps" :current-key="approvalCurrentStep" />
-            <div v-if="canApprove" class="mt-4 flex justify-end">
-                <button type="button" class="wh-btn-primary" :disabled="approveForm.processing" @click="approve">
+            <div class="mt-4 flex flex-wrap justify-end gap-2">
+                <button
+                    v-if="canSubmit"
+                    type="button"
+                    class="wh-btn-secondary"
+                    :disabled="submitForm.processing"
+                    @click="submitPo"
+                >
+                    Submit for approval
+                </button>
+                <button
+                    v-if="canApprove"
+                    type="button"
+                    class="wh-btn-primary"
+                    :disabled="approveForm.processing"
+                    @click="approve"
+                >
                     Approve current step
+                </button>
+                <button
+                    v-if="canReceive"
+                    type="button"
+                    class="wh-btn-primary"
+                    :disabled="receiveForm.processing"
+                    @click="receive"
+                >
+                    Receive goods
                 </button>
             </div>
         </section>
@@ -71,6 +106,9 @@ function approve() {
                     <span class="wh-money font-medium">{{ formatMoney(row.line_total) }}</span>
                 </template>
             </DataTable>
+            <p v-if="purchaseOrder.received_at" class="mt-3 text-sm text-emerald-800">
+                Received {{ purchaseOrder.received_at }}
+            </p>
         </section>
     </AppLayout>
 </template>

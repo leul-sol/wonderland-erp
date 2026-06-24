@@ -4,11 +4,14 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fb\MenuController;
 use App\Http\Controllers\Fb\OrderController as FbOrderController;
+use App\Http\Controllers\Finance\PayableController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
 use App\Http\Controllers\FrontDesk\RoomController;
+use App\Http\Controllers\Inventory\ItemController;
+use App\Http\Controllers\Inventory\PurchaseOrderController;
+use App\Http\Controllers\Inventory\SupplierController;
 use App\Http\Controllers\ModulePlaceholderController;
-use App\Http\Controllers\Procurement\PurchaseOrderController;
 use App\Http\Middleware\EnsurePortalAuthenticated;
 use App\Http\Middleware\RedirectIfPortalAuthenticated;
 use Illuminate\Support\Facades\Route;
@@ -52,18 +55,6 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
             ->name('folios.check-out');
     });
 
-    Route::prefix('procurement')->name('procurement.')->group(function () {
-        Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
-            ->middleware('portal.permission:S3.inventory.purchase_orders.read')
-            ->name('purchase-orders.index');
-        Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
-            ->middleware('portal.permission:S3.inventory.purchase_orders.read')
-            ->name('purchase-orders.show');
-        Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
-            ->middleware('portal.permission:S3.inventory.purchase_orders.approve')
-            ->name('purchase-orders.approve');
-    });
-
     Route::prefix('fb')->name('fb.')->group(function () {
         Route::get('/menu', [MenuController::class, 'index'])
             ->middleware('portal.permission:S3.restaurant.menu.read')
@@ -85,4 +76,47 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
             ->middleware('portal.permission:S3.restaurant.orders.write')
             ->name('orders.finalize');
     });
+
+    Route::prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('/items', [ItemController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.items.read')
+            ->name('items.index');
+        Route::get('/suppliers', [SupplierController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.suppliers.read')
+            ->name('suppliers.index');
+
+        Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.read')
+            ->name('purchase-orders.index');
+        Route::get('/purchase-orders/create', [PurchaseOrderController::class, 'create'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.write')
+            ->name('purchase-orders.create');
+        Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.write')
+            ->name('purchase-orders.store');
+        Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.read')
+            ->name('purchase-orders.show');
+        Route::post('/purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.write')
+            ->name('purchase-orders.submit');
+        Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
+            ->middleware('portal.permission:S3.inventory.purchase_orders.approve')
+            ->name('purchase-orders.approve');
+        Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])
+            ->middleware('portal.permission:S3.inventory.stock.write')
+            ->name('purchase-orders.receive');
+    });
+
+    Route::prefix('finance')->name('finance.')->group(function () {
+        Route::get('/payables', [PayableController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.payables.read')
+            ->name('payables.index');
+        Route::post('/payables/{payable}/settle', [PayableController::class, 'settle'])
+            ->middleware('portal.permission:S4.finance.payables.settle')
+            ->name('payables.settle');
+    });
+
+    Route::redirect('/procurement/purchase-orders', '/inventory/purchase-orders');
+    Route::get('/procurement/purchase-orders/{purchaseOrder}', fn (int $purchaseOrder) => redirect()->route('inventory.purchase-orders.show', $purchaseOrder));
 });
