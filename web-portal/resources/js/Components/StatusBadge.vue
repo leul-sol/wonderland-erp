@@ -26,6 +26,17 @@ const classes = computed(() => {
         received: 'bg-blue-50 text-blue-800 ring-blue-200',
         draft: 'bg-slate-100 text-slate-700 ring-slate-200',
         posted: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        active: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        archived: 'bg-slate-100 text-slate-600 ring-slate-200',
+        pending: 'bg-amber-50 text-amber-900 ring-amber-200',
+        pending_approval: 'bg-orange-50 text-orange-900 ring-orange-200',
+        rejected: 'bg-red-50 text-red-800 ring-red-200',
+        calculated: 'bg-blue-50 text-blue-800 ring-blue-200',
+        paid: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        present: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        absent: 'bg-red-50 text-red-800 ring-red-200',
+        leave: 'bg-purple-50 text-purple-900 ring-purple-200',
+        half_day: 'bg-amber-50 text-amber-900 ring-amber-200',
     };
 
     return map[props.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200';
