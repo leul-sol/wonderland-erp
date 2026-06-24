@@ -106,6 +106,21 @@ function With-IdempotencyKey {
     return $merged
 }
 
+function Approve-AndPostManualJournal {
+    param(
+        [int]$JournalId,
+        [hashtable]$RequestHeaders
+    )
+
+    $approved = Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$JournalId/approve" -RequestHeaders $RequestHeaders
+    if ($approved.data.status -eq "approved") {
+        $approved = Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$JournalId/approve" -RequestHeaders $RequestHeaders
+    }
+    if ($approved.data.status -ne "posted") {
+        Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$JournalId/post" -RequestHeaders $RequestHeaders | Out-Null
+    }
+}
+
 function Wait-GatewayHealth {
     param(
         [string]$Url,
@@ -183,11 +198,38 @@ function Record-Uat {
 Write-Step "Gateway health"
 Wait-GatewayHealth -Url "$BaseS1/health"
 
+function Ensure-ServiceSeeded {
+    param([string]$ServiceName)
+
+    docker compose exec -T $ServiceName php artisan app:ensure-seeded 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ServiceName app:ensure-seeded failed."
+    }
+}
+
+Write-Step "Bootstrap seed data (S1 login, S4 UAT catalog, S2/S3 fixtures)"
+Ensure-ServiceSeeded -ServiceName "s1-identity"
+Ensure-ServiceSeeded -ServiceName "s4-finance-bi"
+Ensure-ServiceSeeded -ServiceName "s3-hospitality"
+Ensure-ServiceSeeded -ServiceName "s2-workforce"
+
+Write-Step "Reset S3 room availability for repeatable E2E"
+docker compose exec -T s3-hospitality php artisan hospitality:reset-rooms 2>&1 | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    throw "s3-hospitality hospitality:reset-rooms failed."
+}
+
 Write-Step "Login (UAT-S1-001)"
-$login = Invoke-RestMethod -Method POST -Uri "$BaseS1/auth/login" -Headers @{ Accept = "application/json" } -ContentType "application/json" -Body (@{
-    username = $Username
-    password = $Password
-} | ConvertTo-Json -Compress)
+try {
+    $login = Invoke-RestMethod -Method POST -Uri "$BaseS1/auth/login" -Headers @{ Accept = "application/json" } -ContentType "application/json" -Body (@{
+        username = $Username
+        password = $Password
+    } | ConvertTo-Json -Compress)
+}
+catch {
+    $hint = "Login failed (401). UAT uses SUPER_ADMIN_PASSWORD from repo root .env; run: docker compose exec s1-identity php artisan app:ensure-seeded"
+    throw "$hint`n$($_.Exception.Message)"
+}
 
 $token = $login.access_token
 if ([string]::IsNullOrWhiteSpace($token)) {
@@ -591,8 +633,7 @@ $manualJournal = Invoke-Api -Method POST -Url "$BaseS4/journal-entries" -Request
     )
 }
 $journalId = $manualJournal.data.id
-Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$journalId/approve" -RequestHeaders $auth | Out-Null
-Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$journalId/post" -RequestHeaders $auth | Out-Null
+Approve-AndPostManualJournal -JournalId $journalId -RequestHeaders $auth
 Record-Uat -ScenarioKey "UAT-S4-002" -Status "passed" -Notes "Manual journal approved and posted." -Token $token
 
 $executiveDashboard = Invoke-Api -Method GET -Url "$BaseS4/dashboards/executive?fiscal_period_id=$periodId" -RequestHeaders $auth
@@ -667,8 +708,11 @@ catch {
 }
 
 $closedPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods/$uatPeriodId/close" -RequestHeaders $auth
+if ($closedPeriod.data.status -eq "closing") {
+    $closedPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods/$uatPeriodId/close" -RequestHeaders $auth
+}
 if ($closedPeriod.data.status -ne "closed") {
-    throw "Fiscal period close failed."
+    throw "Fiscal period close failed (status=$($closedPeriod.data.status))."
 }
 
 $lockedPeriod = Invoke-Api -Method POST -Url "$BaseS4/fiscal-periods/$uatPeriodId/lock" -RequestHeaders $auth
@@ -697,8 +741,7 @@ if ($netIncome -le 0) {
         )
     }
     $revenueBoostId = $revenueBoost.data.id
-    Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$revenueBoostId/approve" -RequestHeaders $auth | Out-Null
-    Invoke-Api -Method POST -Url "$BaseS4/journal-entries/$revenueBoostId/post" -RequestHeaders $auth | Out-Null
+    Approve-AndPostManualJournal -JournalId $revenueBoostId -RequestHeaders $auth
     $income = Invoke-Api -Method GET -Url "$BaseS4/reports/income-statement?fiscal_period_id=$periodId" -RequestHeaders $auth
     $netIncome = [decimal]$income.data.net_income
 }

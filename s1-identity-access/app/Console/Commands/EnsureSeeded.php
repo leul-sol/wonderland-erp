@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use Database\Seeders\CatalogPermissionsSeeder;
+use Database\Seeders\SuperAdminSeeder;
 use Illuminate\Console\Command;
 
 class EnsureSeeded extends Command
@@ -19,7 +20,8 @@ class EnsureSeeded extends Command
         $this->call(CatalogPermissionsSeeder::class);
 
         if (User::query()->where('username', 'super.admin')->exists()) {
-            $this->comment('Admin user already present — skipping seed.');
+            $this->call(SuperAdminSeeder::class);
+            $this->comment('Admin user present — synced password from SUPER_ADMIN_PASSWORD.');
 
             return self::SUCCESS;
         }

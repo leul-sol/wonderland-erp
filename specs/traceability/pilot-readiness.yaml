@@ -1,0 +1,104 @@
+# Pilot readiness — NOT production. Gate before calling anything "live".
+# Status: done | partial | missing
+# Owner: who must sign off (dev | ops | hotel)
+
+policy:
+  production_label: forbidden_until_all_critical_done
+  ui_build: forbidden_until_uat_green_and_traceability_review
+
+backup:
+  - id: BR-001
+    item: MySQL automated backup (wh_s1–s4_db)
+    status: missing
+    owner: ops
+    notes: "Document mysqldump schedule or managed DB snapshots; test restore quarterly"
+  - id: BR-002
+    item: Redis / event bus persistence policy
+    status: missing
+    owner: ops
+    notes: "Bus is ephemeral; document acceptable message loss window"
+  - id: BR-003
+    item: Restore drill documented and tested
+    status: missing
+    owner: ops
+
+monitoring:
+  - id: MON-001
+    item: Health checks on all services (/health)
+    status: done
+    owner: dev
+    evidence: "docker-compose healthcheck, gateway /s{n}/api/v1/health"
+  - id: MON-002
+    item: Worker process monitoring (s1–s4 workers)
+    status: partial
+    owner: ops
+    notes: "Workers run in compose; no alert if consumer/outbox stops"
+  - id: MON-003
+    item: Centralized logs (request_id correlation)
+    status: partial
+    owner: ops
+    evidence: "X-Request-Id in gateway; no log aggregation stack"
+  - id: MON-004
+    item: Failed outbox / failed job alerting
+    status: missing
+    owner: ops
+    notes: "event_outbox.status=failed should page super_admin"
+  - id: MON-005
+    item: Disk / DB connection / latency SLOs
+    status: missing
+    owner: ops
+
+support:
+  - id: SUP-001
+    item: Runbook — start, stop, seed, reset UAT
+    status: partial
+    owner: dev
+    evidence: "scripts/start.ps1, reset-uat.ps1, run-uat-e2e.ps1"
+  - id: SUP-002
+    item: Runbook — incident response (service down)
+    status: missing
+    owner: ops
+  - id: SUP-003
+    item: Role → contact matrix (who fixes HR vs finance)
+    status: missing
+    owner: hotel
+  - id: SUP-004
+    item: Escalation for failed UAT / fiscal period close
+    status: missing
+    owner: hotel
+  - id: SUP-005
+    item: Secrets rotation procedure
+    status: partial
+    owner: ops
+    evidence: ".env.example documents rotation; no runbook"
+
+security:
+  - id: SEC-001
+    item: Non-default secrets in shared environments
+    status: missing
+    owner: ops
+    notes: "Required before any shared host"
+  - id: SEC-002
+    item: TLS termination at gateway
+    status: missing
+    owner: ops
+    notes: "Local dev uses HTTP only"
+  - id: SEC-003
+    item: DB encryption at rest (S4 §10.2)
+    status: missing
+    owner: ops
+
+gates:
+  uat:
+    script: scripts/run-uat-e2e.ps1
+    required_pass_rate: 100
+    scenarios: 24
+  tests:
+    - { service: s1-identity, command: "php artisan test" }
+    - { service: s2-workforce, command: "php artisan test" }
+    - { service: s3-hospitality, command: "php artisan test" }
+    - { service: s4-finance-bi, command: "php artisan test" }
+  traceability:
+    matrix: specs/traceability/matrix.yaml
+    block_on_critical_missing: true
+    block_on_high_missing: false

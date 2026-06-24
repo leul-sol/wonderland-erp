@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Services\Payroll\TaxCalculatorService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS2Auth;
 use Tests\Concerns\SeedsPayrollAttendance;
 use Tests\TestCase;
@@ -14,6 +15,17 @@ class PayrollLifecycleTest extends TestCase
     use MocksS2Auth;
     use RefreshDatabase;
     use SeedsPayrollAttendance;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.internal_key_current' => 'test-service-key']);
+
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 42, 'entry_number' => 'JE-00010']], 201),
+        ]);
+    }
 
     public function test_payroll_submit_approve_lock_lifecycle(): void
     {

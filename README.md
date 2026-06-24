@@ -15,7 +15,7 @@ Design source: [`documents/`](documents/) (S0–S4 SDDs, v1.0). Executable contr
 
 All four systems are implemented and wired through the gateway:
 
-- **S1** — JWT auth, RBAC (79 permissions), users/roles, audit, cross-system permission sync
+- **S1** — JWT auth, RBAC (112 permissions), users/roles, audit, cross-system permission sync
 - **S2** — employees, payroll (with deductions), leave, attendance, severance, outbox events
 - **S3** — reservations, folios, F&B, procurement, group bookings, staff consumption → S2 deductions
 - **S4** — GL, fiscal periods, budgets, 24-report BI catalog, dashboards, RTM/UAT tracking, event consumers
@@ -49,7 +49,15 @@ After the stack is up and seeded:
 .\scripts\run-uat-e2e.ps1
 ```
 
-The script exercises **17 UAT scenarios** (hotel golden path, group bookings, employee consumption, payroll, severance, finance reports, fiscal period close/lock) and records results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat`.
+The script exercises **24 UAT scenarios** (hotel golden path, group bookings, employee consumption, payroll, severance, finance reports, fiscal period close/lock) and records results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat`.
+
+**Pilot gate** (tests + traceability + UAT — not production):
+
+```powershell
+.\scripts\pilot-gate.ps1
+```
+
+See [`specs/traceability/`](specs/traceability/) before building UI or calling the system production-ready.
 
 To reset UAT statuses and room availability before another run:
 

@@ -10,6 +10,20 @@ Machine-readable contracts extracted from the S0–S4 SDDs. **PDFs in `documents
 | [`platform/error-codes.yaml`](platform/error-codes.yaml) | D7 standard error codes |
 | [`s1/permissions.yaml`](s1/permissions.yaml) | S1 permission catalog (seed into S1) |
 
+## Traceability & pilot gate
+
+Before UI work or a "production" label:
+
+| File | Purpose |
+|------|---------|
+| [`traceability/matrix.yaml`](traceability/matrix.yaml) | SDD section → implementation status (no new features until critical gaps reviewed) |
+| [`traceability/pilot-readiness.yaml`](traceability/pilot-readiness.yaml) | Backup, monitoring, support checklist (ops — not code) |
+| [`../scripts/pilot-gate.ps1`](../scripts/pilot-gate.ps1) | Runs tests + UAT + blocks on critical SDD `missing` |
+
+```powershell
+.\scripts\pilot-gate.ps1   # MVP pilot gate — NOT production sign-off
+```
+
 ## Rules
 
 1. Change cross-system behavior in **S0 narrative + these YAML files** in the same PR.

@@ -1,0 +1,88 @@
+# SDD traceability matrix — section-level coverage vs documents/*.pdf
+# Status: implemented | partial | missing | deferred | ops_pending
+# Priority: critical | high | medium | low
+# Do NOT add features until critical/high "missing" items are reviewed and accepted.
+
+meta:
+  version: "1.0"
+  date: "2026-06-24"
+  sources:
+    - documents/S0_Cross_System_Integration_and_Platform.pdf
+    - documents/S1_Identity_Access_Platform_SDD.pdf
+    - documents/S2_Workforce_Payroll_SDD.pdf
+    - documents/S3_Hospitality_Operations_SDD.pdf
+    - documents/S4_Finance_BI_SDD.pdf
+  ui_policy: deferred_until_uat_green_and_critical_implemented
+
+requirements:
+  # --- S0 Platform ---
+  - { key: S0-GW-001, system: S0, section: "§3", title: Gateway routing /s{n}/api/v1, status: implemented, priority: critical, evidence: "gateway/nginx.conf, docker-compose.yml" }
+  - { key: S0-AUTH-001, system: S0, section: "§4.1", title: JWT issue (S1) and verify (S2–S4), status: implemented, priority: critical, evidence: "S1 auth routes; S* JwtAuthenticate middleware" }
+  - { key: S0-AUTH-002, system: S0, section: "§4.3", title: Service-to-service X-Service-Key, status: implemented, priority: critical, evidence: "specs/platform/cross-system-calls.yaml" }
+  - { key: S0-EVT-001, system: S0, section: "§5.2", title: Cross-system event catalog, status: implemented, priority: high, evidence: "specs/platform/events.yaml" }
+  - { key: S0-HTTP-001, system: S0, section: "§5.3", title: Cross-system sync HTTP catalog, status: implemented, priority: critical, evidence: "specs/platform/cross-system-calls.yaml" }
+  - { key: S0-RBAC-001, system: S0, section: "§7", title: 12 roles + S4.{domain} permission convention, status: implemented, priority: high, evidence: "specs/platform/roles.yaml; 112 permissions seeded" }
+  - { key: S0-GL-001, system: S0, section: "§8", title: Financial posting map S2/S3 → S4, status: partial, priority: critical, evidence: "Payroll/folio/PO journals work; AP timing note (goods receipt vs PO approve) in specs/README errata" }
+  - { key: S0-DEPLOY-001, system: S0, section: "§10", title: Deployment topology (Docker), status: implemented, priority: high, evidence: "docker-compose.yml, scripts/start.ps1" }
+  - { key: S0-NFR-001, system: S0, section: "§9 D1–D14", title: Platform conventions (pagination, errors, idempotency), status: partial, priority: high, evidence: "D7 errors, D5 idempotency on journals; JWKS rotation not implemented" }
+
+  # --- S1 Identity ---
+  - { key: S1-AUTH-001, system: S1, section: "§4", title: Login, refresh, logout, status: implemented, priority: critical, evidence: "AuthTest, UAT-S1-001" }
+  - { key: S1-AUTH-002, system: S1, section: "§5.2", title: POST /auth/verify for S2–S4, status: implemented, priority: critical, evidence: "PlatformContractTest" }
+  - { key: S1-RBAC-001, system: S1, section: "§6", title: Global permissions + role assignment, status: implemented, priority: critical, evidence: "PermissionCatalogTest; specs/s1–s4 permissions.yaml" }
+  - { key: S1-USER-001, system: S1, section: "§7", title: Account lifecycle (provision from S2), status: implemented, priority: high, evidence: "events:consume-s2, UAT-S2-006" }
+  - { key: S1-EVT-001, system: S1, section: "§8", title: Consume S2 employee events, status: implemented, priority: high, evidence: "s1-workers, ProvisionEmployeeFromS2" }
+  - { key: S1-AUDIT-001, system: S1, section: "§9", title: Audit logging API, status: partial, priority: medium, evidence: "GET /audit-logs exists; full compliance retention policy not verified" }
+  - { key: S1-SEC-001, system: S1, section: "§5.4", title: Password policy & lockout, status: partial, priority: high, evidence: "must_change_password on seed; full lockout thresholds not tested" }
+  - { key: S1-NFR-001, system: S1, section: "§11", title: NFR performance/security testing, status: ops_pending, priority: medium, evidence: "Feature tests only; no load test harness" }
+
+  # --- S2 Workforce ---
+  - { key: S2-HR-001, system: S2, section: "§4.1", title: Employee CRUD, status: implemented, priority: critical, evidence: "HrWorkflowTest" }
+  - { key: S2-HR-002, system: S2, section: "§9", title: Disciplinary / assets / guarantors / offboarding, status: partial, priority: medium, evidence: "Data model may exist; not in UAT golden path" }
+  - { key: S2-PAY-001, system: S2, section: "§5.1–5.3", title: Payroll run lifecycle + ERCA deductions, status: implemented, priority: critical, evidence: "PayrollFlowTest, UAT-S2-001" }
+  - { key: S2-PAY-002, system: S2, section: "§5.4", title: Overtime pay, status: partial, priority: medium, evidence: "Attendance exists; overtime calc not in UAT" }
+  - { key: S2-PAY-003, system: S2, section: "§5.5", title: Pension contributions, status: implemented, priority: high, evidence: "Payroll journals to S4 pension accounts" }
+  - { key: S2-SEV-001, system: S2, section: "§5.6", title: Severance calculation, status: implemented, priority: high, evidence: "SeveranceFlowTest, UAT-S2-004" }
+  - { key: S2-SEV-002, system: S2, section: "§5.6", title: Severance payout, status: implemented, priority: high, evidence: "UAT-S2-005" }
+  - { key: S2-LEAVE-001, system: S2, section: "§5.7", title: Leave accrual & approval, status: implemented, priority: high, evidence: "LeaveFlowTest, UAT-S2-002" }
+  - { key: S2-ATT-001, system: S2, section: "§5.8", title: Attendance records, status: implemented, priority: high, evidence: "AttendanceFlowTest, UAT-S2-003" }
+  - { key: S2-DED-001, system: S2, section: "§8.3", title: Staff meal deductions from S3, status: implemented, priority: high, evidence: "DeductionFlowTest, UAT-S3-004" }
+  - { key: S2-EVT-001, system: S2, section: "§8.1", title: Outbox events to bus, status: implemented, priority: high, evidence: "s2-workers outbox:publish" }
+  - { key: S2-NFR-001, system: S2, section: "§11", title: NFR testing, status: ops_pending, priority: medium, evidence: "Feature tests only" }
+
+  # --- S3 Hospitality ---
+  - { key: S3-INV-001, system: S3, section: "§4.1", title: Item categories, suppliers, stock, status: implemented, priority: high, evidence: "SddAlignmentTest" }
+  - { key: S3-INV-002, system: S3, section: "§5.2", title: FIFO/FEFO stock rotation, status: implemented, priority: high, evidence: "FifoFefoService, stock movements" }
+  - { key: S3-PO-001, system: S3, section: "§5.3", title: PO tiered approval, status: implemented, priority: critical, evidence: "PurchaseOrderApprovalFlowTest, UAT-S3-006" }
+  - { key: S3-PO-002, system: S3, section: "§9.1", title: Goods receipt workflow, status: implemented, priority: critical, evidence: "GoodsReceiptService" }
+  - { key: S3-PO-003, system: S3, section: "§9.2", title: Supplier payment + GL, status: partial, priority: high, evidence: "supplier payments route; full GL modes not UAT-covered" }
+  - { key: S3-FB-001, system: S3, section: "§4.2", title: Menu, orders, bills, finalize, status: implemented, priority: critical, evidence: "FbInventoryFlowTest, UAT-S3-003" }
+  - { key: S3-FB-002, system: S3, section: "§5.4", title: Service charge + VAT, status: implemented, priority: high, evidence: "TaxBreakdownFlowTest, UAT-S3-007" }
+  - { key: S3-FB-003, system: S3, section: "§5.5", title: Customer types & billing routing, status: partial, priority: medium, evidence: "Guest folio path covered; event F&B billing not UAT-covered" }
+  - { key: S3-CON-001, system: S3, section: "§5.8", title: Employee consumption → S2 deduction, status: implemented, priority: high, evidence: "ConsumptionFlowTest, UAT-S3-004" }
+  - { key: S3-HTL-001, system: S3, section: "§4.3", title: Reservations check-in/out, status: implemented, priority: critical, evidence: "HospitalityFlowTest, UAT-S3-001/002" }
+  - { key: S3-FOL-001, system: S3, section: "§5.6–5.7", title: Folio charges, settle, partial pay, status: implemented, priority: critical, evidence: "Folio routes; UAT hotel golden path" }
+  - { key: S3-GRP-001, system: S3, section: "§4.3", title: Group bookings bulk in/out, status: implemented, priority: high, evidence: "GroupBookingFlowTest, UAT-S3-005" }
+  - { key: S3-HTL-002, system: S3, section: "§9.3", title: Mandatory folio invoice fields, status: partial, priority: medium, evidence: "GET folio invoice; 13-field PDF spec not verified" }
+  - { key: S3-CSH-001, system: S3, section: "§9.4", title: Cashier shift reconciliation, status: implemented, priority: medium, evidence: "CashierShiftController routes" }
+  - { key: S3-JOB-001, system: S3, section: "§8", title: Scheduled jobs (expiry, consumption push), status: implemented, priority: medium, evidence: "routes/console.php, s3-workers" }
+  - { key: S3-NFR-001, system: S3, section: "§11", title: NFR testing, status: ops_pending, priority: medium, evidence: "30 feature tests; no load test" }
+
+  # --- S4 Finance & BI ---
+  - { key: S4-GL-001, system: S4, section: "§5.1–5.2", title: Journal post + balance + period guard, status: implemented, priority: critical, evidence: "JournalTest" }
+  - { key: S4-GL-002, system: S4, section: "§5.4", title: Manual journal tiered approval + draft delete, status: implemented, priority: high, evidence: "Phase2Test" }
+  - { key: S4-GL-003, system: S4, section: "§5.5", title: Journal reversal, status: implemented, priority: high, evidence: "JournalController reverse" }
+  - { key: S4-AR-001, system: S4, section: "§5.6", title: AR subledger + settle + write-off, status: implemented, priority: high, evidence: "Phase2Test receivable tests" }
+  - { key: S4-AP-001, system: S4, section: "§5.6", title: AP subledger + settle, status: implemented, priority: high, evidence: "UAT-S4-009" }
+  - { key: S4-FP-001, system: S4, section: "§5.7", title: Two-step fiscal close + period balances, status: implemented, priority: critical, evidence: "Phase2Test fiscal close" }
+  - { key: S4-RPT-001, system: S4, section: "§9.3", title: Trial balance, P&L, balance sheet, status: implemented, priority: critical, evidence: "Phase3Test, UAT-S4-001" }
+  - { key: S4-RPT-002, system: S4, section: "§4.1", title: Departmental revenue report, status: implemented, priority: medium, evidence: "Phase8Test" }
+  - { key: S4-BI-001, system: S4, section: "§4.2", title: Five PDF dashboards, status: implemented, priority: high, evidence: "/dashboard/* routes, Phase8Test" }
+  - { key: S4-BI-002, system: S4, section: "§9.2", title: 24+ operational reports catalog, status: partial, priority: high, evidence: "24 slugs runnable; not every PDF column spec verified" }
+  - { key: S4-BI-003, system: S4, section: "§5.9", title: PDF + Excel export, status: implemented, priority: medium, evidence: "Phase4/6/8 export tests" }
+  - { key: S4-EVT-001, system: S4, section: "§8.1", title: S4 outbox journal.posted + period.closed, status: implemented, priority: high, evidence: "OutboxService, Phase7Test" }
+  - { key: S4-COA-001, system: S4, section: "§9.1", title: Chart of accounts seed, status: partial, priority: medium, evidence: "AccountSeeder matches coa.yaml; not YAML-loaded at runtime" }
+  - { key: S4-NFR-001, system: S4, section: "§11", title: NFR performance/observability, status: ops_pending, priority: medium, evidence: "Health endpoint only; no APM" }
+
+  # --- UI (explicitly deferred) ---
+  - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: deferred, priority: high, evidence: "API-only MVP; defer until matrix critical/high gaps closed + UAT green" }
