@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
@@ -72,6 +72,13 @@ function checkOut() {
         >
             <template #actions>
                 <StatusBadge :status="folio.status" />
+                <Link
+                    v-if="folio.status === 'open'"
+                    :href="`/fb/orders/create?folio_id=${folio.id}`"
+                    class="wh-btn-secondary text-xs"
+                >
+                    Post F&B
+                </Link>
             </template>
         </PageHeader>
 

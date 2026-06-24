@@ -134,6 +134,32 @@ if ($checkIn.Status -ne 302 -or $checkIn.Location -notmatch "/folios/(\d+)") {
 $folioId = [int]$Matches[1]
 Write-Host "  Folio #$folioId"
 
+Write-Step "Post F&B order to folio (Phase 2)"
+$menu = Invoke-RestMethod -Uri "$ApiS3/menu-items" -Headers $apiHeaders
+$burger = $menu.data | Where-Object { $_.code -eq "BURGER-CL" } | Select-Object -First 1
+if ($null -eq $burger) {
+    throw "Menu item BURGER-CL not found for portal F&B smoke."
+}
+$openOrder = Invoke-PortalPost -BaseUrl $PortalUrl -CookieJar $cookieJar -Path "/fb/orders" -Fields @{
+    folio_id = $folioId
+}
+if ($openOrder.Status -ne 302 -or $openOrder.Location -notmatch "/orders/(\d+)") {
+    throw "F&B order create failed (HTTP $($openOrder.Status))."
+}
+$orderId = [int]$Matches[1]
+$addLine = Invoke-PortalPost -BaseUrl $PortalUrl -CookieJar $cookieJar -Path "/fb/orders/$orderId/lines" -Fields @{
+    menu_item_id = $burger.id
+    quantity     = 2
+}
+if ($addLine.Status -notin @(302, 303)) {
+    throw "F&B add line failed (HTTP $($addLine.Status))."
+}
+$finalize = Invoke-PortalPost -BaseUrl $PortalUrl -CookieJar $cookieJar -Path "/fb/orders/$orderId/finalize" -Fields @{}
+if ($finalize.Status -ne 302) {
+    throw "F&B finalize failed (HTTP $($finalize.Status))."
+}
+Write-Host "  Order #$orderId finalized on folio #$folioId"
+
 Write-Step "Post incidental charge"
 $charge = Invoke-PortalPost -BaseUrl $PortalUrl -CookieJar $cookieJar -Path "/front-desk/folios/$folioId/charges" -Fields @{
     description      = "Minibar snack"

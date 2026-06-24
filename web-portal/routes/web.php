@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Fb\MenuController;
+use App\Http\Controllers\Fb\OrderController as FbOrderController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
 use App\Http\Controllers\FrontDesk\RoomController;
@@ -60,5 +62,27 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
             ->middleware('portal.permission:S3.inventory.purchase_orders.approve')
             ->name('purchase-orders.approve');
+    });
+
+    Route::prefix('fb')->name('fb.')->group(function () {
+        Route::get('/menu', [MenuController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('menu.index');
+
+        Route::get('/orders/create', [FbOrderController::class, 'create'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.create');
+        Route::post('/orders', [FbOrderController::class, 'store'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.store');
+        Route::get('/orders/{order}', [FbOrderController::class, 'show'])
+            ->middleware('portal.permission:S3.restaurant.orders.read,S3.restaurant.orders.write')
+            ->name('orders.show');
+        Route::post('/orders/{order}/lines', [FbOrderController::class, 'addLine'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.line');
+        Route::post('/orders/{order}/finalize', [FbOrderController::class, 'finalize'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.finalize');
     });
 });

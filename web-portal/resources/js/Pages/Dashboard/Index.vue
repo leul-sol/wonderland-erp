@@ -16,7 +16,7 @@ defineProps({
 <template>
     <AppLayout title="Dashboard">
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p class="text-sm font-medium uppercase tracking-wide text-teal-700">Phase 1 · Front desk</p>
+            <p class="text-sm font-medium uppercase tracking-wide text-teal-700">Phase 2 · F&B on folio</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-900">Welcome back</h2>
             <p class="mt-3 max-w-2xl text-slate-600">{{ welcome }}</p>
 
@@ -39,8 +39,8 @@ defineProps({
                     <p class="mt-1 text-sm text-slate-600">Use Quick tasks: check in → post charges → settle → check out.</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-semibold text-slate-900">Shared components</p>
-                    <p class="mt-1 text-sm text-slate-600">DataTable, MoneyField, StatusBadge, and ApprovalStepper are live.</p>
+                    <p class="text-sm font-semibold text-slate-900">Restaurant</p>
+                    <p class="mt-1 text-sm text-slate-600">Post F&B to folio: menu → order lines → finalize with SC/VAT.</p>
                 </div>
             </div>
         </div>

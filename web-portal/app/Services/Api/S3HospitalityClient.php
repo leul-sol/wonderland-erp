@@ -136,4 +136,46 @@ class S3HospitalityClient extends GatewayClient
     {
         return $this->json('POST', "/s3/api/v1/purchase-orders/{$id}/submit");
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function menuItems(): array
+    {
+        return $this->json('GET', '/s3/api/v1/menu-items', ['active_only' => true]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createOrder(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/orders', $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function order(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/orders/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function addOrderLine(int $orderId, array $payload): array
+    {
+        return $this->json('POST', "/s3/api/v1/orders/{$orderId}/lines", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function finalizeOrder(int $orderId): array
+    {
+        return $this->json('POST', "/s3/api/v1/orders/{$orderId}/finalize");
+    }
 }

@@ -27,8 +27,7 @@ return [
         [
             'key' => 'fb',
             'label' => 'Restaurant and F&B',
-            'route' => 'modules.placeholder',
-            'route_params' => ['module' => 'fb'],
+            'route' => 'fb.menu.index',
             'permissions' => ['S3.restaurant.orders.read', 'S3.restaurant.menu.read'],
             'phase' => 2,
         ],
@@ -104,6 +103,20 @@ return [
             'route' => 'procurement.purchase-orders.index',
             'module' => 'inventory',
             'permissions' => ['S3.inventory.purchase_orders.approve'],
+        ],
+        [
+            'key' => 'post_fb_to_folio',
+            'label' => 'Post F&B to folio',
+            'route' => 'fb.orders.create',
+            'module' => 'fb',
+            'permissions' => ['S3.restaurant.orders.write'],
+        ],
+        [
+            'key' => 'view_menu',
+            'label' => 'View menu',
+            'route' => 'fb.menu.index',
+            'module' => 'fb',
+            'permissions' => ['S3.restaurant.menu.read'],
         ],
     ],
 ];
