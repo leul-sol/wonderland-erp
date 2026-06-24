@@ -18,6 +18,9 @@ Before UI work or a "production" label:
 |------|---------|
 | [`traceability/matrix.yaml`](traceability/matrix.yaml) | SDD section → implementation status (no new features until critical gaps reviewed) |
 | [`traceability/pilot-readiness.yaml`](traceability/pilot-readiness.yaml) | Backup, monitoring, support checklist (ops — not code) |
+| [`ui/README.md`](ui/README.md) | Web portal plan (Inertia + Vue BFF) — screens, phases, security |
+| [`ui/modules.yaml`](ui/modules.yaml) | Portal routes, permissions, API mapping per screen |
+| [`ui/phases.yaml`](ui/phases.yaml) | Delivery phases aligned to UAT scenarios |
 | [`../scripts/pilot-gate.ps1`](../scripts/pilot-gate.ps1) | Runs tests + UAT + blocks on critical SDD `missing` |
 
 ```powershell

@@ -22,6 +22,8 @@ All four systems are implemented and wired through the gateway:
 
 External API base: `http://localhost/s{n}/api/v1/...`
 
+Staff portal (Inertia + Vue BFF): `http://localhost/` — see [`web-portal/README.md`](web-portal/README.md) and [`specs/ui/`](specs/ui/).
+
 ## Quick start
 
 ```powershell
@@ -95,5 +97,6 @@ Postman collections: [`postman/`](postman/).
 | Doc | Purpose |
 |-----|---------|
 | [`specs/README.md`](specs/README.md) | Cross-system contracts — read before API changes |
+| [`specs/ui/README.md`](specs/ui/README.md) | Web portal UI plan (Inertia + Vue BFF) |
 | S0 | Platform integration |
 | S1–S4 | Per-system build specifications |

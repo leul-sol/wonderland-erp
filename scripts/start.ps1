@@ -24,6 +24,11 @@ if (-not (Test-Path "s2-workforce-payroll\.env")) {
     Write-Host "Created s2-workforce-payroll/.env from .env.example"
 }
 
+if (-not (Test-Path "web-portal\.env")) {
+    Copy-Item "web-portal/.env.example" "web-portal/.env"
+    Write-Host "Created web-portal/.env from .env.example"
+}
+
 if (-not (Test-Path ".env.example")) {
     Write-Warning "Missing root .env.example - secrets template not found."
 }
@@ -232,6 +237,9 @@ Write-Host ""
 Write-Host "Login (Postman Auth -> Login):"
 Write-Host "  username: super.admin"
 Write-Host "  password: SUPER_ADMIN_PASSWORD from root .env (not the Postman default unless you have no root .env)"
+Write-Host ""
+Write-Host "Staff web portal (Phase 0):"
+Write-Host "  http://localhost/"
 Write-Host ""
 Write-Host "If you changed DB_PASSWORD or MYSQL_ROOT_PASSWORD, reset MySQL once:"
 Write-Host "  docker compose down -v"

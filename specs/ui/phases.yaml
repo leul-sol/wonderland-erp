@@ -1,0 +1,129 @@
+# Web portal delivery phases — ordered by hotel value
+# Each phase ends with demo + UAT scenarios reproducible in UI (not Postman).
+
+meta:
+  stack: "Laravel 11 + Inertia + Vue 3 + Tailwind"
+  app_path: web-portal
+  portal_url: http://localhost/
+  api_base: http://localhost/s{n}/api/v1
+
+phase_0_foundation:
+  name: Foundation
+  duration_estimate: "1–2 weeks"
+  deliverables:
+    - web-portal Laravel app with Inertia + Vue + Tailwind
+    - Docker service web-portal:9000 + nginx route /
+    - GatewayClient + S1AuthClient
+    - Login, logout, session refresh
+    - AppLayout with permission-based sidebar
+    - Error handling (API error → toast)
+    - GuestLayout + Login page
+  exit_criteria:
+    - super.admin can log in and see modules for role
+    - receptionist role sees Front desk only (test user seeded in Phase 1)
+    - Direct browser call to /s3/api/v1/rooms without session still requires JWT (unchanged)
+  updates:
+    - specs/traceability/matrix.yaml UI-ALL-001 → partial
+
+phase_1_front_desk:
+  name: Front desk MVP
+  duration_estimate: "2–3 weeks"
+  uat_scenarios: [UAT-S3-001, UAT-S3-002]
+  deliverables:
+    - Rooms list (available / occupied filters)
+    - Create reservation
+    - Check-in (assign room)
+    - Folio view (charges, balance, SC/VAT breakdown)
+    - Post incidental charge
+    - Settle folio (payment method)
+    - Check-out
+  exit_criteria:
+    - Complete guest stay without Postman
+    - pilot-gate.ps1 still green (API unchanged)
+  test_roles: [receptionist, super_admin]
+
+phase_2_fb:
+  name: F&B on folio
+  duration_estimate: "1–2 weeks"
+  uat_scenarios: [UAT-S3-003, UAT-S3-007]
+  deliverables:
+    - Menu items list
+    - Create order on folio, add lines, finalize
+    - Display tax breakdown on folio lines
+  test_roles: [restaurant_manager, cashier, receptionist]
+
+phase_3_inventory_po:
+  name: Inventory and procurement
+  duration_estimate: "2 weeks"
+  uat_scenarios: [UAT-S3-006, UAT-S4-009]
+  deliverables:
+    - Suppliers, inventory items (read)
+    - Create PO, submit
+    - Approval wizard (tier steps by role)
+    - Goods receive
+    - Open payables list + settle (finance role)
+  test_roles: [department_head, finance_manager, inventory_manager, super_admin]
+
+phase_4_consumption:
+  name: Employee meal consumption
+  duration_estimate: "1 week"
+  uat_scenarios: [UAT-S3-004]
+  deliverables:
+    - Consumption period open/close
+    - Employee meal orders (no folio)
+  test_roles: [restaurant_manager, hr_manager]
+
+phase_5_group:
+  name: Group bookings
+  duration_estimate: "1–2 weeks"
+  uat_scenarios: [UAT-S3-005]
+  deliverables:
+    - Create group booking with rooming list
+    - Bulk check-in assignments
+    - Per-folio settle + group check-out
+  test_roles: [receptionist, super_admin]
+
+phase_6_hr_payroll:
+  name: HR and payroll
+  duration_estimate: "3 weeks"
+  uat_scenarios: [UAT-S2-001, UAT-S2-002, UAT-S2-003, UAT-S2-004, UAT-S2-005, UAT-S2-006]
+  deliverables:
+    - Employees CRUD (HR)
+    - Leave request + approve
+    - Attendance record/list
+    - Payroll run create → submit → approve
+    - Severance calculate + payout
+    - Show S1 user link after employee create (read-only)
+  test_roles: [hr_manager, payroll_officer, department_head]
+
+phase_7_finance_bi:
+  name: Finance and BI
+  duration_estimate: "3–4 weeks"
+  uat_scenarios: [UAT-S4-001, UAT-S4-002, UAT-S4-003, UAT-S4-004, UAT-S4-005, UAT-S4-006, UAT-S4-007, UAT-S4-008, UAT-S4-009, UAT-E2E-001]
+  deliverables:
+    - Trial balance, income statement, balance sheet (read)
+    - Manual journal draft → approve → post (two-step GM if large)
+    - Fiscal period two-step close + lock
+    - Receivables settle / write-off
+    - Dashboard pages (executive, operations) — embed KPI JSON first
+    - Report export buttons (CSV/PDF/Excel via proxy)
+    - Budget variance (read)
+  test_roles: [accountant, finance_manager, general_manager, report_viewer]
+
+phase_8_admin:
+  name: Platform admin
+  duration_estimate: "1–2 weeks"
+  deliverables:
+    - Users list/create/deactivate
+    - Roles and permission assignment
+    - Audit log viewer (paginated)
+  test_roles: [super_admin]
+  exit_criteria:
+    - specs/traceability/matrix.yaml UI-ALL-001 → implemented
+
+pilot_ui_mvp:
+  phases: [phase_0_foundation, phase_1_front_desk]
+  goal: "Reception runs check-in through check-out in browser"
+
+full_staff_ui:
+  phases: [phase_0_foundation, phase_1_front_desk, phase_2_fb, phase_3_inventory_po, phase_4_consumption, phase_5_group, phase_6_hr_payroll, phase_7_finance_bi, phase_8_admin]

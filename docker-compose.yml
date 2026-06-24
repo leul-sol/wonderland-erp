@@ -14,6 +14,8 @@ services:
         condition: service_healthy
       s2-workforce:
         condition: service_healthy
+      web-portal:
+        condition: service_healthy
     networks:
       - wh-internal
 
@@ -356,6 +358,38 @@ services:
         condition: service_healthy
     networks:
       - wh-internal
+
+  web-portal:
+    build:
+      context: ./web-portal
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: "Wonderland ERP Portal"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost
+      DB_CONNECTION: sqlite
+      SESSION_DRIVER: redis
+      SESSION_ENCRYPT: "true"
+      CACHE_STORE: redis
+      REDIS_HOST: wh-redis
+      REDIS_PORT: 6379
+      GATEWAY_INTERNAL_URL: http://wh-gateway
+    volumes:
+      - ./web-portal:/var/www/html
+    depends_on:
+      wh-redis:
+        condition: service_started
+      s1-identity:
+        condition: service_healthy
+    networks:
+      - wh-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/up"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
 
 networks:
   wh-internal:

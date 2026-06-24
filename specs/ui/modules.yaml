@@ -1,0 +1,319 @@
+# Web portal modules — screens, Inertia routes, permissions, API mapping
+# Permission slugs must match seeded S1 catalog (S{n}.{domain}.{resource}.{action}).
+
+modules:
+  dashboard:
+    label: Dashboard
+    icon: chart-bar
+    min_permissions_any:
+      - S4.bi.dashboards.read
+      - S4.bi.reports.read
+    screens:
+      - key: dashboard.home
+        route: GET /dashboard
+        inertia: Dashboard/Index
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboards/executive?fiscal_period_id=current
+          - GET /s4/api/v1/dashboards/operations?fiscal_period_id=current
+
+  front_desk:
+    label: Front desk
+    icon: building
+    min_permissions_any:
+      - S3.hotel.rooms.read
+      - S3.hotel.reservations.read
+      - S3.hotel.folios.read
+    screens:
+      - key: front_desk.rooms
+        route: GET /front-desk/rooms
+        inertia: FrontDesk/Rooms/Index
+        permission: S3.hotel.rooms.read
+        api:
+          - GET /s3/api/v1/rooms
+      - key: front_desk.reservations_create
+        route: GET /front-desk/reservations/create
+        inertia: FrontDesk/Reservations/Create
+        permission: S3.hotel.reservations.create
+        api:
+          - POST /s3/api/v1/reservations
+      - key: front_desk.check_in
+        route: GET /front-desk/reservations/{id}/check-in
+        inertia: FrontDesk/CheckIn/Show
+        permission: S3.hotel.reservations.check_in
+        api:
+          - GET /s3/api/v1/reservations/{id}
+          - GET /s3/api/v1/rooms?status=available
+          - POST /s3/api/v1/reservations/{id}/check-in
+      - key: front_desk.folio
+        route: GET /front-desk/folios/{id}
+        inertia: FrontDesk/Folios/Show
+        permission: S3.hotel.folios.read
+        api:
+          - GET /s3/api/v1/folios/{id}
+          - POST /s3/api/v1/folios/{id}/charges
+          - POST /s3/api/v1/folios/{id}/settle
+        uat: [UAT-S3-001, UAT-S3-002, UAT-S3-007]
+      - key: front_desk.check_out
+        route: POST /front-desk/reservations/{id}/check-out
+        inertia: null
+        permission: S3.hotel.reservations.check_out
+        api:
+          - POST /s3/api/v1/reservations/{id}/check-out
+
+  fb:
+    label: Restaurant and F&B
+    icon: utensils
+    min_permissions_any:
+      - S3.restaurant.orders.read
+      - S3.restaurant.menu.read
+    screens:
+      - key: fb.menu
+        route: GET /fb/menu
+        inertia: Fb/Menu/Index
+        permission: S3.restaurant.menu.read
+        api:
+          - GET /s3/api/v1/menu-items
+      - key: fb.order_on_folio
+        route: GET /fb/orders/create
+        inertia: Fb/Orders/Create
+        permission: S3.restaurant.orders.create
+        api:
+          - POST /s3/api/v1/orders
+          - POST /s3/api/v1/orders/{id}/lines
+          - POST /s3/api/v1/orders/{id}/finalize
+        uat: [UAT-S3-003]
+
+  inventory:
+    label: Inventory and procurement
+    icon: boxes
+    min_permissions_any:
+      - S3.inventory.items.read
+      - S3.procurement.purchase_orders.read
+    screens:
+      - key: inventory.items
+        route: GET /inventory/items
+        inertia: Inventory/Items/Index
+        permission: S3.inventory.items.read
+        api:
+          - GET /s3/api/v1/inventory-items
+          - GET /s3/api/v1/inventory/valuation
+      - key: inventory.po_list
+        route: GET /inventory/purchase-orders
+        inertia: Inventory/PurchaseOrders/Index
+        permission: S3.procurement.purchase_orders.read
+        api:
+          - GET /s3/api/v1/purchase-orders
+      - key: inventory.po_create
+        route: GET /inventory/purchase-orders/create
+        inertia: Inventory/PurchaseOrders/Create
+        permission: S3.procurement.purchase_orders.create
+        api:
+          - POST /s3/api/v1/purchase-orders
+          - POST /s3/api/v1/purchase-orders/{id}/submit
+      - key: inventory.po_approve
+        route: GET /inventory/purchase-orders/{id}/approve
+        inertia: Inventory/PurchaseOrders/Approve
+        permission: S3.procurement.purchase_orders.approve
+        api:
+          - POST /s3/api/v1/purchase-orders/{id}/approve
+        notes: "Show tier step UI based on approval_tier in response"
+        uat: [UAT-S3-006]
+      - key: inventory.goods_receive
+        route: POST /inventory/purchase-orders/{id}/receive
+        inertia: null
+        permission: S3.procurement.purchase_orders.receive
+        api:
+          - POST /s3/api/v1/purchase-orders/{id}/receive
+
+  consumption:
+    label: Staff meals
+    icon: user-group
+    min_permissions_any:
+      - S3.restaurant.consumption.read
+    screens:
+      - key: consumption.periods
+        route: GET /consumption/periods
+        inertia: Consumption/Periods/Index
+        permission: S3.restaurant.consumption.read
+        api:
+          - POST /s3/api/v1/employee-consumption-periods
+          - POST /s3/api/v1/employee-consumption-periods/{id}/close
+        uat: [UAT-S3-004]
+
+  group_bookings:
+    label: Group bookings
+    icon: users
+    min_permissions_any:
+      - S3.hotel.group_bookings.read
+    screens:
+      - key: group.create
+        route: GET /group-bookings/create
+        inertia: GroupBookings/Create
+        permission: S3.hotel.group_bookings.create
+        api:
+          - POST /s3/api/v1/group-bookings
+          - POST /s3/api/v1/group-bookings/{id}/check-in
+          - POST /s3/api/v1/group-bookings/{id}/check-out
+        uat: [UAT-S3-005]
+
+  hr:
+    label: HR
+    icon: id-badge
+    min_permissions_any:
+      - S2.hr.employees.read
+      - S2.leave.requests.read
+    screens:
+      - key: hr.employees
+        route: GET /hr/employees
+        inertia: Hr/Employees/Index
+        permission: S2.hr.employees.read
+        api:
+          - GET /s2/api/v1/employees
+          - POST /s2/api/v1/employees
+      - key: hr.leave
+        route: GET /hr/leave-requests
+        inertia: Hr/Leave/Index
+        permission: S2.leave.requests.read
+        api:
+          - POST /s2/api/v1/leave-requests
+          - POST /s2/api/v1/leave-requests/{id}/approve
+        uat: [UAT-S2-002]
+      - key: hr.attendance
+        route: GET /hr/attendance
+        inertia: Hr/Attendance/Index
+        permission: S2.attendance.records.read
+        api:
+          - GET /s2/api/v1/attendance-records
+          - POST /s2/api/v1/attendance-records
+        uat: [UAT-S2-003]
+
+  payroll:
+    label: Payroll
+    icon: money-bill
+    min_permissions_any:
+      - S2.payroll.runs.read
+    screens:
+      - key: payroll.runs
+        route: GET /payroll/runs
+        inertia: Payroll/Runs/Index
+        permission: S2.payroll.runs.read
+        api:
+          - POST /s2/api/v1/payroll-runs
+          - POST /s2/api/v1/payroll-runs/{id}/submit
+          - POST /s2/api/v1/payroll-runs/{id}/approve
+        notes: "Send Idempotency-Key on approve"
+        uat: [UAT-S2-001]
+      - key: payroll.severance
+        route: GET /payroll/severance
+        inertia: Payroll/Severance/Index
+        permission: S2.payroll.severance.read
+        api:
+          - POST /s2/api/v1/employees/{id}/severance/calculate
+          - POST /s2/api/v1/employees/{id}/severance/payout
+        uat: [UAT-S2-004, UAT-S2-005]
+
+  finance:
+    label: Finance
+    icon: calculator
+    min_permissions_any:
+      - S4.finance.reports.read
+      - S4.finance.journal_entries.read
+    screens:
+      - key: finance.reports
+        route: GET /finance/reports
+        inertia: Finance/Reports/Index
+        permission: S4.finance.reports.read
+        api:
+          - GET /s4/api/v1/reports/trial-balance
+          - GET /s4/api/v1/reports/income-statement
+          - GET /s4/api/v1/reports/balance-sheet
+          - GET /s4/api/v1/reports/catalog
+        uat: [UAT-S4-001, UAT-S4-004]
+      - key: finance.journals
+        route: GET /finance/journals
+        inertia: Finance/Journals/Index
+        permission: S4.finance.journal_entries.read
+        api:
+          - POST /s4/api/v1/journal-entries
+          - POST /s4/api/v1/journal-entries/{id}/approve
+          - POST /s4/api/v1/journal-entries/{id}/post
+          - DELETE /s4/api/v1/journal-entries/{id}
+        notes: "Under threshold auto-posts on approve; large needs second GM approve"
+        uat: [UAT-S4-002]
+      - key: finance.fiscal_periods
+        route: GET /finance/fiscal-periods
+        inertia: Finance/FiscalPeriods/Index
+        permission: S4.finance.fiscal_periods.read
+        api:
+          - GET /s4/api/v1/fiscal-periods
+          - POST /s4/api/v1/fiscal-periods/{id}/close
+          - POST /s4/api/v1/fiscal-periods/{id}/lock
+        notes: "Close twice open→closing→closed"
+        uat: [UAT-S4-006]
+      - key: finance.receivables
+        route: GET /finance/receivables
+        inertia: Finance/Receivables/Index
+        permission: S4.finance.receivables.read
+        api:
+          - GET /s4/api/v1/receivables
+          - POST /s4/api/v1/receivables/{id}/settle
+          - POST /s4/api/v1/receivables/{id}/write-off
+        uat: [UAT-S4-008]
+      - key: finance.payables
+        route: GET /finance/payables
+        inertia: Finance/Payables/Index
+        permission: S4.finance.payables.read
+        api:
+          - GET /s4/api/v1/payables
+          - POST /s4/api/v1/payables/{id}/settle
+        uat: [UAT-S4-009]
+
+  admin:
+    label: Administration
+    icon: shield
+    min_permissions_any:
+      - S1.admin.users.read
+      - S1.admin.roles.read
+    screens:
+      - key: admin.users
+        route: GET /admin/users
+        inertia: Admin/Users/Index
+        permission: S1.admin.users.read
+        api:
+          - GET /s1/api/v1/users
+          - POST /s1/api/v1/users
+      - key: admin.roles
+        route: GET /admin/roles
+        inertia: Admin/Roles/Index
+        permission: S1.admin.roles.read
+        api:
+          - GET /s1/api/v1/roles
+          - PUT /s1/api/v1/roles/{id}/permissions
+      - key: admin.audit
+        route: GET /admin/audit-logs
+        inertia: Admin/Audit/Index
+        permission: S1.admin.audit_logs.read
+        api:
+          - GET /s1/api/v1/audit-logs
+
+auth_screens:
+  - key: auth.login
+    route: GET /login
+    inertia: Auth/Login
+    guest: true
+    api:
+      - POST /s1/api/v1/auth/login
+  - key: auth.logout
+    route: POST /logout
+    inertia: null
+    api:
+      - POST /s1/api/v1/auth/logout
+
+bff_clients:
+  - App\Services\Api\S1AuthClient
+  - App\Services\Api\S1AdminClient
+  - App\Services\Api\S2WorkforceClient
+  - App\Services\Api\S3HospitalityClient
+  - App\Services\Api\S4FinanceClient
+  - App\Services\Api\GatewayClient   # base: token injection, errors, retry

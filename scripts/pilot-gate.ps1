@@ -77,8 +77,8 @@ if ($openItems.Count -gt 8) {
     Write-Host "    ... and $($openItems.Count - 8) more (see specs/traceability/pilot-readiness.yaml)"
 }
 
-Write-Step "Automated tests (S1-S4)"
-$services = @("s1-identity", "s2-workforce", "s3-hospitality", "s4-finance-bi")
+Write-Step "Automated tests (S1-S4 + web-portal)"
+$services = @("s1-identity", "s2-workforce", "s3-hospitality", "s4-finance-bi", "web-portal")
 foreach ($svc in $services) {
     Write-Host "  $svc ..."
     docker compose exec $svc php artisan test --no-ansi 2>&1 | Out-Host
@@ -95,6 +95,13 @@ if ($LASTEXITCODE -ne 0) {
     $failed = $true
 }
 
+Write-Step "Portal UI smoke (front desk golden path)"
+& (Join-Path $RepoRoot "scripts\portal-smoke.ps1")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  PORTAL SMOKE FAILED" -ForegroundColor Red
+    $failed = $true
+}
+
 Write-Step "Pilot gate verdict"
 if ($failed) {
     Write-Host "  PILOT GATE: FAILED - fix blockers before pilot or UI work." -ForegroundColor Red
@@ -102,5 +109,5 @@ if ($failed) {
 }
 
 Write-Host "  PILOT GATE: PASSED (MVP ready for controlled pilot - NOT production)." -ForegroundColor Green
-Write-Host "  Next: hotel dry-run, close pilot-readiness items, then UI scoping from matrix."
+Write-Host "  Next: hotel dry-run, close pilot-readiness items, expand UI phases (F&B, full procurement)."
 exit 0

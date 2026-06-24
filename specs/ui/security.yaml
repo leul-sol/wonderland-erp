@@ -1,0 +1,63 @@
+# Web portal security — BFF + Inertia + Vue
+# UI must follow these rules in every phase.
+
+auth:
+  login_endpoint: POST /s1/api/v1/auth/login
+  refresh_endpoint: POST /s1/api/v1/auth/refresh
+  logout_endpoint: POST /s1/api/v1/auth/logout
+  profile_endpoint: GET /s1/api/v1/auth/me
+
+  session_storage:
+    driver: redis                    # same wh-redis as other services
+    encrypt: true
+    keys:
+      - access_token
+      - refresh_token
+      - token_expires_at
+      - user_id
+      - username
+      - permissions                 # cached array from /auth/me
+
+  forbidden:
+    - localStorage access_token
+    - sessionStorage access_token
+    - exposing JWT to Vue props
+    - calling /s1|s2|s3|s4 API from browser fetch/axios with Bearer
+
+  refresh_policy:
+    refresh_before_expiry_seconds: 120
+    on_401: attempt refresh once then redirect to login
+    on_refresh_fail: invalidate session, redirect login with message
+
+csrf:
+  all_inertia_forms: true
+  api_calls: server_side_only        # no CSRF on gateway API from browser
+
+authorization:
+  route_middleware: CheckPermission  # permission slug from modules.yaml
+  menu_filter: hide modules without any read permission in group
+  api_enforcement: required          # UI hide is not sufficient for audit
+
+headers:
+  outbound_to_gateway:
+    - Authorization: "Bearer {session access_token}"
+    - Accept: application/json
+    - X-Request-Id: "{uuid per request}"
+  idempotency:
+    when: POST creates financial or payroll side effects
+    header: Idempotency-Key
+
+downloads:
+  pdf_excel: proxy through portal controller
+  reason: keep token server-side; set Content-Disposition for browser download
+
+session:
+  idle_timeout_minutes: 30           # configurable; align with hotel policy
+  regenerate_on_login: true
+  invalidate_on_logout: true
+
+production_additions:
+  - TLS at gateway (SEC-002 in pilot-readiness.yaml)
+  - Secure + HttpOnly session cookies
+  - SameSite=Lax or Strict
+  - Rate limit login (gateway already limits S1 login)
