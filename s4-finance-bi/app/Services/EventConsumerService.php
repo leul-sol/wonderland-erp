@@ -32,6 +32,7 @@ class EventConsumerService
             config('events.channels.permission_changed') => $this->cache->invalidateIntegrationCaches(),
             config('events.channels.payroll_run_approved'),
             config('events.channels.severance_calculated'),
+            config('events.channels.severance_paid'),
             config('events.channels.leave_approved') => $this->cache->invalidateS2Caches(),
             config('events.channels.goods_received'),
             config('events.channels.purchase_order_approved'),
