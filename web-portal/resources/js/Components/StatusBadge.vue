@@ -37,6 +37,11 @@ const classes = computed(() => {
         absent: 'bg-red-50 text-red-800 ring-red-200',
         leave: 'bg-purple-50 text-purple-900 ring-purple-200',
         half_day: 'bg-amber-50 text-amber-900 ring-amber-200',
+        partial: 'bg-amber-50 text-amber-900 ring-amber-200',
+        closing: 'bg-orange-50 text-orange-900 ring-orange-200',
+        locked: 'bg-slate-100 text-slate-600 ring-slate-200',
+        inactive: 'bg-slate-100 text-slate-600 ring-slate-200',
+        written_off: 'bg-red-50 text-red-800 ring-red-200',
     };
 
     return map[props.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200';

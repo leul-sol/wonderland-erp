@@ -1,12 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Consumption\MealOrderController;
 use App\Http\Controllers\Consumption\PeriodController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fb\MenuController;
 use App\Http\Controllers\Fb\OrderController as FbOrderController;
+use App\Http\Controllers\Finance\BiDashboardController;
+use App\Http\Controllers\Finance\BudgetController;
+use App\Http\Controllers\Finance\FiscalPeriodController;
+use App\Http\Controllers\Finance\JournalController;
 use App\Http\Controllers\Finance\PayableController;
+use App\Http\Controllers\Finance\ReceivableController;
+use App\Http\Controllers\Finance\ReportController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
 use App\Http\Controllers\FrontDesk\RoomController;
@@ -117,6 +126,63 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
     });
 
     Route::prefix('finance')->name('finance.')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.reports.read')
+            ->name('reports.index');
+        Route::get('/reports/export', [ReportController::class, 'export'])
+            ->middleware('portal.permission:S4.finance.reports.read,S4.bi.export.create')
+            ->name('reports.export');
+
+        Route::get('/journals', [JournalController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.journal_entries.read')
+            ->name('journals.index');
+        Route::get('/journals/create', [JournalController::class, 'create'])
+            ->middleware('portal.permission:S4.finance.journal_entries.create')
+            ->name('journals.create');
+        Route::post('/journals', [JournalController::class, 'store'])
+            ->middleware('portal.permission:S4.finance.journal_entries.create')
+            ->name('journals.store');
+        Route::get('/journals/{journalEntry}', [JournalController::class, 'show'])
+            ->middleware('portal.permission:S4.finance.journal_entries.read')
+            ->name('journals.show');
+        Route::post('/journals/{journalEntry}/approve', [JournalController::class, 'approve'])
+            ->middleware('portal.permission:S4.finance.journal_entries.approve')
+            ->name('journals.approve');
+        Route::delete('/journals/{journalEntry}', [JournalController::class, 'destroy'])
+            ->middleware('portal.permission:S4.finance.journal_entries.create')
+            ->name('journals.destroy');
+
+        Route::get('/fiscal-periods', [FiscalPeriodController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.fiscal_periods.read')
+            ->name('fiscal-periods.index');
+        Route::post('/fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])
+            ->middleware('portal.permission:S4.finance.fiscal_periods.close')
+            ->name('fiscal-periods.close');
+        Route::post('/fiscal-periods/{fiscalPeriod}/lock', [FiscalPeriodController::class, 'lock'])
+            ->middleware('portal.permission:S4.finance.fiscal_periods.lock')
+            ->name('fiscal-periods.lock');
+
+        Route::get('/receivables', [ReceivableController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.receivables.read')
+            ->name('receivables.index');
+        Route::post('/receivables/{receivable}/settle', [ReceivableController::class, 'settle'])
+            ->middleware('portal.permission:S4.finance.receivables.settle')
+            ->name('receivables.settle');
+        Route::post('/receivables/{receivable}/write-off', [ReceivableController::class, 'writeOff'])
+            ->middleware('portal.permission:S4.finance.receivables.settle')
+            ->name('receivables.write-off');
+
+        Route::get('/budget', [BudgetController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.budgets.read,S4.bi.reports.read')
+            ->name('budget.index');
+
+        Route::get('/dashboard/executive', [BiDashboardController::class, 'executive'])
+            ->middleware('portal.permission:S4.bi.dashboards.read')
+            ->name('dashboard.executive');
+        Route::get('/dashboard/operations', [BiDashboardController::class, 'operations'])
+            ->middleware('portal.permission:S4.bi.dashboards.read')
+            ->name('dashboard.operations');
+
         Route::get('/payables', [PayableController::class, 'index'])
             ->middleware('portal.permission:S4.finance.payables.read')
             ->name('payables.index');
@@ -235,6 +301,35 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/severance/{severanceCalculation}/pay', [SeveranceController::class, 'pay'])
             ->middleware('portal.permission:S2.workforce.severance.pay')
             ->name('severance.pay');
+    });
+
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/users', [AdminUserController::class, 'index'])
+            ->middleware('portal.permission:S1.identity.users.read')
+            ->name('users.index');
+        Route::get('/users/create', [AdminUserController::class, 'create'])
+            ->middleware('portal.permission:S1.identity.users.create')
+            ->name('users.create');
+        Route::post('/users', [AdminUserController::class, 'store'])
+            ->middleware('portal.permission:S1.identity.users.create')
+            ->name('users.store');
+        Route::post('/users/{user}/deactivate', [AdminUserController::class, 'deactivate'])
+            ->middleware('portal.permission:S1.identity.users.deactivate')
+            ->name('users.deactivate');
+
+        Route::get('/roles', [AdminRoleController::class, 'index'])
+            ->middleware('portal.permission:S1.identity.roles.read')
+            ->name('roles.index');
+        Route::get('/roles/{role}', [AdminRoleController::class, 'show'])
+            ->middleware('portal.permission:S1.identity.roles.read')
+            ->name('roles.show');
+        Route::post('/roles/{role}/permissions', [AdminRoleController::class, 'syncPermissions'])
+            ->middleware('portal.permission:S1.identity.roles.sync_permissions')
+            ->name('roles.permissions');
+
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])
+            ->middleware('portal.permission:S1.identity.audit_logs.read')
+            ->name('audit.index');
     });
 
     Route::redirect('/procurement/purchase-orders', '/inventory/purchase-orders');

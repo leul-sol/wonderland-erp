@@ -12,7 +12,7 @@ meta:
     - documents/S2_Workforce_Payroll_SDD.pdf
     - documents/S3_Hospitality_Operations_SDD.pdf
     - documents/S4_Finance_BI_SDD.pdf
-  ui_policy: partial_phase_0_portal_shell
+  ui_policy: full_staff_ui_portal
 
 requirements:
   # --- S0 Platform ---
@@ -85,4 +85,4 @@ requirements:
   - { key: S4-NFR-001, system: S4, section: "§11", title: NFR performance/observability, status: ops_pending, priority: medium, evidence: "Health endpoint only; no APM" }
 
   # --- UI (explicitly deferred) ---
-  - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: partial, priority: high, evidence: "web-portal Phase 1–6: front desk through HR/payroll; scripts/portal-smoke.ps1" }
+  - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: implemented, priority: high, evidence: "web-portal Phases 0–8 complete; scripts/portal-smoke.ps1" }

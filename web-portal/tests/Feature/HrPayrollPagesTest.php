@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Services\Api\S1IdentityClient;
+use App\Services\Api\S1AdminClient;
 use App\Services\Api\S2WorkforceClient;
 use Illuminate\Support\Facades\Session;
 use Mockery\MockInterface;
@@ -68,7 +68,7 @@ class HrPayrollPagesTest extends TestCase
             ]);
         });
 
-        $this->mock(S1IdentityClient::class, function (MockInterface $mock): void {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
             $mock->shouldReceive('usersByEmployeeId')->once()->with(2)->andReturn([
                 'data' => [[
                     'id' => 9,

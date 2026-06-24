@@ -16,7 +16,7 @@ defineProps({
 <template>
     <AppLayout title="Dashboard">
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p class="text-sm font-medium uppercase tracking-wide text-teal-700">Phase 6 · HR and payroll</p>
+            <p class="text-sm font-medium uppercase tracking-wide text-teal-700">Phase 8 · Platform admin</p>
             <h2 class="mt-2 text-2xl font-semibold text-slate-900">Welcome back</h2>
             <p class="mt-3 max-w-2xl text-slate-600">{{ welcome }}</p>
 
@@ -39,8 +39,8 @@ defineProps({
                     <p class="mt-1 text-sm text-slate-600">Use Quick tasks: check in → post charges → settle → check out.</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-semibold text-slate-900">HR and payroll</p>
-                    <p class="mt-1 text-sm text-slate-600">Employees → leave/attendance → payroll run approve → severance payout.</p>
+                    <p class="text-sm font-semibold text-slate-900">Full staff UI complete</p>
+                    <p class="mt-1 text-sm text-slate-600">All eight phases shipped — admin users, roles, and audit logs in Administration.</p>
                 </div>
             </div>
         </div>

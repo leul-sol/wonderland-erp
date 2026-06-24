@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Hr;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
-use App\Services\Api\S1IdentityClient;
+use App\Services\Api\S1AdminClient;
 use App\Services\Api\S2WorkforceClient;
 use App\Services\Auth\PortalAuthService;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +19,7 @@ class EmployeeController extends Controller
 
     public function __construct(
         private readonly S2WorkforceClient $s2,
-        private readonly S1IdentityClient $s1,
+        private readonly S1AdminClient $s1,
         private readonly PortalAuthService $auth,
     ) {
     }
