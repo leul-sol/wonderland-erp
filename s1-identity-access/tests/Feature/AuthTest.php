@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PasswordHistory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -124,5 +125,32 @@ class AuthTest extends TestCase
             'Authorization' => 'Bearer '.$login->json('access_token'),
         ])->assertOk()
             ->assertJsonPath('username', 'super.admin');
+    }
+
+    public function test_change_password_clears_must_change_flag_and_trims_history(): void
+    {
+        $currentPassword = $this->superAdminPassword();
+        $login = $this->postJson('/api/v1/auth/login', [
+            'username' => 'super.admin',
+            'password' => $currentPassword,
+        ])->assertOk();
+
+        $token = $login->json('access_token');
+        $user = User::query()->where('username', 'super.admin')->firstOrFail();
+        $user->must_change_password = true;
+        $user->save();
+
+        $this->postJson('/api/v1/auth/change-password', [
+            'current_password' => $currentPassword,
+            'password' => 'NewSecurePass!10',
+            'password_confirmation' => 'NewSecurePass!10',
+        ], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk()
+            ->assertJsonPath('message', 'Password updated.');
+
+        $user->refresh();
+        $this->assertFalse($user->must_change_password);
+        $this->assertSame(1, PasswordHistory::query()->where('user_id', $user->id)->count());
     }
 }

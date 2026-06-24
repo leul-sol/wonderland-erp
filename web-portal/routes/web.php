@@ -316,6 +316,12 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/users/{user}/deactivate', [AdminUserController::class, 'deactivate'])
             ->middleware('portal.permission:S1.identity.users.deactivate')
             ->name('users.deactivate');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])
+            ->middleware('portal.permission:S1.identity.users.read')
+            ->name('users.show');
+        Route::post('/users/{user}/roles', [AdminUserController::class, 'syncRoles'])
+            ->middleware('portal.permission:S1.identity.users.assign_role')
+            ->name('users.roles');
 
         Route::get('/roles', [AdminRoleController::class, 'index'])
             ->middleware('portal.permission:S1.identity.roles.read')

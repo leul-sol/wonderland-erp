@@ -42,6 +42,25 @@ class S1AdminClient extends GatewayClient
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function user(int $userId): array
+    {
+        return $this->json('GET', "/s1/api/v1/users/{$userId}");
+    }
+
+    /**
+     * @param  list<array{role_id: int, department_id?: int|null}>  $roles
+     * @return array<string, mixed>
+     */
+    public function assignUserRoles(int $userId, array $roles): array
+    {
+        return $this->json('POST', "/s1/api/v1/users/{$userId}/roles", [
+            'roles' => $roles,
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */

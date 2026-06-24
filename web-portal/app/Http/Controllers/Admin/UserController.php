@@ -42,6 +42,27 @@ class UserController extends Controller
             'search' => $request->input('search', ''),
             'canCreate' => $this->auth->hasAnyPermission(['S1.identity.users.create']),
             'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
+            'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
+        ]);
+    }
+
+    public function show(int $user): Response|RedirectResponse
+    {
+        try {
+            $userResponse = $this->s1->user($user);
+            $rolesResponse = $this->s1->roles(['per_page' => 50]);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e, 'admin.users.index');
+        }
+
+        $userData = $userResponse['data'] ?? [];
+        $assignedRoleIds = collect($userData['roles'] ?? [])->pluck('id')->all();
+
+        return Inertia::render('Admin/Users/Show', [
+            'user' => $userData,
+            'roles' => $rolesResponse['data'] ?? [],
+            'assignedRoleIds' => $assignedRoleIds,
+            'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
         ]);
     }
 
@@ -87,5 +108,26 @@ class UserController extends Controller
         }
 
         return back()->with('success', 'User deactivated.');
+    }
+
+    public function syncRoles(Request $request, int $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'role_ids' => ['required', 'array', 'min:1'],
+            'role_ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $roles = collect($data['role_ids'])
+            ->map(fn ($id) => ['role_id' => (int) $id])
+            ->values()
+            ->all();
+
+        try {
+            $this->s1->assignUserRoles($user, $roles);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'User roles updated.');
     }
 }

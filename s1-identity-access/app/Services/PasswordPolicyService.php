@@ -76,14 +76,23 @@ class PasswordPolicyService
             'password' => $user->password,
         ]);
 
-        $keep = PasswordHistory::query()
-            ->where('user_id', $user->id)
-            ->orderByDesc('id')
-            ->skip(config('password_policy.history'))
-            ->pluck('id');
+        $historyLimit = max(0, (int) config('password_policy.history'));
 
-        if ($keep->isNotEmpty()) {
-            PasswordHistory::query()->whereIn('id', $keep)->delete();
+        if ($historyLimit > 0) {
+            $keepIds = PasswordHistory::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->limit($historyLimit)
+                ->pluck('id');
+
+            PasswordHistory::query()
+                ->where('user_id', $user->id)
+                ->whereNotIn('id', $keepIds)
+                ->delete();
+        } else {
+            PasswordHistory::query()
+                ->where('user_id', $user->id)
+                ->delete();
         }
 
         $user->password = Hash::make($plainPassword);

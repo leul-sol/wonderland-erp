@@ -18,6 +18,7 @@ class AdminPagesTest extends TestCase
             'S1.identity.users.read',
             'S1.identity.users.create',
             'S1.identity.users.deactivate',
+            'S1.identity.users.assign_role',
             'S1.identity.roles.read',
             'S1.identity.roles.sync_permissions',
             'S1.identity.audit_logs.read',
@@ -52,7 +53,60 @@ class AdminPagesTest extends TestCase
             ->component('Admin/Users/Index')
             ->has('users', 1)
             ->where('canCreate', true)
+            ->where('canAssignRoles', true)
         );
+    }
+
+    public function test_user_show_includes_role_catalog(): void
+    {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('user')->once()->with(3)->andReturn([
+                'data' => [
+                    'id' => 3,
+                    'username' => 'e2e.staff',
+                    'display_name' => 'E2E Payroll Staff',
+                    'email' => 'e2e.staff@wonderlandhotel.local',
+                    'is_active' => true,
+                    'roles' => [['id' => 5, 'name' => 'cashier', 'display_name' => 'Cashier']],
+                ],
+            ]);
+            $mock->shouldReceive('roles')->once()->andReturn([
+                'data' => [
+                    ['id' => 5, 'name' => 'cashier', 'display_name' => 'Cashier'],
+                    ['id' => 6, 'name' => 'report_viewer', 'display_name' => 'Report Viewer'],
+                ],
+            ]);
+        });
+
+        $response = $this->get('/admin/users/3');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Users/Show')
+            ->where('user.id', 3)
+            ->where('assignedRoleIds', [5])
+            ->has('roles', 2)
+            ->where('canAssignRoles', true)
+        );
+    }
+
+    public function test_user_role_sync_posts_to_s1(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('assignUserRoles')->once()->with(3, [
+                ['role_id' => 5],
+                ['role_id' => 6],
+            ])->andReturn(['data' => ['id' => 3]]);
+        });
+
+        $response = $this->post('/admin/users/3/roles', [
+            'role_ids' => [5, 6],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'User roles updated.');
     }
 
     public function test_user_create_page_renders(): void

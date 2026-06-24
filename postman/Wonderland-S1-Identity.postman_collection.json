@@ -118,7 +118,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"password\": \"NewSecurePass!10\"\n}"
+              "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"password\": \"NewSecurePass!10\",\n  \"password_confirmation\": \"NewSecurePass!10\"\n}"
             },
             "url": "{{baseUrl}}/auth/change-password"
           }

@@ -11,6 +11,7 @@ const props = defineProps({
     search: { type: String, default: '' },
     canCreate: { type: Boolean, default: false },
     canDeactivate: { type: Boolean, default: false },
+    canAssignRoles: { type: Boolean, default: false },
 });
 
 const columns = [
@@ -73,14 +74,23 @@ function goToPage(page) {
                 <StatusBadge :status="userStatus(row)" />
             </template>
             <template #cell-actions="{ row }">
-                <button
-                    v-if="canDeactivate && row.is_active"
-                    type="button"
-                    class="wh-btn-secondary text-xs"
-                    @click="deactivateUser(row.id)"
-                >
-                    Deactivate
-                </button>
+                <div class="flex justify-end gap-2">
+                    <Link
+                        v-if="canAssignRoles"
+                        :href="`/admin/users/${row.id}`"
+                        class="wh-btn-secondary text-xs"
+                    >
+                        Roles
+                    </Link>
+                    <button
+                        v-if="canDeactivate && row.is_active"
+                        type="button"
+                        class="wh-btn-secondary text-xs"
+                        @click="deactivateUser(row.id)"
+                    >
+                        Deactivate
+                    </button>
+                </div>
             </template>
         </DataTable>
 
