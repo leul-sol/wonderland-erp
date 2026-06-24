@@ -58,20 +58,33 @@ function Invoke-Api {
         $reqHeaders[$key] = $RequestHeaders[$key]
     }
 
-    try {
-        if ($null -ne $Payload) {
-            return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders -ContentType "application/json" -Body ($Payload | ConvertTo-Json -Depth 8 -Compress)
-        }
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            if ($null -ne $Payload) {
+                return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders -ContentType "application/json" -Body ($Payload | ConvertTo-Json -Depth 8 -Compress)
+            }
 
-        return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders
-    }
-    catch {
-        $detail = $_.ErrorDetails.Message
-        if ([string]::IsNullOrWhiteSpace($detail)) {
-            $detail = $_.Exception.Message
+            return Invoke-RestMethod -Method $Method -Uri $Url -Headers $reqHeaders
         }
+        catch {
+            $statusCode = $null
+            if ($_.Exception.Response) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+            }
 
-        throw "$Method $Url failed: $detail"
+            $isRetryable = $statusCode -in @(500, 502, 503, 504) -or $_.Exception.Message -match 'timed out|timeout|Unable to connect'
+            if (-not $isRetryable -or $attempt -eq $maxAttempts) {
+                $detail = $_.ErrorDetails.Message
+                if ([string]::IsNullOrWhiteSpace($detail)) {
+                    $detail = $_.Exception.Message
+                }
+
+                throw "$Method $Url failed: $detail"
+            }
+
+            Start-Sleep -Seconds 1
+        }
     }
 }
 
@@ -399,6 +412,13 @@ $employeeId = $employee.data.id
 
 $payPeriodStart = (Get-Date).ToString("yyyy-MM-01")
 $payPeriodEnd = (Get-Date).ToString("yyyy-MM-dd")
+$allEmployees = Invoke-Api -Method GET -Url "$BaseS2/employees" -RequestHeaders $auth
+$keepEmployeeIds = @($consumptionEmployeeId, $employeeId)
+foreach ($staleEmployee in ($allEmployees.data | Where-Object { $_.full_name -like "E2E*" -and $_.status -eq "active" -and ($keepEmployeeIds -notcontains $_.id) })) {
+    Invoke-Api -Method POST -Url "$BaseS2/employees/$($staleEmployee.id)/archive" -RequestHeaders $auth -Payload @{
+        reason = "UAT cleanup before payroll"
+    } | Out-Null
+}
 $allEmployees = Invoke-Api -Method GET -Url "$BaseS2/employees" -RequestHeaders $auth
 $day = [DateTime]::Parse($payPeriodStart)
 $endDay = [DateTime]::Parse($payPeriodEnd)

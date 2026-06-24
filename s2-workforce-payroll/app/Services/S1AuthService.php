@@ -15,7 +15,8 @@ class S1AuthService
         $url = rtrim((string) config('services.s1_url'), '/').'/api/v1/auth/verify';
 
         try {
-            $response = Http::timeout(5)
+            $response = Http::timeout(8)
+                ->retry(2, 200, throw: false)
                 ->withHeaders([
                     'Authorization' => 'Bearer '.$bearerToken,
                     'X-Service-Key' => (string) config('services.internal_key_current'),
