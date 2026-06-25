@@ -27,6 +27,8 @@ Thumbs.db
 # Docker / secrets
 gateway/certs/*
 !gateway/certs/.gitkeep
+backups/*
+!backups/.gitkeep
 secrets/
 *.pem
 

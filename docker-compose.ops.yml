@@ -1,0 +1,49 @@
+# Optional TLS profile — scheduled backups + stack monitor
+#   docker compose --profile ops up -d
+
+services:
+  wh-mysql-backup:
+    profiles: ["ops"]
+    image: wonderland-erp-wh-mysql
+    entrypoint: []
+    command: ["/bin/sh", "/opt/backup/backup-loop.sh"]
+    environment:
+      MYSQL_HOST: wh-mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - wh-mysql-backups:/backups
+      - ./ops/backup:/opt/backup:ro
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+    networks:
+      - wh-internal
+    restart: unless-stopped
+
+  wh-monitor:
+    profiles: ["ops"]
+    build:
+      context: ./ops/monitor
+    environment:
+      GATEWAY_URL: http://wh-gateway
+      MYSQL_HOST: wh-mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
+      MONITOR_INTERVAL_SECONDS: ${MONITOR_INTERVAL_SECONDS:-60}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      FAILED_OUTBOX_THRESHOLD: ${FAILED_OUTBOX_THRESHOLD:-1}
+    volumes:
+      - wh-monitor-logs:/var/log/wh-monitor
+    depends_on:
+      wh-mysql:
+        condition: service_healthy
+      wh-gateway:
+        condition: service_started
+    networks:
+      - wh-internal
+    restart: unless-stopped
+
+volumes:
+  wh-mysql-backups:
+  wh-monitor-logs:

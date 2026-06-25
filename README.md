@@ -92,6 +92,17 @@ docker compose exec s4-finance-bi php artisan test
 
 Postman collections: [`postman/`](postman/).
 
+## Operations (pilot)
+
+Backup, TLS, monitoring, and incident response: [`ops/README.md`](ops/README.md).
+
+```powershell
+.\scripts\backup-mysql.ps1          # dump wh_s1–s4_db → backups\
+.\scripts\restore-drill.ps1         # validate latest backup
+.\scripts\monitor-stack.ps1         # health + workers + failed outbox
+.\scripts\generate-tls-certs.ps1    # staging HTTPS (with docker-compose.tls.yml)
+```
+
 ## Documentation
 
 | Doc | Purpose |

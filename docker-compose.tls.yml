@@ -1,0 +1,17 @@
+# TLS override — use with self-signed or real certs in gateway/certs/
+#   .\scripts\generate-tls-certs.ps1
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+
+services:
+  wh-gateway:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./gateway/nginx.tls.conf:/etc/nginx/nginx.conf:ro
+      - ./gateway/includes:/etc/nginx/includes:ro
+      - ./gateway/certs:/etc/nginx/certs:ro
+
+  web-portal:
+    environment:
+      APP_URL: https://localhost

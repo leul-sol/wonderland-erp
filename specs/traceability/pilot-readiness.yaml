@@ -9,18 +9,19 @@ policy:
 backup:
   - id: BR-001
     item: MySQL automated backup (wh_s1–s4_db)
-    status: missing
+    status: done
     owner: ops
-    notes: "Document mysqldump schedule or managed DB snapshots; test restore quarterly"
+    evidence: "scripts/backup-mysql.ps1, ops/backup/, docker-compose.ops.yml wh-mysql-backup"
   - id: BR-002
     item: Redis / event bus persistence policy
-    status: missing
+    status: done
     owner: ops
-    notes: "Bus is ephemeral; document acceptable message loss window"
+    evidence: "ops/backup/redis-policy.md"
   - id: BR-003
     item: Restore drill documented and tested
-    status: missing
+    status: partial
     owner: ops
+    evidence: "scripts/restore-drill.ps1, ops/backup/restore-drill.sh — run quarterly on staging"
 
 monitoring:
   - id: MON-001
@@ -30,9 +31,9 @@ monitoring:
     evidence: "docker-compose healthcheck, gateway /s{n}/api/v1/health"
   - id: MON-002
     item: Worker process monitoring (s1–s4 workers)
-    status: partial
+    status: done
     owner: ops
-    notes: "Workers run in compose; no alert if consumer/outbox stops"
+    evidence: "scripts/monitor-stack.ps1 worker checks; wh-monitor ops profile"
   - id: MON-003
     item: Centralized logs (request_id correlation)
     status: partial
@@ -40,9 +41,9 @@ monitoring:
     evidence: "X-Request-Id in gateway; no log aggregation stack"
   - id: MON-004
     item: Failed outbox / failed job alerting
-    status: missing
+    status: done
     owner: ops
-    notes: "event_outbox.status=failed should page super_admin"
+    evidence: "ops/monitor/check-stack.sh, ALERT_WEBHOOK_URL, scripts/monitor-stack.ps1"
   - id: MON-005
     item: Disk / DB connection / latency SLOs
     status: missing
@@ -56,8 +57,9 @@ support:
     evidence: "scripts/start.ps1, reset-uat.ps1, run-uat-e2e.ps1"
   - id: SUP-002
     item: Runbook — incident response (service down)
-    status: missing
+    status: done
     owner: ops
+    evidence: "ops/runbooks/incident-response.md, scripts/monitor-stack.ps1"
   - id: SUP-003
     item: Role → contact matrix (who fixes HR vs finance)
     status: missing
@@ -80,9 +82,9 @@ security:
     notes: "Required before any shared host"
   - id: SEC-002
     item: TLS termination at gateway
-    status: missing
+    status: partial
     owner: ops
-    notes: "Local dev uses HTTP only"
+    evidence: "docker-compose.tls.yml, scripts/generate-tls-certs.ps1, ops/tls/README.md — use real CA in production"
   - id: SEC-003
     item: DB encryption at rest (S4 §10.2)
     status: missing
