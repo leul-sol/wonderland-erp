@@ -1,19 +1,14 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
-import {
-    Bell,
-    Building2,
-    ChevronDown,
-    LogOut,
-    Maximize2,
-    Menu,
-    Search,
-    Sun,
-} from 'lucide-vue-next';
+import { Bell, LogOut, Menu, Search, Sun } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 defineProps({
-    onOpenMobileNav: {
+    sidebarCollapsed: {
+        type: Boolean,
+        default: false,
+    },
+    onToggleSidebar: {
         type: Function,
         default: null,
     },
@@ -38,18 +33,19 @@ function reloadPage() {
 </script>
 
 <template>
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white">
-        <div class="flex h-[72px] items-center gap-3 px-4 sm:gap-4 sm:px-6">
+    <header class="sticky top-0 z-30 bg-white">
+        <div class="wh-shell-header gap-3 px-4 sm:gap-4 sm:px-6">
             <button
                 type="button"
-                class="wh-icon-btn lg:hidden"
-                aria-label="Open menu"
-                @click="onOpenMobileNav?.()"
+                class="wh-icon-btn"
+                :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                @click="onToggleSidebar?.()"
             >
                 <Menu class="h-[18px] w-[18px]" />
             </button>
 
-            <div class="relative hidden min-w-0 flex-1 sm:block sm:max-w-md">
+            <div class="relative min-w-0 flex-1 sm:max-w-md">
                 <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                     type="search"
@@ -60,12 +56,6 @@ function reloadPage() {
             </div>
 
             <div class="ml-auto flex items-center gap-2 sm:gap-3">
-                <button type="button" class="wh-topbar-pill hidden sm:inline-flex">
-                    <Building2 class="h-4 w-4 text-teal-700" />
-                    <span class="truncate">Wonderland Hotel</span>
-                    <ChevronDown class="h-4 w-4 text-slate-400" />
-                </button>
-
                 <button type="button" class="wh-icon-btn hidden sm:inline-flex" aria-label="Theme" @click="reloadPage">
                     <Sun class="h-[18px] w-[18px]" />
                 </button>
@@ -73,10 +63,6 @@ function reloadPage() {
                 <button type="button" class="wh-icon-btn relative hidden sm:inline-flex" aria-label="Notifications">
                     <Bell class="h-[18px] w-[18px]" />
                     <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-                </button>
-
-                <button type="button" class="wh-icon-btn hidden sm:inline-flex" aria-label="Full screen">
-                    <Maximize2 class="h-[18px] w-[18px]" />
                 </button>
 
                 <div class="relative">

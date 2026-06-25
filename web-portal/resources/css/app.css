@@ -52,6 +52,10 @@ body {
     @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50;
 }
 
+.wh-shell-header {
+    @apply flex h-[72px] shrink-0 items-center border-b border-slate-200 bg-white;
+}
+
 .wh-topbar-search {
     @apply h-10 w-full rounded-lg border border-slate-200 bg-[#f8fafc] py-2 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-teal-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-100;
 }
@@ -124,6 +128,55 @@ body {
     @apply border-teal-200 bg-teal-50 text-teal-800;
 }
 
+.wh-dash-date-input {
+    @apply h-8 w-[9.25rem] rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 shadow-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-100;
+}
+
+.wh-dash-date-btn {
+    @apply inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50;
+}
+
+.wh-dash-date-select {
+    @apply h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-100;
+}
+
+.wh-sidebar-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition;
+}
+
+.wh-sidebar-link-active {
+    @apply bg-teal-600 text-white shadow-sm;
+}
+
+.wh-sidebar-link-inactive {
+    @apply text-slate-600 hover:bg-slate-50 hover:text-slate-900;
+}
+
+.wh-sidebar-sublink {
+    @apply relative block py-2 pl-1 pr-2 text-[13px] font-medium transition;
+}
+
+.wh-sidebar-sublink-active {
+    @apply font-semibold text-teal-700;
+}
+
+.wh-sidebar-sublink-active::before {
+    content: '';
+    @apply absolute -left-3 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-teal-600;
+}
+
+.wh-sidebar-sublink-inactive {
+    @apply text-slate-500 hover:text-slate-800;
+}
+
+.wh-sidebar-flyout-link {
+    @apply relative block border-l-2 border-transparent py-2 pl-3 pr-3 text-sm font-medium transition;
+}
+
+.wh-sidebar-flyout-link.wh-sidebar-sublink-active {
+    @apply border-teal-600 font-semibold text-teal-700;
+}
+
 .wh-table-control-select {
     @apply min-w-[148px] appearance-none pl-9 pr-8;
 }
@@ -189,4 +242,20 @@ body {
 
 .wh-action-menu-btn {
     @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700;
+}
+
+.wh-dash-kpi {
+    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+}
+
+.wh-dash-panel {
+    @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+.wh-dash-panel-header {
+    @apply flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4;
+}
+
+.wh-dash-panel-header h3 {
+    @apply text-base font-semibold text-slate-900;
 }

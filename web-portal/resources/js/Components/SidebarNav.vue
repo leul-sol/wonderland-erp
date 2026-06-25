@@ -5,16 +5,13 @@ import {
     ArrowUpCircle,
     BedDouble,
     BookOpen,
-    Building2,
     CalendarRange,
-    ChevronDown,
     ChevronRight,
     ClipboardList,
     Coffee,
     FileBarChart,
     LayoutDashboard,
     LayoutGrid,
-    Menu,
     Package,
     PieChart,
     ScrollText,
@@ -30,7 +27,11 @@ import {
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
-defineProps({
+const props = defineProps({
+    collapsed: {
+        type: Boolean,
+        default: false,
+    },
     mobileOpen: {
         type: Boolean,
         default: false,
@@ -41,7 +42,7 @@ const emit = defineEmits(['close-mobile']);
 
 const page = usePage();
 const navigation = computed(() => page.props.navigation ?? []);
-const currentPath = computed(() => page.url.split('?')[0]);
+const currentPath = computed(() => normalizePath(page.url));
 
 const iconMap = {
     'layout-grid': LayoutGrid,
@@ -68,21 +69,44 @@ const iconMap = {
 };
 
 const expandedKeys = ref(new Set());
+const flyoutKey = ref(null);
 
 function resolveIcon(name) {
     return iconMap[name] ?? LayoutGrid;
 }
 
-function isActive(href) {
+function normalizePath(href) {
     if (!href) {
+        return '';
+    }
+
+    const raw = String(href).split('?')[0];
+
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        try {
+            return new URL(raw).pathname.replace(/\/+$/, '') || '/';
+        } catch {
+            return raw;
+        }
+    }
+
+    const path = raw.startsWith('/') ? raw : `/${raw}`;
+
+    return path.replace(/\/+$/, '') || '/';
+}
+
+function isActive(href) {
+    const target = normalizePath(href);
+
+    if (!target) {
         return false;
     }
 
-    if (currentPath.value === href) {
+    if (currentPath.value === target) {
         return true;
     }
 
-    return href !== '/' && currentPath.value.startsWith(`${href}/`);
+    return target !== '/' && currentPath.value.startsWith(`${target}/`);
 }
 
 function itemIsActive(item) {
@@ -94,6 +118,10 @@ function itemIsActive(item) {
 }
 
 function syncExpandedFromRoute() {
+    if (props.collapsed) {
+        return;
+    }
+
     const keys = new Set(expandedKeys.value);
 
     navigation.value.forEach((section) => {
@@ -107,9 +135,20 @@ function syncExpandedFromRoute() {
     expandedKeys.value = keys;
 }
 
-watch([navigation, currentPath], syncExpandedFromRoute, { immediate: true });
+watch([navigation, currentPath, () => props.collapsed], syncExpandedFromRoute, { immediate: true });
+
+watch(() => props.collapsed, (value) => {
+    if (value) {
+        flyoutKey.value = null;
+    }
+});
 
 function toggleExpanded(key) {
+    if (props.collapsed) {
+        flyoutKey.value = flyoutKey.value === key ? null : key;
+        return;
+    }
+
     const keys = new Set(expandedKeys.value);
 
     if (keys.has(key)) {
@@ -126,28 +165,55 @@ function isExpanded(key) {
 }
 
 function itemClasses(active) {
-    return active
-        ? 'bg-teal-50 text-teal-700'
-        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
+    return [
+        active ? 'wh-sidebar-link-active' : 'wh-sidebar-link-inactive',
+        props.collapsed ? 'justify-center px-2' : '',
+    ];
 }
 
 function iconClasses(active) {
-    return active ? 'text-teal-700' : 'text-slate-400';
+    return active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600';
+}
+
+function childClasses(active) {
+    return active ? 'wh-sidebar-sublink-active' : 'wh-sidebar-sublink-inactive';
+}
+
+function closeFlyout() {
+    flyoutKey.value = null;
+}
+
+function onChildNavigate() {
+    emit('close-mobile');
+    closeFlyout();
 }
 </script>
 
 <template>
     <div class="flex h-full flex-col bg-white">
-        <div class="shrink-0 border-b border-slate-200 px-4 py-4">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex min-w-0 items-center gap-3">
+        <div
+            class="wh-shell-header px-4"
+            :class="collapsed ? 'lg:justify-center lg:px-2' : ''"
+        >
+            <div
+                class="flex w-full items-center justify-between gap-2"
+                :class="collapsed ? 'lg:justify-center' : ''"
+            >
+                <div class="flex min-w-0 items-center gap-3" :class="collapsed ? 'lg:justify-center lg:gap-0' : ''">
                     <div
                         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-base font-bold text-white"
+                        :title="collapsed ? 'Wonderland' : undefined"
                     >
                         W
                     </div>
-                    <span class="truncate text-[17px] font-bold tracking-tight text-slate-800">Wonderland</span>
+                    <span
+                        v-show="!collapsed"
+                        class="truncate text-[17px] font-bold tracking-tight text-slate-800"
+                    >
+                        Wonderland
+                    </span>
                 </div>
+
                 <button
                     type="button"
                     class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
@@ -156,42 +222,27 @@ function iconClasses(active) {
                 >
                     <X class="h-5 w-5" />
                 </button>
-                <button
-                    type="button"
-                    class="hidden rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:inline-flex"
-                    aria-label="Menu"
-                >
-                    <Menu class="h-5 w-5" />
-                </button>
             </div>
         </div>
 
-        <div class="shrink-0 px-4 py-4">
-            <button
-                type="button"
-                class="flex w-full items-center gap-3 rounded-lg bg-indigo-50 px-3 py-2.5 text-left transition hover:bg-indigo-100/80"
-            >
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-indigo-600 shadow-sm">
-                    <Building2 class="h-4 w-4" />
-                </span>
-                <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">Wonderland Hotel</span>
-                <ChevronDown class="h-4 w-4 shrink-0 text-slate-400" />
-            </button>
-        </div>
-
-        <nav class="sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-8">
+        <nav class="sidebar-scroll min-h-0 flex-1 overflow-y-auto pb-8">
             <div v-for="section in navigation" :key="section.key">
-                <p class="px-4 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                <p
+                    v-show="!collapsed"
+                    class="px-4 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400"
+                >
                     {{ section.label }}
                 </p>
+                <div v-show="collapsed" class="mx-3 mt-3 border-t border-slate-100 first:mt-4" />
 
-                <ul class="space-y-0.5 px-3">
-                    <li v-for="item in section.items" :key="item.key">
+                <ul class="space-y-0.5 px-3" :class="collapsed ? 'lg:px-2' : ''">
+                    <li v-for="item in section.items" :key="item.key" class="relative">
                         <Link
                             v-if="!item.children?.length && item.href"
                             :href="item.href"
-                            class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition"
+                            class="group wh-sidebar-link"
                             :class="itemClasses(isActive(item.href))"
+                            :title="collapsed ? item.label : undefined"
                             @click="emit('close-mobile')"
                         >
                             <component
@@ -200,24 +251,27 @@ function iconClasses(active) {
                                 :class="iconClasses(isActive(item.href))"
                                 :stroke-width="1.75"
                             />
-                            <span class="flex-1 truncate">{{ item.label }}</span>
+                            <span v-show="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
                             <span
-                                v-if="section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
-                                class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500"
+                                v-if="!collapsed && section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
+                                class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+                                :class="isActive(item.href) ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
                             >
                                 P{{ item.phase }}
                             </span>
                             <ChevronRight
-                                class="h-4 w-4 shrink-0 opacity-0 transition group-hover:opacity-100"
-                                :class="isActive(item.href) ? 'text-teal-600 opacity-100' : 'text-slate-300'"
+                                v-if="!collapsed"
+                                class="h-4 w-4 shrink-0 transition"
+                                :class="isActive(item.href) ? 'text-white opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'"
                             />
                         </Link>
 
-                        <div v-else>
+                        <div v-else class="relative">
                             <button
                                 type="button"
-                                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition"
+                                class="wh-sidebar-link w-full text-left"
                                 :class="itemClasses(itemIsActive(item))"
+                                :title="collapsed ? item.label : undefined"
                                 @click="toggleExpanded(item.key)"
                             >
                                 <component
@@ -226,38 +280,58 @@ function iconClasses(active) {
                                     :class="iconClasses(itemIsActive(item))"
                                     :stroke-width="1.75"
                                 />
-                                <span class="flex-1 truncate">{{ item.label }}</span>
+                                <span v-show="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
                                 <span
-                                    v-if="section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
-                                    class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500"
+                                    v-if="!collapsed && section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
+                                    class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+                                    :class="itemIsActive(item) ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
                                 >
                                     P{{ item.phase }}
                                 </span>
                                 <ChevronRight
-                                    class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200"
-                                    :class="{ 'rotate-90 text-teal-600': isExpanded(item.key) }"
+                                    v-if="!collapsed"
+                                    class="h-4 w-4 shrink-0 transition-transform duration-200"
+                                    :class="[
+                                        isExpanded(item.key) ? 'rotate-90' : '',
+                                        itemIsActive(item) ? 'text-white' : 'text-slate-400',
+                                    ]"
                                 />
                             </button>
 
                             <ul
-                                v-show="isExpanded(item.key)"
-                                class="mt-0.5 space-y-0.5 border-l border-slate-200 pl-3 ml-6"
+                                v-if="!collapsed && isExpanded(item.key)"
+                                class="ml-6 mt-0.5 space-y-0.5 border-l border-slate-200 pl-3"
                             >
                                 <li v-for="child in item.children" :key="child.key">
                                     <Link
                                         :href="child.href"
-                                        class="block rounded-lg px-3 py-2 text-[13px] font-medium transition"
-                                        :class="
-                                            isActive(child.href)
-                                                ? 'bg-teal-50 text-teal-700'
-                                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                                        "
+                                        class="wh-sidebar-sublink"
+                                        :class="childClasses(isActive(child.href))"
                                         @click="emit('close-mobile')"
                                     >
                                         {{ child.label }}
                                     </Link>
                                 </li>
                             </ul>
+
+                            <div
+                                v-if="collapsed && flyoutKey === item.key"
+                                class="absolute left-full top-0 z-50 ml-2 min-w-[200px] rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+                            >
+                                <p class="border-b border-slate-100 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    {{ item.label }}
+                                </p>
+                                <Link
+                                    v-for="child in item.children"
+                                    :key="child.key"
+                                    :href="child.href"
+                                    class="wh-sidebar-flyout-link"
+                                    :class="childClasses(isActive(child.href))"
+                                    @click="onChildNavigate"
+                                >
+                                    {{ child.label }}
+                                </Link>
+                            </div>
                         </div>
                     </li>
                 </ul>

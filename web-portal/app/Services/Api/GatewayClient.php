@@ -4,6 +4,7 @@ namespace App\Services\Api;
 
 use App\Exceptions\ApiException;
 use App\Services\Auth\PortalAuthService;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -61,6 +62,59 @@ class GatewayClient
     }
 
     /**
+     * @param  array<string, array{path: string, query?: array<string, mixed>}>  $requests
+     * @return array<string, array<string, mixed>|null>
+     *
+     * @throws ApiException
+     */
+    public function fetchMany(array $requests, int $timeout = 15): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+
+        $this->auth->ensureFreshToken();
+
+        $token = $this->auth->accessToken();
+
+        if ($token === null) {
+            throw new ApiException('UNAUTHENTICATED', 'Not authenticated.', 401);
+        }
+
+        $baseUrl = rtrim((string) config('portal.gateway_url'), '/');
+
+        $responses = Http::pool(function (Pool $pool) use ($requests, $token, $baseUrl, $timeout) {
+            foreach ($requests as $key => $request) {
+                $path = '/'.ltrim($request['path'], '/');
+                $query = $request['query'] ?? [];
+
+                $pool->as($key)
+                    ->acceptJson()
+                    ->timeout($timeout)
+                    ->withToken($token)
+                    ->withHeaders([
+                        'X-Request-Id' => (string) Str::uuid(),
+                    ])
+                    ->get($baseUrl.$path, $query);
+            }
+        });
+
+        $results = [];
+
+        foreach (array_keys($requests) as $key) {
+            $response = $responses[$key] ?? null;
+
+            if ($response instanceof Response && $response->successful()) {
+                $results[$key] = $response->json() ?? [];
+            } else {
+                $results[$key] = null;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @param  array<string, string>  $headers
      */
@@ -68,7 +122,7 @@ class GatewayClient
     {
         $client = Http::baseUrl(config('portal.gateway_url'))
             ->acceptJson()
-            ->timeout(60)
+            ->timeout(20)
             ->withToken($token)
             ->withHeaders(array_merge([
                 'X-Request-Id' => (string) Str::uuid(),
