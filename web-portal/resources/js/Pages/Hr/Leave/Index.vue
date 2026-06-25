@@ -86,7 +86,7 @@ function approve(id) {
             </form>
         </section>
 
-        <DataTable :columns="columns" :rows="leaveRequests" empty-message="No leave requests yet.">
+        <DataTable list-title="Leave request list" selectable :columns="columns" :rows="leaveRequests" empty-message="No leave requests yet.">
             <template #cell-employee="{ row }">
                 {{ row.employee?.full_name ?? '—' }}
             </template>

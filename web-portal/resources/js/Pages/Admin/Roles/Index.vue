@@ -25,7 +25,7 @@ const columns = [
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="roles" empty-message="No roles configured.">
+        <DataTable list-title="Role list" selectable :columns="columns" :rows="roles" empty-message="No roles configured.">
             <template #cell-actions="{ row }">
                 <Link
                     v-if="canSyncPermissions"

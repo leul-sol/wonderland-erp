@@ -54,7 +54,7 @@ function applyFilter(status) {
             </button>
         </div>
 
-        <DataTable :columns="columns" :rows="rooms" empty-message="No rooms match this filter.">
+        <DataTable list-title="Room list" selectable :columns="columns" :rows="rooms" empty-message="No rooms match this filter.">
             <template #cell-room_type="{ row }">
                 {{ row.room_type?.name ?? '—' }}
             </template>

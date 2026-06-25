@@ -127,12 +127,12 @@ function isExpanded(key) {
 
 function itemClasses(active) {
     return active
-        ? 'bg-blue-50 text-blue-600'
+        ? 'bg-teal-50 text-teal-700'
         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
 }
 
 function iconClasses(active) {
-    return active ? 'text-blue-600' : 'text-slate-400';
+    return active ? 'text-teal-700' : 'text-slate-400';
 }
 </script>
 
@@ -142,7 +142,7 @@ function iconClasses(active) {
             <div class="flex items-center justify-between gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                     <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-base font-bold text-white"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-base font-bold text-white"
                     >
                         W
                     </div>
@@ -209,7 +209,7 @@ function iconClasses(active) {
                             </span>
                             <ChevronRight
                                 class="h-4 w-4 shrink-0 opacity-0 transition group-hover:opacity-100"
-                                :class="isActive(item.href) ? 'text-blue-500 opacity-100' : 'text-slate-300'"
+                                :class="isActive(item.href) ? 'text-teal-600 opacity-100' : 'text-slate-300'"
                             />
                         </Link>
 
@@ -235,7 +235,7 @@ function iconClasses(active) {
                                 </span>
                                 <ChevronRight
                                     class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200"
-                                    :class="{ 'rotate-90 text-blue-500': isExpanded(item.key) }"
+                                    :class="{ 'rotate-90 text-teal-600': isExpanded(item.key) }"
                                 />
                             </button>
 
@@ -249,7 +249,7 @@ function iconClasses(active) {
                                         class="block rounded-lg px-3 py-2 text-[13px] font-medium transition"
                                         :class="
                                             isActive(child.href)
-                                                ? 'bg-blue-50 text-blue-600'
+                                                ? 'bg-teal-50 text-teal-700'
                                                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                                         "
                                         @click="emit('close-mobile')"

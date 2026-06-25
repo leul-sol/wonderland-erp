@@ -106,7 +106,7 @@ function filterByDate() {
             </form>
         </section>
 
-        <DataTable :columns="columns" :rows="records" empty-message="No attendance records for this date.">
+        <DataTable list-title="Attendance list" selectable :columns="columns" :rows="records" empty-message="No attendance records for this date.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>

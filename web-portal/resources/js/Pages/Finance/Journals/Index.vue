@@ -29,7 +29,7 @@ const columns = [
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="journalEntries" empty-message="No manual journal entries yet.">
+        <DataTable list-title="Journal list" selectable :columns="columns" :rows="journalEntries" empty-message="No manual journal entries yet.">
             <template #cell-total_debit="{ row }">
                 <span class="wh-money">{{ row.total_debit }}</span>
             </template>

@@ -44,7 +44,7 @@ function writeOff(receivable) {
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="receivables" empty-message="No open receivables.">
+        <DataTable list-title="Receivable list" selectable :columns="columns" :rows="receivables" empty-message="No open receivables.">
             <template #cell-balance="{ row }">
                 <span class="wh-money font-semibold">ETB {{ formatMoney(row.balance) }}</span>
             </template>

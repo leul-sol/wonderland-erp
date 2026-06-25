@@ -1,7 +1,9 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
+import { Plus } from 'lucide-vue-next';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
@@ -15,12 +17,24 @@ const props = defineProps({
 });
 
 const columns = [
-    { key: 'username', label: 'Username' },
-    { key: 'display_name', label: 'Name' },
+    { key: 'username', label: 'ID', sortable: true },
+    { key: 'display_name', label: 'Name', sortable: true },
     { key: 'email', label: 'Email' },
     { key: 'roles', label: 'Roles' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: '', class: 'text-right' },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'actions', label: 'Action', class: 'text-right w-16' },
+];
+
+const sortOptions = [
+    { label: 'Sort By A-Z', value: 'username_asc' },
+    { label: 'Sort By Z-A', value: 'username_desc' },
+    { label: 'Newest first', value: 'newest' },
+];
+
+const breadcrumbs = [
+    { label: 'Dashboard', href: '/' },
+    { label: 'Administration', href: '/admin/users' },
+    { label: 'Users' },
 ];
 
 function userStatus(user) {
@@ -31,8 +45,7 @@ function roleNames(user) {
     return (user.roles ?? []).map((role) => role.display_name ?? role.name).join(', ') || '—';
 }
 
-function applySearch(event) {
-    const value = event.target.value;
+function applySearch(value) {
     router.get('/admin/users', value ? { search: value } : {}, { preserveScroll: true });
 }
 
@@ -40,33 +53,53 @@ function deactivateUser(userId) {
     router.post(`/admin/users/${userId}/deactivate`, {}, { preserveScroll: true });
 }
 
-function goToPage(page) {
-    router.get('/admin/users', { search: props.search || undefined, page }, { preserveScroll: true });
+function rowActions(row) {
+    const items = [];
+    if (props.canAssignRoles) {
+        items.push({ label: 'Manage roles', href: `/admin/users/${row.id}` });
+    }
+    if (props.canDeactivate && row.is_active) {
+        items.push({ label: 'Deactivate', onClick: () => deactivateUser(row.id) });
+    }
+    return items;
 }
 </script>
 
 <template>
     <AppLayout title="Platform users">
-        <PageHeader title="Platform users" subtitle="S1 identity — create and deactivate staff accounts">
+        <PageHeader
+            title="Platform users"
+            subtitle="S1 identity — create and deactivate staff accounts"
+            :breadcrumbs="breadcrumbs"
+            :show-export="true"
+        >
             <template #actions>
-                <Link href="/admin/roles" class="wh-btn-secondary">Roles</Link>
-                <Link href="/admin/audit-logs" class="wh-btn-secondary">Audit log</Link>
-                <Link v-if="canCreate" href="/admin/users/create" class="wh-btn-primary">Create user</Link>
+                <Link href="/admin/roles" class="wh-btn-outline">Roles</Link>
+                <Link href="/admin/audit-logs" class="wh-btn-outline">Audit log</Link>
+                <Link v-if="canCreate" href="/admin/users/create" class="wh-btn-primary">
+                    <Plus class="h-4 w-4" />
+                    Create user
+                </Link>
             </template>
         </PageHeader>
 
-        <section class="wh-card mb-6 p-4">
-            <label class="mb-1 block text-xs font-medium text-slate-600">Search</label>
-            <input
-                type="search"
-                class="wh-input max-w-md"
-                :value="search"
-                placeholder="Username, email, or display name"
-                @change="applySearch"
-            />
-        </section>
-
-        <DataTable :columns="columns" :rows="users" empty-message="No users found.">
+        <DataTable
+            list-title="User list"
+            :columns="columns"
+            :rows="users"
+            empty-message="No users found."
+            selectable
+            searchable
+            :search="search"
+            search-placeholder="Search"
+            :meta="meta"
+            :sort-options="sortOptions"
+            @search="applySearch"
+            @page="(page) => router.get('/admin/users', { search: search || undefined, page }, { preserveScroll: true })"
+        >
+            <template #cell-username="{ row }">
+                <Link :href="`/admin/users/${row.id}`" class="wh-table-link">{{ row.username }}</Link>
+            </template>
             <template #cell-roles="{ row }">
                 {{ roleNames(row) }}
             </template>
@@ -74,37 +107,8 @@ function goToPage(page) {
                 <StatusBadge :status="userStatus(row)" />
             </template>
             <template #cell-actions="{ row }">
-                <div class="flex justify-end gap-2">
-                    <Link
-                        v-if="canAssignRoles"
-                        :href="`/admin/users/${row.id}`"
-                        class="wh-btn-secondary text-xs"
-                    >
-                        Roles
-                    </Link>
-                    <button
-                        v-if="canDeactivate && row.is_active"
-                        type="button"
-                        class="wh-btn-secondary text-xs"
-                        @click="deactivateUser(row.id)"
-                    >
-                        Deactivate
-                    </button>
-                </div>
+                <RowActions v-if="rowActions(row).length" :items="rowActions(row)" />
             </template>
         </DataTable>
-
-        <nav v-if="meta && meta.last_page > 1" class="mt-4 flex justify-center gap-2">
-            <button
-                v-for="page in meta.last_page"
-                :key="page"
-                type="button"
-                class="rounded px-3 py-1 text-sm"
-                :class="page === meta.current_page ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700'"
-                @click="goToPage(page)"
-            >
-                {{ page }}
-            </button>
-        </nav>
     </AppLayout>
 </template>

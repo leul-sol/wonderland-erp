@@ -33,7 +33,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="purchaseOrders" empty-message="No purchase orders found.">
+        <DataTable list-title="Purchase order list" selectable :columns="columns" :rows="purchaseOrders" empty-message="No purchase orders found.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>

@@ -62,7 +62,7 @@ function pay(id) {
             </form>
         </section>
 
-        <DataTable :columns="columns" :rows="calculations" empty-message="No severance calculations yet.">
+        <DataTable list-title="Severance list" selectable :columns="columns" :rows="calculations" empty-message="No severance calculations yet.">
             <template #cell-amount="{ row }">
                 <span class="wh-money">ETB {{ formatMoney(row.amount) }}</span>
             </template>

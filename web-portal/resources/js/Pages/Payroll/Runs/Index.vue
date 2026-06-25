@@ -34,7 +34,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="payrollRuns" empty-message="No payroll runs yet.">
+        <DataTable list-title="Payroll run list" selectable :columns="columns" :rows="payrollRuns" empty-message="No payroll runs yet.">
             <template #cell-period="{ row }">
                 {{ row.period_start }} → {{ row.period_end }}
             </template>

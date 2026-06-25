@@ -27,7 +27,7 @@ const columns = [
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="items" empty-message="No inventory items found.">
+        <DataTable list-title="Inventory item list" selectable :columns="columns" :rows="items" empty-message="No inventory items found.">
             <template #cell-quantity_on_hand="{ row }">
                 <span class="font-mono tabular-nums">{{ row.quantity_on_hand }}</span>
             </template>

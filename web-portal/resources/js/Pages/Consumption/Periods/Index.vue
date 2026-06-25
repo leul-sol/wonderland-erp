@@ -96,7 +96,7 @@ function startMealOrder(periodId) {
             </form>
         </section>
 
-        <DataTable :columns="columns" :rows="periods" empty-message="No consumption periods yet.">
+        <DataTable list-title="Consumption period list" selectable :columns="columns" :rows="periods" empty-message="No consumption periods yet.">
             <template #cell-total_amount="{ row }">
                 <span class="wh-money">ETB {{ formatMoney(row.total_amount) }}</span>
             </template>

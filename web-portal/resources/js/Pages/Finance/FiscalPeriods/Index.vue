@@ -41,7 +41,7 @@ function lockPeriod(id) {
             Click close twice on an open period: first moves to closing, second completes close. Lock only after closed.
         </p>
 
-        <DataTable :columns="columns" :rows="fiscalPeriods" empty-message="No fiscal periods configured.">
+        <DataTable list-title="Fiscal period list" selectable :columns="columns" :rows="fiscalPeriods" empty-message="No fiscal periods configured.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>

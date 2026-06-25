@@ -27,7 +27,7 @@ const columns = [
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="groupBookings" empty-message="No group bookings yet.">
+        <DataTable list-title="Group booking list" selectable :columns="columns" :rows="groupBookings" empty-message="No group bookings yet.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>

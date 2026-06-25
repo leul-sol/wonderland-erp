@@ -31,7 +31,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="folios" empty-message="No open folios.">
+        <DataTable list-title="Folio list" selectable :columns="columns" :rows="folios" empty-message="No open folios.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>

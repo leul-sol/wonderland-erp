@@ -42,7 +42,7 @@ function settle(payable) {
             </template>
         </PageHeader>
 
-        <DataTable :columns="columns" :rows="payables" empty-message="No open payables.">
+        <DataTable list-title="Payable list" selectable :columns="columns" :rows="payables" empty-message="No open payables.">
             <template #cell-balance="{ row }">
                 <span class="wh-money font-semibold">ETB {{ formatMoney(row.balance) }}</span>
             </template>

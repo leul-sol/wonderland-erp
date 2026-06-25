@@ -20,7 +20,7 @@ const columns = [
     <AppLayout title="Suppliers">
         <PageHeader title="Suppliers" subtitle="Vendor master for procurement" />
 
-        <DataTable :columns="columns" :rows="suppliers" empty-message="No suppliers found.">
+        <DataTable list-title="Supplier list" selectable :columns="columns" :rows="suppliers" empty-message="No suppliers found.">
             <template #cell-outstanding_balance="{ row }">
                 <span class="wh-money">ETB {{ row.outstanding_balance ?? '0.00' }}</span>
             </template>

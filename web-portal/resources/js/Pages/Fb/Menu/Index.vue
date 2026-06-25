@@ -24,7 +24,7 @@ function formatMoney(value) {
     <AppLayout title="Menu">
         <PageHeader title="Restaurant menu" subtitle="Active items available for folio and cashier orders" />
 
-        <DataTable :columns="columns" :rows="menuItems" empty-message="No menu items found.">
+        <DataTable list-title="Menu item list" selectable :columns="columns" :rows="menuItems" empty-message="No menu items found.">
             <template #cell-category="{ row }">
                 {{ row.category ?? '—' }}
             </template>
