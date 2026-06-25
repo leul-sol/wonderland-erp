@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\ChangePasswordController;
@@ -349,6 +350,21 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/roles', [AdminRoleController::class, 'index'])
             ->middleware('portal.permission:S1.identity.roles.read')
             ->name('roles.index');
+        Route::get('/roles/create', [AdminRoleController::class, 'create'])
+            ->middleware('portal.permission:S1.identity.roles.create')
+            ->name('roles.create');
+        Route::post('/roles', [AdminRoleController::class, 'store'])
+            ->middleware('portal.permission:S1.identity.roles.create')
+            ->name('roles.store');
+        Route::get('/roles/{role}/edit', [AdminRoleController::class, 'edit'])
+            ->middleware('portal.permission:S1.identity.roles.update')
+            ->name('roles.edit');
+        Route::put('/roles/{role}', [AdminRoleController::class, 'update'])
+            ->middleware('portal.permission:S1.identity.roles.update')
+            ->name('roles.update');
+        Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy'])
+            ->middleware('portal.permission:S1.identity.roles.delete')
+            ->name('roles.destroy');
         Route::get('/roles/{role}', [AdminRoleController::class, 'show'])
             ->middleware('portal.permission:S1.identity.roles.read')
             ->name('roles.show');
@@ -356,9 +372,16 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
             ->middleware('portal.permission:S1.identity.roles.sync_permissions')
             ->name('roles.permissions');
 
+        Route::get('/permissions', [AdminPermissionController::class, 'index'])
+            ->middleware('portal.permission:S1.identity.permissions.read')
+            ->name('permissions.index');
+
         Route::get('/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('portal.permission:S1.identity.audit_logs.read')
             ->name('audit.index');
+        Route::get('/audit-logs/export', [AuditLogController::class, 'export'])
+            ->middleware('portal.permission:S1.identity.audit_logs.read')
+            ->name('audit.export');
     });
 
     Route::redirect('/procurement/purchase-orders', '/inventory/purchase-orders');

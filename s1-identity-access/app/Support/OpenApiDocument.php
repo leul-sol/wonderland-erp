@@ -115,9 +115,57 @@ class OpenApiDocument
                 'put' => ['summary' => 'Update user', 'security' => $bearer, 'responses' => ['200' => ['description' => 'Updated', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserResponse']]]]]],
                 'delete' => ['summary' => 'Delete user', 'security' => $bearer, 'responses' => ['204' => ['description' => 'Deleted']]],
             ],
+            '/users/{id}/deactivate' => [
+                'post' => [
+                    'summary' => 'Deactivate user',
+                    'security' => $bearer,
+                    'responses' => ['200' => ['description' => 'Deactivated', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserResponse']]]]],
+                ],
+            ],
+            '/users/{id}/force-logout' => [
+                'post' => [
+                    'summary' => 'Revoke all refresh tokens for user',
+                    'security' => $bearer,
+                    'responses' => ['200' => ['description' => 'Sessions revoked', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/MessageResponse']]]]],
+                ],
+            ],
+            '/users/{id}/reset-password' => [
+                'post' => [
+                    'summary' => 'Admin reset user password',
+                    'security' => $bearer,
+                    'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ResetUserPasswordRequest']]]],
+                    'responses' => ['200' => ['description' => 'Password reset', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/MessageResponse']]]]],
+                ],
+            ],
+            '/users/{id}/roles' => [
+                'put' => [
+                    'summary' => 'Replace user role assignments',
+                    'security' => $bearer,
+                    'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/AssignUserRolesRequest']]]],
+                    'responses' => ['200' => ['description' => 'Roles assigned', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserResponse']]]]],
+                ],
+                'post' => [
+                    'summary' => 'Replace user role assignments (alias)',
+                    'security' => $bearer,
+                    'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/AssignUserRolesRequest']]]],
+                    'responses' => ['200' => ['description' => 'Roles assigned', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserResponse']]]]],
+                ],
+            ],
+            '/users/{id}/roles/{roleId}' => [
+                'delete' => [
+                    'summary' => 'Remove one role from user',
+                    'security' => $bearer,
+                    'responses' => ['200' => ['description' => 'Role removed', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserResponse']]]]],
+                ],
+            ],
             '/roles' => [
                 'get' => ['summary' => 'List roles', 'security' => $bearerOrService, 'responses' => ['200' => ['description' => 'Roles', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/RoleListResponse']]]]]],
                 'post' => ['summary' => 'Create role', 'security' => $bearer, 'responses' => ['201' => ['description' => 'Created', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/RoleResponse']]]]]],
+            ],
+            '/roles/{id}' => [
+                'get' => ['summary' => 'Get role', 'security' => $bearerOrService, 'responses' => ['200' => ['description' => 'Role', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/RoleResponse']]]]]],
+                'put' => ['summary' => 'Update role', 'security' => $bearer, 'responses' => ['200' => ['description' => 'Updated', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/RoleResponse']]]]]],
+                'delete' => ['summary' => 'Delete custom role', 'security' => $bearer, 'responses' => ['204' => ['description' => 'Deleted']]],
             ],
             '/roles/{id}/permissions' => [
                 'put' => ['summary' => 'Sync role permissions', 'security' => $bearer, 'responses' => ['200' => ['description' => 'Synced', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/RoleResponse']]]]]],
@@ -271,6 +319,31 @@ class OpenApiDocument
                     'display_name' => ['type' => 'string'],
                     'employee_id' => ['type' => 'integer', 'nullable' => true],
                     'role_ids' => ['type' => 'array', 'items' => ['type' => 'integer']],
+                ],
+            ],
+            'ResetUserPasswordRequest' => [
+                'type' => 'object',
+                'required' => ['password'],
+                'properties' => [
+                    'password' => ['type' => 'string'],
+                    'must_change_password' => ['type' => 'boolean'],
+                ],
+            ],
+            'AssignUserRolesRequest' => [
+                'type' => 'object',
+                'required' => ['roles'],
+                'properties' => [
+                    'roles' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'required' => ['role_id'],
+                            'properties' => [
+                                'role_id' => ['type' => 'integer'],
+                                'department_id' => ['type' => 'integer', 'nullable' => true],
+                            ],
+                        ],
+                    ],
                 ],
             ],
             'User' => [

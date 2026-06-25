@@ -39,4 +39,8 @@ Additional collections (use S1 Login first for `accessToken`):
 
 After **List Roles**, set `roleId` to a role you want (e.g. `receptionist` = id from response).
 
+**Admin lifecycle (Users folder):** create user → assign roles → reset password → force logout → deactivate → reactivate (PATCH `is_active`) → remove single role → delete user.
+
+**Audit:** use **Audit Logs For User** after admin actions; **OpenAPI Document** under Spec lists all routes.
+
 S2/S3 collections include severance, group bookings, and employee consumption flows. S4 includes fiscal period close/lock requests (set `uatFiscalPeriodId` to an open period you want to test).

@@ -19,9 +19,25 @@ curl http://localhost/s1/api/v1/health
 | Field | Value |
 |-------|-------|
 | Username | `super.admin` |
-| Password | `ChangeMeNow!10` |
+| Password | `SUPER_ADMIN_PASSWORD` in repo root `.env` (see root `.env.example`) |
 
-Change immediately after first login.
+First login may require a password change when `SEED_ADMIN_MUST_CHANGE_PASSWORD=true` (default).
+
+After UAT lockout or deactivation, re-sync dev admin:
+
+```bash
+docker compose exec s1-identity php artisan app:sync-super-admin
+```
+
+## Portal integration (sign-off)
+
+Staff admin UI is implemented in `../web-portal/` (Inertia + Vue BFF):
+
+- Users, roles, permissions catalog, audit log (portal proxy to this API)
+- Automated smoke: `../scripts/portal-admin-smoke.ps1`
+- Portal tests: `docker compose exec web-portal php artisan test --filter=Admin`
+
+S1 backend + portal admin checklist **Phases 1–7 complete** — no further S1 portal work unless the SDD revision changes.
 
 ## API surface
 
@@ -50,10 +66,16 @@ S4 reads `users`, `roles`, and `audit-logs` via `X-Service-Key`.
 - `php artisan outbox:publish` — publishes `wh.events.s1.permission.changed`
 - Docker service `s1-workers` runs both in the background
 
+## Ops runbooks
+
+- **JWKS rotation:** `../ops/runbooks/jwks-rotation.md`
+- **Incident response:** `../ops/runbooks/incident-response.md`
+- **DR restore drill:** `../scripts/restore-drill.ps1` (logs `dr.restore_drill` to audit on success)
+
 ## Remaining (cross-system / ops)
 
 1. PHPStan in CI (baseline config at repo root when enabled)
-2. Production DR runbook (D14)
+2. Dual-key JWKS for seamless rotation (single key today)
 
 Permission catalogs for S1–S4 are loaded from `../specs/*/permissions.yaml` via `CatalogPermissionsSeeder`.
 

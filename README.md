@@ -15,7 +15,7 @@ Design source: [`documents/`](documents/) (S0–S4 SDDs, v1.0). Executable contr
 
 All four systems are implemented and wired through the gateway:
 
-- **S1** — JWT auth, RBAC (112 permissions), users/roles, audit, cross-system permission sync
+- **S1** — JWT auth, RBAC (112 permissions), users/roles, audit, cross-system permission sync — **sign-off complete** (portal admin Phases 1–7; `scripts/portal-admin-smoke.ps1`)
 - **S2** — employees, payroll (with deductions), leave, attendance, severance, outbox events
 - **S3** — reservations, folios, F&B, procurement, group bookings, staff consumption → S2 deductions
 - **S4** — GL, fiscal periods, budgets, 24-report BI catalog, dashboards, RTM/UAT tracking, event consumers
@@ -33,7 +33,7 @@ Staff portal (Inertia + Vue BFF): `http://localhost/` — see [`web-portal/READM
 
 `start.ps1` copies per-service `.env` files on first run, builds containers, runs migrations, and calls `app:ensure-seeded` on S1–S4.
 
-Default dev login: `super.admin` / `ChangeMeNow!10` (must change password on first login).
+Default dev login: `super.admin` / password from root `.env` (`SUPER_ADMIN_PASSWORD`; fallback `ChangeMeNow!10` when `.env` is absent). On first seed you may be prompted to change password — see [Dev credentials](web-portal/README.md#dev-credentials).
 
 ```bash
 # Manual health checks
@@ -51,7 +51,7 @@ After the stack is up and seeded:
 .\scripts\run-uat-e2e.ps1
 ```
 
-The script exercises **24 UAT scenarios** (hotel golden path, group bookings, employee consumption, payroll, severance, finance reports, fiscal period close/lock) and records results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat`.
+The script exercises **27 UAT scenarios** (S1 identity, hotel golden path, group bookings, employee consumption, payroll, severance, finance reports, fiscal period close/lock) and records results via `POST /s4/api/v1/bi/uat/{id}/results`. Check outcomes with `GET /s4/api/v1/bi/uat`.
 
 **Pilot gate** (tests + traceability + UAT — not production):
 
@@ -65,7 +65,17 @@ To reset UAT statuses and room availability before another run:
 
 ```powershell
 .\scripts\reset-uat.ps1
+docker compose exec s1-identity php artisan app:sync-super-admin   # if super.admin was locked/deactivated by UAT
 ```
+
+## Portal smoke tests
+
+```powershell
+.\scripts\portal-admin-smoke.ps1   # S1 admin: login, users, roles, audit, change-password
+.\scripts\portal-smoke.ps1         # Front desk golden path through portal UI
+```
+
+Details: [`web-portal/README.md`](web-portal/README.md).
 
 ## Secrets (staging / shared hosts)
 

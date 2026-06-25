@@ -1,6 +1,6 @@
 # Wonderland ERP - pilot gate (NOT production sign-off)
 # Runs: service tests -> traceability summary -> UAT E2E
-# Exit 0 only when tests pass, no critical SDD gaps, UAT 24/24
+# Exit 0 only when tests pass, no critical SDD gaps, UAT 27/27
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
@@ -88,10 +88,17 @@ foreach ($svc in $services) {
     }
 }
 
-Write-Step "UAT E2E (24 scenarios)"
+Write-Step "UAT E2E (27 scenarios)"
 & (Join-Path $RepoRoot "scripts\run-uat-e2e.ps1")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  UAT FAILED" -ForegroundColor Red
+    $failed = $true
+}
+
+Write-Step "Portal admin smoke (S1 sign-off)"
+& (Join-Path $RepoRoot "scripts\portal-admin-smoke.ps1")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  PORTAL ADMIN SMOKE FAILED" -ForegroundColor Red
     $failed = $true
 }
 

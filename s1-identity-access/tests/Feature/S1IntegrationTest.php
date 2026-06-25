@@ -22,10 +22,30 @@ class S1IntegrationTest extends TestCase
 
     public function test_openapi_document_is_available(): void
     {
-        $this->getJson('/api/v1/openapi.json')
+        $response = $this->getJson('/api/v1/openapi.json');
+
+        $response
             ->assertOk()
             ->assertJsonPath('openapi', '3.0.3')
-            ->assertJsonStructure(['paths' => ['/auth/verify'], 'components' => ['schemas' => ['LoginRequest', 'TokenResponse']]]);
+            ->assertJsonStructure([
+                'paths' => [
+                    '/auth/verify',
+                    '/users/{id}/deactivate',
+                    '/users/{id}/force-logout',
+                    '/users/{id}/reset-password',
+                    '/users/{id}/roles',
+                    '/users/{id}/roles/{roleId}',
+                    '/roles/{id}',
+                ],
+                'components' => [
+                    'schemas' => [
+                        'LoginRequest',
+                        'TokenResponse',
+                        'ResetUserPasswordRequest',
+                        'AssignUserRolesRequest',
+                    ],
+                ],
+            ]);
     }
 
     public function test_permissions_by_domain_route(): void

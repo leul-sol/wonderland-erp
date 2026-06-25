@@ -5,7 +5,8 @@
 
 meta:
   version: "1.0"
-  date: "2026-06-24"
+  date: "2026-06-25"
+  s1_portal_signoff: "2026-06-25 — checklist Phases 1–7 complete; scripts/portal-admin-smoke.ps1"
   sources:
     - documents/S0_Cross_System_Integration_and_Platform.pdf
     - documents/S1_Identity_Access_Platform_SDD.pdf
@@ -32,8 +33,8 @@ requirements:
   - { key: S1-RBAC-001, system: S1, section: "§6", title: Global permissions + role assignment, status: implemented, priority: critical, evidence: "PermissionCatalogTest; specs/s1–s4 permissions.yaml" }
   - { key: S1-USER-001, system: S1, section: "§7", title: Account lifecycle (provision from S2), status: implemented, priority: high, evidence: "events:consume-s2, UAT-S2-006" }
   - { key: S1-EVT-001, system: S1, section: "§8", title: Consume S2 employee events, status: implemented, priority: high, evidence: "s1-workers, ProvisionEmployeeFromS2" }
-  - { key: S1-AUDIT-001, system: S1, section: "§9", title: Audit logging API, status: partial, priority: medium, evidence: "GET /audit-logs exists; full compliance retention policy not verified" }
-  - { key: S1-SEC-001, system: S1, section: "§5.4", title: Password policy & lockout, status: partial, priority: high, evidence: "must_change_password on seed; full lockout thresholds not tested" }
+  - { key: S1-AUDIT-001, system: S1, section: "§9", title: Audit logging API, status: implemented, priority: medium, evidence: "Audit API, portal CSV export, UAT-S1-004, dr.restore_drill" }
+  - { key: S1-SEC-001, system: S1, section: "§5.4", title: Password policy & lockout, status: implemented, priority: high, evidence: "AuthTest lockout; UAT-S1-002; must_change_password flow" }
   - { key: S1-NFR-001, system: S1, section: "§11", title: NFR performance/security testing, status: ops_pending, priority: medium, evidence: "Feature tests only; no load test harness" }
 
   # --- S2 Workforce ---
@@ -85,4 +86,4 @@ requirements:
   - { key: S4-NFR-001, system: S4, section: "§11", title: NFR performance/observability, status: ops_pending, priority: medium, evidence: "Health endpoint only; no APM" }
 
   # --- UI (explicitly deferred) ---
-  - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: implemented, priority: high, evidence: "web-portal Phases 0–8 complete; scripts/portal-smoke.ps1" }
+  - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: implemented, priority: high, evidence: "web-portal Phases 0–8; scripts/portal-smoke.ps1; S1 admin scripts/portal-admin-smoke.ps1" }

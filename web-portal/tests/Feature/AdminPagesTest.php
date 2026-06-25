@@ -19,8 +19,13 @@ class AdminPagesTest extends TestCase
             'S1.identity.users.create',
             'S1.identity.users.deactivate',
             'S1.identity.users.assign_role',
+            'S1.identity.users.update',
             'S1.identity.roles.read',
+            'S1.identity.roles.create',
+            'S1.identity.roles.update',
+            'S1.identity.roles.delete',
             'S1.identity.roles.sync_permissions',
+            'S1.identity.permissions.read',
             'S1.identity.audit_logs.read',
         ]);
     }
@@ -76,6 +81,21 @@ class AdminPagesTest extends TestCase
                     ['id' => 6, 'name' => 'report_viewer', 'display_name' => 'Report Viewer'],
                 ],
             ]);
+            $mock->shouldReceive('auditLogsForUser')->once()->with(3, ['per_page' => 25, 'page' => 1])->andReturn([
+                'data' => [[
+                    'id' => 50,
+                    'event' => 'user.login',
+                    'created_at' => '2026-06-01T10:00:00+00:00',
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'PHPUnit',
+                ]],
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 25,
+                    'total' => 1,
+                ],
+            ]);
         });
 
         $response = $this->get('/admin/users/3');
@@ -87,6 +107,8 @@ class AdminPagesTest extends TestCase
             ->where('assignedRoleIds', [5])
             ->has('roles', 2)
             ->where('canAssignRoles', true)
+            ->where('canViewAudit', true)
+            ->has('auditLogs', 1)
         );
     }
 
@@ -175,6 +197,55 @@ class AdminPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page->component('Admin/Audit/Index')->has('auditLogs', 1));
     }
 
+    public function test_audit_log_export_returns_csv(): void
+    {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('auditLogs')->once()->andReturn([
+                'data' => [[
+                    'id' => 100,
+                    'event' => 'user.created',
+                    'user_id' => 1,
+                    'user' => ['username' => 'super.admin'],
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'PHPUnit',
+                    'created_at' => '2026-06-01T10:00:00+00:00',
+                ]],
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 100,
+                    'total' => 1,
+                ],
+            ]);
+        });
+
+        $response = $this->get('/admin/audit-logs/export');
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('user.created', $response->streamedContent());
+        $this->assertStringContainsString('super.admin', $response->streamedContent());
+    }
+
+    public function test_audit_log_index_shows_inline_error_when_api_fails(): void
+    {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('auditLogs')->once()->andThrow(
+                new \App\Exceptions\ApiException('S1_UNAVAILABLE', 'Identity service is unreachable.', 503),
+            );
+        });
+
+        $response = $this->get('/admin/audit-logs');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Audit/Index')
+            ->where('loadError', 'Identity service is unreachable.')
+            ->where('loadErrorCode', 'S1_UNAVAILABLE')
+            ->has('auditLogs', 0)
+        );
+    }
+
     public function test_user_edit_renders(): void
     {
         Session::put('portal.permissions', array_merge(Session::get('portal.permissions', []), [
@@ -198,5 +269,56 @@ class AdminPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('Admin/Users/Edit'));
+    }
+
+    public function test_role_create_page_renders(): void
+    {
+        $response = $this->get('/admin/roles/create');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Admin/Roles/Create'));
+    }
+
+    public function test_role_edit_renders(): void
+    {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('role')->once()->with(9)->andReturn([
+                'data' => [
+                    'id' => 9,
+                    'name' => 'custom_role',
+                    'display_name' => 'Custom Role',
+                    'description' => 'Test',
+                    'is_system' => false,
+                ],
+            ]);
+        });
+
+        $response = $this->get('/admin/roles/9/edit');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Admin/Roles/Edit'));
+    }
+
+    public function test_permissions_index_renders(): void
+    {
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('permissions')->once()->andReturn([
+                'data' => [[
+                    'id' => 1,
+                    'domain' => 'identity',
+                    'action' => 'S1.identity.users.read',
+                    'display_name' => 'Read users',
+                ]],
+                'meta' => ['total' => 1],
+            ]);
+        });
+
+        $response = $this->get('/admin/permissions');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Permissions/Index')
+            ->has('permissions', 1)
+        );
     }
 }

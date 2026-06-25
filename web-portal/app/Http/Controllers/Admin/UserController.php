@@ -33,7 +33,15 @@ class UserController extends Controller
         try {
             $response = $this->s1->users($query);
         } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
+            return Inertia::render('Admin/Users/Index', [
+                'users' => [],
+                'meta' => null,
+                'search' => $request->input('search', ''),
+                'canCreate' => $this->auth->hasAnyPermission(['S1.identity.users.create']),
+                'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
+                'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
+                ...$this->apiLoadErrorProps($e),
+            ]);
         }
 
         return Inertia::render('Admin/Users/Index', [
@@ -43,10 +51,12 @@ class UserController extends Controller
             'canCreate' => $this->auth->hasAnyPermission(['S1.identity.users.create']),
             'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
             'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
+            'loadError' => null,
+            'loadErrorCode' => null,
         ]);
     }
 
-    public function show(int $user): Response|RedirectResponse
+    public function show(Request $request, int $user): Response|RedirectResponse
     {
         try {
             $userResponse = $this->s1->user($user);
@@ -58,6 +68,27 @@ class UserController extends Controller
         $userData = $userResponse['data'] ?? [];
         $assignedRoleIds = collect($userData['roles'] ?? [])->pluck('id')->all();
 
+        $canViewAudit = $this->auth->hasAnyPermission(['S1.identity.audit_logs.read']);
+        $auditLogs = [];
+        $auditMeta = null;
+        $auditLoadError = null;
+        $auditLoadErrorCode = null;
+
+        if ($canViewAudit) {
+            try {
+                $auditPage = max(1, (int) $request->input('audit_page', 1));
+                $auditResponse = $this->s1->auditLogsForUser($user, [
+                    'per_page' => 25,
+                    'page' => $auditPage,
+                ]);
+                $auditLogs = $auditResponse['data'] ?? [];
+                $auditMeta = $auditResponse['meta'] ?? null;
+            } catch (ApiException $e) {
+                $auditLoadError = $e->getMessage();
+                $auditLoadErrorCode = $e->errorCode;
+            }
+        }
+
         return Inertia::render('Admin/Users/Show', [
             'user' => $userData,
             'roles' => $rolesResponse['data'] ?? [],
@@ -68,6 +99,11 @@ class UserController extends Controller
             'canForceLogout' => $this->auth->hasAnyPermission(['S1.identity.users.force_logout']),
             'canDelete' => $this->auth->hasAnyPermission(['S1.identity.users.delete']),
             'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
+            'canViewAudit' => $canViewAudit,
+            'auditLogs' => $auditLogs,
+            'auditMeta' => $auditMeta,
+            'auditLoadError' => $auditLoadError,
+            'auditLoadErrorCode' => $auditLoadErrorCode,
         ]);
     }
 

@@ -1,8 +1,8 @@
 # Wonderland ERP — Web Portal UI Plan
 
 **Stack:** Laravel 11 + Inertia.js + Vue 3 + Tailwind (BFF portal)  
-**Status:** Planned — implementation starts Phase 0  
-**Gate:** Pilot gate green (UAT 24/24); APIs unchanged; UI is presentation only
+**Status:** Implemented — portal Phases 0–8; **S1 Identity & Access admin UI sign-off complete** (checklist Phases 1–7)  
+**Gate:** Pilot gate green (UAT 27/27); APIs unchanged; UI is presentation only
 
 PDFs and `specs/traceability/matrix.yaml` remain source of truth for business rules. This folder defines **screens, routes, permissions, and API calls** for the staff portal.
 

@@ -17,6 +17,7 @@ class EventOutbox extends Model
         'payload',
         'status',
         'attempts',
+        'last_attempt_at',
         'published_at',
     ];
 
@@ -26,6 +27,7 @@ class EventOutbox extends Model
             'payload' => 'array',
             'attempts' => 'integer',
             'created_at' => 'datetime',
+            'last_attempt_at' => 'datetime',
             'published_at' => 'datetime',
         ];
     }

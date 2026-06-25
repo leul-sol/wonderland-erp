@@ -45,6 +45,36 @@ class AuthTest extends TestCase
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
     }
 
+    public function test_account_locks_after_max_failed_logins(): void
+    {
+        config(['password_policy.max_failed_logins' => 3]);
+
+        $user = User::query()->create([
+            'username' => 'lockout.candidate',
+            'email' => 'lockout@wonderlandhotel.local',
+            'password' => bcrypt('Welcome123!'),
+            'display_name' => 'Lockout Candidate',
+            'is_active' => true,
+            'password_changed_at' => now(),
+        ]);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->postJson('/api/v1/auth/login', [
+                'username' => 'lockout.candidate',
+                'password' => 'wrong-password',
+            ])->assertStatus(401);
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'username' => 'lockout.candidate',
+            'password' => 'Welcome123!',
+        ])->assertStatus(403)
+            ->assertJsonPath('error.message', 'Account is temporarily locked.');
+
+        $user->refresh();
+        $this->assertTrue($user->isLocked());
+    }
+
     public function test_expired_password_restricts_protected_routes(): void
     {
         $user = User::query()->where('username', 'super.admin')->firstOrFail();

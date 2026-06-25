@@ -140,6 +140,41 @@ class S1AdminClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createRole(array $payload): array
+    {
+        return $this->json('POST', '/s1/api/v1/roles', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateRole(int $roleId, array $payload): array
+    {
+        return $this->json('PUT', "/s1/api/v1/roles/{$roleId}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteRole(int $roleId): array
+    {
+        return $this->json('DELETE', "/s1/api/v1/roles/{$roleId}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function permissionsByDomain(string $domain, array $query = []): array
+    {
+        return $this->json('GET', "/s1/api/v1/permissions/{$domain}", $query);
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */

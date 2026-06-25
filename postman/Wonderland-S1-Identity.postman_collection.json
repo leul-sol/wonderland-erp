@@ -302,6 +302,34 @@
           }
         },
         {
+          "name": "Reactivate User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Remove Role From User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}/roles/{{roleId}}"
+          }
+        },
+        {
           "name": "Delete User",
           "request": {
             "auth": {
@@ -444,6 +472,18 @@
               "query": [{ "key": "domain", "value": "identity" }]
             }
           }
+        },
+        {
+          "name": "List Permissions By Domain",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/permissions/identity"
+          }
         }
       ]
     },
@@ -479,6 +519,31 @@
             "method": "GET",
             "header": [{ "key": "X-Service-Key", "value": "{{serviceKey}}" }],
             "url": "{{baseUrl}}/audit-logs"
+          }
+        },
+        {
+          "name": "Audit Logs For User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/audit-logs/user/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spec",
+      "item": [
+        {
+          "name": "OpenAPI Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/openapi.json"
           }
         }
       ]

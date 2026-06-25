@@ -43,3 +43,4 @@ if [ "$tables" -lt 1 ]; then
 fi
 
 echo "[drill] PASS - archive valid (${tables} tables in sample restore)"
+echo "DRILL_RESULT archive=$(basename "$archive") tables=${tables}"

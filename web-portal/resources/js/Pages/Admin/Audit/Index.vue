@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { reactive } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
@@ -9,6 +10,9 @@ const props = defineProps({
     auditLogs: { type: Array, default: () => [] },
     meta: { type: Object, default: null },
     filters: { type: Object, default: () => ({}) },
+    exportQuery: { type: String, default: '' },
+    loadError: { type: String, default: null },
+    loadErrorCode: { type: String, default: null },
 });
 
 const filterForm = reactive({
@@ -53,6 +57,8 @@ function goToPage(page) {
 function formatUser(row) {
     return row.user?.username ?? (row.user_id ? `#${row.user_id}` : '—');
 }
+
+const exportHref = `/admin/audit-logs/export${props.exportQuery ? `?${props.exportQuery}` : ''}`;
 </script>
 
 <template>
@@ -61,12 +67,15 @@ function formatUser(row) {
             title="Audit log"
             subtitle="Platform security and permission change history"
             :breadcrumbs="breadcrumbs"
-            :show-export="true"
+            :show-export="!loadError"
+            :export-href="exportHref"
         >
             <template #actions>
                 <Link href="/admin/users" class="wh-btn-outline">Users</Link>
             </template>
         </PageHeader>
+
+        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
 
         <DataTable
             list-title="Audit entries"

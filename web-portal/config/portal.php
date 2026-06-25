@@ -147,12 +147,14 @@ return [
             'permissions' => [
                 'S1.identity.users.read',
                 'S1.identity.roles.read',
+                'S1.identity.permissions.read',
                 'S1.identity.audit_logs.read',
             ],
             'phase' => 8,
             'children' => [
                 ['key' => 'users', 'label' => 'Users', 'route' => 'admin.users.index', 'permissions' => ['S1.identity.users.read']],
                 ['key' => 'roles', 'label' => 'Roles & permissions', 'route' => 'admin.roles.index', 'permissions' => ['S1.identity.roles.read']],
+                ['key' => 'permissions', 'label' => 'Permission catalog', 'route' => 'admin.permissions.index', 'permissions' => ['S1.identity.permissions.read']],
                 ['key' => 'audit', 'label' => 'Audit logs', 'route' => 'admin.audit.index', 'permissions' => ['S1.identity.audit_logs.read']],
             ],
         ],

@@ -12,6 +12,7 @@ defineProps({
     showRefresh: { type: Boolean, default: true },
     showPrint: { type: Boolean, default: true },
     showExport: { type: Boolean, default: false },
+    exportHref: { type: String, default: '' },
 });
 
 function refreshPage() {
@@ -67,7 +68,15 @@ function printPage() {
                     <Printer class="h-[18px] w-[18px]" />
                 </button>
 
-                <button v-if="showExport" type="button" class="wh-btn-outline">
+                <a
+                    v-if="showExport && exportHref"
+                    :href="exportHref"
+                    class="wh-btn-outline"
+                >
+                    <Download class="h-4 w-4" />
+                    Export
+                </a>
+                <button v-else-if="showExport" type="button" class="wh-btn-outline" disabled title="Export not available">
                     <Download class="h-4 w-4" />
                     Export
                 </button>

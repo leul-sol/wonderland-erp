@@ -29,9 +29,11 @@ class SuperAdminSeeder extends Seeder
         $userId = DB::table('users')->where('username', 'super.admin')->value('id');
         $roleId = DB::table('roles')->where('name', 'super_admin')->value('id');
 
-        DB::table('user_roles')->updateOrInsert(
-            ['user_id' => $userId, 'role_id' => $roleId],
-            ['assigned_at' => now()]
-        );
+        if ($userId && $roleId) {
+            DB::table('user_roles')->updateOrInsert(
+                ['user_id' => $userId, 'role_id' => $roleId],
+                ['assigned_at' => now()]
+            );
+        }
     }
 }

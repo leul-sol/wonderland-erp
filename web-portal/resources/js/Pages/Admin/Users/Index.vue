@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import DataTable from '../../../Components/DataTable.vue';
+import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
@@ -14,6 +15,8 @@ const props = defineProps({
     canCreate: { type: Boolean, default: false },
     canDeactivate: { type: Boolean, default: false },
     canAssignRoles: { type: Boolean, default: false },
+    loadError: { type: String, default: null },
+    loadErrorCode: { type: String, default: null },
 });
 
 const columns = [
@@ -71,7 +74,6 @@ function rowActions(row) {
             title="Platform users"
             subtitle="S1 identity — create and deactivate staff accounts"
             :breadcrumbs="breadcrumbs"
-            :show-export="true"
         >
             <template #actions>
                 <Link href="/admin/roles" class="wh-btn-outline">Roles</Link>
@@ -82,6 +84,8 @@ function rowActions(row) {
                 </Link>
             </template>
         </PageHeader>
+
+        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
 
         <DataTable
             list-title="User list"

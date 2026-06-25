@@ -22,7 +22,8 @@ function Invoke-MySqlContainerScript {
         [string]$RepoRoot,
         [string]$RelativeScript,
         [string[]]$Arguments = @(),
-        [hashtable]$Environment = @{}
+        [hashtable]$Environment = @{},
+        [switch]$CaptureOutput
     )
 
     $source = Join-Path $RepoRoot $RelativeScript
@@ -55,7 +56,18 @@ function Invoke-MySqlContainerScript {
     $prevErrorAction = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        & docker @cmd 2>&1 | ForEach-Object { Write-Host $_ }
+        $output = & docker @cmd 2>&1
+        foreach ($line in $output) {
+            Write-Host $line
+        }
+
+        if ($CaptureOutput) {
+            return [PSCustomObject]@{
+                ExitCode = $LASTEXITCODE
+                Output   = @($output | ForEach-Object { "$_" })
+            }
+        }
+
         return $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prevErrorAction

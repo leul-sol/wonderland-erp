@@ -18,14 +18,24 @@ if ($Archive -ne "") {
 
 Write-Host "Running restore drill (non-destructive)..."
 
-$exitCode = Invoke-MySqlContainerScript `
+$drillOutput = Invoke-MySqlContainerScript `
     -RepoRoot $RepoRoot `
     -RelativeScript "ops\backup\restore-drill.sh" `
     -Arguments $args `
-    -Environment @{ MYSQL_ROOT_PASSWORD = $mysqlRoot }
+    -Environment @{ MYSQL_ROOT_PASSWORD = $mysqlRoot } `
+    -CaptureOutput
 
-if ($exitCode -ne 0) {
+if ($drillOutput.ExitCode -ne 0) {
     Write-Error "Restore drill failed."
+}
+
+$resultLine = $drillOutput.Output | Where-Object { $_ -match '^DRILL_RESULT ' } | Select-Object -Last 1
+if ($resultLine -match 'archive=(\S+)\s+tables=(\d+)') {
+    $archiveName = $Matches[1]
+    $tableCount = $Matches[2]
+
+    Write-Host "Logging dr.restore_drill audit entry to S1..."
+    docker compose exec -T s1-identity php artisan audit:dr-restore-drill $archiveName $tableCount | Out-Null
 }
 
 Write-Host "Restore drill passed." -ForegroundColor Green

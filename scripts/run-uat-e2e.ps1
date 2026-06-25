@@ -91,6 +91,47 @@ function Invoke-Api {
     }
 }
 
+function Invoke-S1LoginRaw {
+    param(
+        [string]$Username,
+        [string]$Password
+    )
+
+    try {
+        $response = Invoke-WebRequest -Method POST -Uri "$BaseS1/auth/login" `
+            -Headers @{ Accept = "application/json" } `
+            -ContentType "application/json" `
+            -Body (@{ username = $Username; password = $Password } | ConvertTo-Json) `
+            -UseBasicParsing
+
+        return @{
+            StatusCode = [int]$response.StatusCode
+            Body       = ($response.Content | ConvertFrom-Json)
+        }
+    }
+    catch {
+        $statusCode = 0
+        if ($_.Exception.Response) {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+        }
+
+        $body = $null
+        if ($_.ErrorDetails.Message) {
+            try {
+                $body = $_.ErrorDetails.Message | ConvertFrom-Json
+            }
+            catch {
+                $body = $null
+            }
+        }
+
+        return @{
+            StatusCode = $statusCode
+            Body       = $body
+        }
+    }
+}
+
 function With-IdempotencyKey {
     param(
         [hashtable]$RequestHeaders,
@@ -244,6 +285,92 @@ if ($me.username -ne $Username) {
 }
 Write-Step "S1 identity verified"
 Record-Uat -ScenarioKey "UAT-S1-001" -Status "passed" -Notes "Automated E2E login and /auth/me." -Token $token
+
+Write-Step "S1 account lockout (UAT-S1-002)"
+$lockoutUsername = "e2e.uat.lockout"
+$lockoutPassword = "Welcome123!"
+try {
+    Invoke-Api -Method POST -Url "$BaseS1/users" -RequestHeaders $auth -Payload @{
+        username     = $lockoutUsername
+        email        = "$lockoutUsername@wonderland.test"
+        password     = $lockoutPassword
+        display_name = "UAT Lockout User"
+        is_active    = $true
+    } | Out-Null
+}
+catch {
+    Write-Host "  Lockout user may already exist; continuing."
+}
+
+for ($attempt = 1; $attempt -le 5; $attempt++) {
+    $failed = Invoke-S1LoginRaw -Username $lockoutUsername -Password "wrong-password"
+    if ($failed.StatusCode -ne 401) {
+        throw "Expected 401 on failed login attempt $attempt, got $($failed.StatusCode)."
+    }
+}
+
+$locked = Invoke-S1LoginRaw -Username $lockoutUsername -Password $lockoutPassword
+if ($locked.StatusCode -ne 403) {
+    throw "Expected locked account login to return 403, got $($locked.StatusCode)."
+}
+Record-Uat -ScenarioKey "UAT-S1-002" -Status "passed" -Notes "Account locked after repeated failed logins." -Token $token
+
+Write-Step "S1 deactivate user (UAT-S1-003)"
+$deactivateUsername = "e2e.uat.deactivate"
+$deactivatePassword = "Welcome123!"
+$deactivateUser = $null
+try {
+    $created = Invoke-Api -Method POST -Url "$BaseS1/users" -RequestHeaders $auth -Payload @{
+        username     = $deactivateUsername
+        email        = "$deactivateUsername@wonderland.test"
+        password     = $deactivatePassword
+        display_name = "UAT Deactivate User"
+        is_active    = $true
+    }
+    $deactivateUser = $created.data
+}
+catch {
+    $existing = Invoke-Api -Method GET -Url "$BaseS1/users?search=$deactivateUsername" -RequestHeaders $auth
+    $deactivateUser = $existing.data | Where-Object { $_.username -eq $deactivateUsername } | Select-Object -First 1
+}
+
+if ($null -eq $deactivateUser) {
+    throw "Unable to create or locate deactivate test user."
+}
+
+$activeLogin = Invoke-S1LoginRaw -Username $deactivateUsername -Password $deactivatePassword
+if ($activeLogin.StatusCode -ne 200) {
+    Invoke-Api -Method PATCH -Url "$BaseS1/users/$($deactivateUser.id)" -RequestHeaders $auth -Payload @{ is_active = $true } | Out-Null
+    $activeLogin = Invoke-S1LoginRaw -Username $deactivateUsername -Password $deactivatePassword
+}
+if ($activeLogin.StatusCode -ne 200) {
+    throw "Deactivate test user could not sign in before deactivation."
+}
+
+Invoke-Api -Method POST -Url "$BaseS1/users/$($deactivateUser.id)/deactivate" -RequestHeaders $auth | Out-Null
+$deactivatedLogin = Invoke-S1LoginRaw -Username $deactivateUsername -Password $deactivatePassword
+if ($deactivatedLogin.StatusCode -ne 403) {
+    throw "Expected deactivated user login to return 403, got $($deactivatedLogin.StatusCode)."
+}
+Record-Uat -ScenarioKey "UAT-S1-003" -Status "passed" -Notes "Deactivated user cannot sign in." -Token $token
+
+Write-Step "S1 role permission sync (UAT-S1-004)"
+$syncRole = (Invoke-Api -Method GET -Url "$BaseS1/roles?per_page=50" -RequestHeaders $auth).data |
+    Where-Object { $_.name -eq "report_viewer" } |
+    Select-Object -First 1
+if ($null -eq $syncRole) {
+    throw "report_viewer role not found for permission sync UAT."
+}
+$roleDetail = Invoke-Api -Method GET -Url "$BaseS1/roles/$($syncRole.id)" -RequestHeaders $auth
+$permissionIds = @($roleDetail.data.permissions | ForEach-Object { $_.id })
+Invoke-Api -Method PUT -Url "$BaseS1/roles/$($syncRole.id)/permissions" -RequestHeaders $auth -Payload @{
+    permission_ids = $permissionIds
+} | Out-Null
+$permissionAudit = Invoke-Api -Method GET -Url "$BaseS1/audit-logs?event=permission.changed&per_page=5" -RequestHeaders $auth
+if (($permissionAudit.data | Measure-Object).Count -lt 1) {
+    throw "Expected permission.changed audit entry after role permission sync."
+}
+Record-Uat -ScenarioKey "UAT-S1-004" -Status "passed" -Notes "Role permission sync recorded in audit log." -Token $token
 
 Write-Step "S2 employee for consumption (UAT-S3-004 prep)"
 $consumptionEmployee = Invoke-Api -Method POST -Url "$BaseS2/employees" -RequestHeaders $auth -Payload @{

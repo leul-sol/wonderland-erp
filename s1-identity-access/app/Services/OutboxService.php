@@ -34,7 +34,7 @@ class OutboxService
     {
         $published = 0;
         $backoff = config('events.outbox.retry_backoff_seconds');
-        $maxAttempts = count($backoff);
+        $maxAttempts = count($backoff) + 1;
 
         $rows = EventOutbox::query()
             ->where('status', 'pending')
@@ -43,6 +43,12 @@ class OutboxService
             ->get();
 
         foreach ($rows as $row) {
+            if (! $this->shouldAttemptPublish($row, $backoff)) {
+                continue;
+            }
+
+            $row->update(['last_attempt_at' => now()]);
+
             try {
                 $this->publishToBus($row);
                 $row->update([
@@ -52,6 +58,7 @@ class OutboxService
                 $published++;
             } catch (Throwable $exception) {
                 $row->increment('attempts');
+                $row->update(['last_attempt_at' => now()]);
                 $row->refresh();
 
                 if ($row->attempts >= $maxAttempts) {
@@ -62,6 +69,25 @@ class OutboxService
         }
 
         return $published;
+    }
+
+    /**
+     * @param  list<int>  $backoffSeconds
+     */
+    public function shouldAttemptPublish(EventOutbox $row, array $backoffSeconds): bool
+    {
+        if ($row->attempts === 0) {
+            return true;
+        }
+
+        if ($row->last_attempt_at === null) {
+            return true;
+        }
+
+        $index = min($row->attempts - 1, count($backoffSeconds) - 1);
+        $waitSeconds = $backoffSeconds[$index] ?? end($backoffSeconds);
+
+        return $row->last_attempt_at->diffInSeconds(now()) >= $waitSeconds;
     }
 
     public function publishToBus(EventOutbox $row): void
