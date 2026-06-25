@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\PermissionMenuBuilder;
+use App\Support\SidebarNavBuilder;
 use App\Support\TaskMenuBuilder;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class HandleInertiaRequests extends Middleware
     public function __construct(
         private readonly PermissionMenuBuilder $menu,
         private readonly TaskMenuBuilder $tasks,
+        private readonly SidebarNavBuilder $navigation,
     ) {
     }
 
@@ -39,6 +41,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'menu' => fn () => $this->menu->build(),
             'tasks' => fn () => $this->tasks->build(),
+            'navigation' => fn () => $this->navigation->build(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

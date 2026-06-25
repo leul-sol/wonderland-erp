@@ -32,14 +32,27 @@ class LoginController extends Controller
         try {
             $this->auth->login($credentials['username'], $credentials['password']);
         } catch (ApiException $exception) {
-            return back()
-                ->withInput($request->only('username'))
-                ->with('error', $exception->getMessage());
+            return $this->loginFailed($request, $exception->getMessage());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return $this->loginFailed(
+                $request,
+                'Unable to reach the sign-in service. Make sure Docker is running, then try again.',
+            );
         }
 
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function loginFailed(Request $request, string $message): RedirectResponse
+    {
+        return back()
+            ->withInput($request->only('username'))
+            ->withErrors(['login' => $message])
+            ->with('error', $message);
     }
 
     public function destroy(Request $request): RedirectResponse

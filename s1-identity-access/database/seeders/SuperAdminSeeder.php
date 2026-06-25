@@ -19,6 +19,8 @@ class SuperAdminSeeder extends Seeder
                 'is_active' => true,
                 'must_change_password' => (bool) config('seeding.admin_must_change_password'),
                 'password_changed_at' => now(),
+                'failed_login_count' => 0,
+                'locked_until' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]

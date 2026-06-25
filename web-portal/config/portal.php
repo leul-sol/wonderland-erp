@@ -5,6 +5,20 @@ return [
 
     'refresh_before_expiry_seconds' => (int) env('PORTAL_TOKEN_REFRESH_BUFFER', 120),
 
+    'module_icons' => [
+        'dashboard' => 'layout-grid',
+        'front_desk' => 'bed-double',
+        'fb' => 'utensils-crossed',
+        'inventory' => 'package',
+        'consumption' => 'coffee',
+        'group_bookings' => 'users-round',
+        'hr' => 'user-cog',
+        'payroll' => 'wallet',
+        'finance' => 'file-bar-chart',
+        'admin' => 'shield-check',
+        'general' => 'zap',
+    ],
+
     /*
     | Sidebar modules — filtered by user permissions (any match shows module).
     | Routes without Phase 1+ pages render Modules/Placeholder until implemented.
@@ -13,6 +27,7 @@ return [
         [
             'key' => 'dashboard',
             'label' => 'Dashboard',
+            'icon' => 'layout-grid',
             'route' => 'dashboard',
             'permissions' => ['S4.bi.dashboards.read', 'S4.bi.reports.read'],
             'phase' => 0,
@@ -20,27 +35,45 @@ return [
         [
             'key' => 'front_desk',
             'label' => 'Front desk',
+            'icon' => 'bed-double',
             'route' => 'front-desk.rooms.index',
             'permissions' => ['S3.hotel.rooms.read', 'S3.hotel.reservations.read', 'S3.hotel.folios.read'],
             'phase' => 1,
+            'children' => [
+                ['key' => 'rooms', 'label' => 'Room status', 'route' => 'front-desk.rooms.index', 'permissions' => ['S3.hotel.rooms.read']],
+                ['key' => 'check_in', 'label' => 'Check in guest', 'route' => 'front-desk.check-in.create', 'permissions' => ['S3.hotel.checkinout.write', 'S3.hotel.reservations.write']],
+                ['key' => 'folios', 'label' => 'Folios', 'route' => 'front-desk.folios.index', 'permissions' => ['S3.hotel.folios.read']],
+            ],
         ],
         [
             'key' => 'fb',
             'label' => 'Restaurant and F&B',
+            'icon' => 'utensils-crossed',
             'route' => 'fb.menu.index',
             'permissions' => ['S3.restaurant.orders.read', 'S3.restaurant.menu.read'],
             'phase' => 2,
+            'children' => [
+                ['key' => 'menu', 'label' => 'Menu', 'route' => 'fb.menu.index', 'permissions' => ['S3.restaurant.menu.read']],
+                ['key' => 'orders', 'label' => 'New order', 'route' => 'fb.orders.create', 'permissions' => ['S3.restaurant.orders.write']],
+            ],
         ],
         [
             'key' => 'inventory',
             'label' => 'Inventory and procurement',
+            'icon' => 'package',
             'route' => 'inventory.items.index',
             'permissions' => ['S3.inventory.items.read', 'S3.inventory.purchase_orders.read'],
             'phase' => 3,
+            'children' => [
+                ['key' => 'items', 'label' => 'Items', 'route' => 'inventory.items.index', 'permissions' => ['S3.inventory.items.read']],
+                ['key' => 'suppliers', 'label' => 'Suppliers', 'route' => 'inventory.suppliers.index', 'permissions' => ['S3.inventory.suppliers.read']],
+                ['key' => 'purchase_orders', 'label' => 'Purchase orders', 'route' => 'inventory.purchase-orders.index', 'permissions' => ['S3.inventory.purchase_orders.read']],
+            ],
         ],
         [
             'key' => 'consumption',
             'label' => 'Staff meals',
+            'icon' => 'coffee',
             'route' => 'consumption.periods.index',
             'permissions' => ['S3.restaurant.consumption.read'],
             'phase' => 4,
@@ -48,27 +81,44 @@ return [
         [
             'key' => 'group_bookings',
             'label' => 'Group bookings',
+            'icon' => 'users-round',
             'route' => 'group-bookings.index',
             'permissions' => ['S3.hotel.group_bookings.read'],
             'phase' => 5,
+            'children' => [
+                ['key' => 'list', 'label' => 'All bookings', 'route' => 'group-bookings.index', 'permissions' => ['S3.hotel.group_bookings.read']],
+                ['key' => 'create', 'label' => 'Create booking', 'route' => 'group-bookings.create', 'permissions' => ['S3.hotel.group_bookings.create']],
+            ],
         ],
         [
             'key' => 'hr',
             'label' => 'HR',
+            'icon' => 'user-cog',
             'route' => 'hr.employees.index',
             'permissions' => ['S2.workforce.employees.read', 'S2.workforce.leave_requests.read', 'S2.workforce.attendance.read'],
             'phase' => 6,
+            'children' => [
+                ['key' => 'employees', 'label' => 'Employees', 'route' => 'hr.employees.index', 'permissions' => ['S2.workforce.employees.read']],
+                ['key' => 'leave', 'label' => 'Leave requests', 'route' => 'hr.leave.index', 'permissions' => ['S2.workforce.leave_requests.read']],
+                ['key' => 'attendance', 'label' => 'Attendance', 'route' => 'hr.attendance.index', 'permissions' => ['S2.workforce.attendance.read']],
+            ],
         ],
         [
             'key' => 'payroll',
             'label' => 'Payroll',
+            'icon' => 'wallet',
             'route' => 'payroll.runs.index',
             'permissions' => ['S2.workforce.payroll_runs.read', 'S2.workforce.severance.read'],
             'phase' => 6,
+            'children' => [
+                ['key' => 'runs', 'label' => 'Payroll runs', 'route' => 'payroll.runs.index', 'permissions' => ['S2.workforce.payroll_runs.read']],
+                ['key' => 'severance', 'label' => 'Severance', 'route' => 'payroll.severance.index', 'permissions' => ['S2.workforce.severance.read']],
+            ],
         ],
         [
             'key' => 'finance',
             'label' => 'Finance',
+            'icon' => 'file-bar-chart',
             'route' => 'finance.reports.index',
             'permissions' => [
                 'S4.finance.payables.read',
@@ -78,10 +128,21 @@ return [
                 'S4.bi.dashboards.read',
             ],
             'phase' => 7,
+            'children' => [
+                ['key' => 'reports', 'label' => 'Reports', 'route' => 'finance.reports.index', 'permissions' => ['S4.finance.reports.read']],
+                ['key' => 'journals', 'label' => 'Journals', 'route' => 'finance.journals.index', 'permissions' => ['S4.finance.journal_entries.read']],
+                ['key' => 'payables', 'label' => 'Payables', 'route' => 'finance.payables.index', 'permissions' => ['S4.finance.payables.read']],
+                ['key' => 'receivables', 'label' => 'Receivables', 'route' => 'finance.receivables.index', 'permissions' => ['S4.finance.receivables.read']],
+                ['key' => 'budget', 'label' => 'Budget', 'route' => 'finance.budget.index', 'permissions' => ['S4.finance.budgets.read', 'S4.bi.reports.read']],
+                ['key' => 'fiscal_periods', 'label' => 'Fiscal periods', 'route' => 'finance.fiscal-periods.index', 'permissions' => ['S4.finance.fiscal_periods.read']],
+                ['key' => 'executive_dashboard', 'label' => 'Executive dashboard', 'route' => 'finance.dashboard.executive', 'permissions' => ['S4.bi.dashboards.read']],
+                ['key' => 'operations_dashboard', 'label' => 'Operations dashboard', 'route' => 'finance.dashboard.operations', 'permissions' => ['S4.bi.dashboards.read']],
+            ],
         ],
         [
             'key' => 'admin',
             'label' => 'Administration',
+            'icon' => 'shield-check',
             'route' => 'admin.users.index',
             'permissions' => [
                 'S1.identity.users.read',
@@ -89,6 +150,11 @@ return [
                 'S1.identity.audit_logs.read',
             ],
             'phase' => 8,
+            'children' => [
+                ['key' => 'users', 'label' => 'Users', 'route' => 'admin.users.index', 'permissions' => ['S1.identity.users.read']],
+                ['key' => 'roles', 'label' => 'Roles & permissions', 'route' => 'admin.roles.index', 'permissions' => ['S1.identity.roles.read']],
+                ['key' => 'audit', 'label' => 'Audit logs', 'route' => 'admin.audit.index', 'permissions' => ['S1.identity.audit_logs.read']],
+            ],
         ],
     ],
 
