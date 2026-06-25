@@ -174,4 +174,29 @@ class AdminPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('Admin/Audit/Index')->has('auditLogs', 1));
     }
+
+    public function test_user_edit_renders(): void
+    {
+        Session::put('portal.permissions', array_merge(Session::get('portal.permissions', []), [
+            'S1.identity.users.update',
+        ]));
+
+        $this->mock(S1AdminClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('user')->once()->with(3)->andReturn([
+                'data' => [
+                    'id' => 3,
+                    'username' => 'e2e.staff',
+                    'display_name' => 'E2E Payroll Staff',
+                    'email' => 'e2e.staff@wonderlandhotel.local',
+                    'is_active' => true,
+                    'employee_id' => 12,
+                ],
+            ]);
+        });
+
+        $response = $this->get('/admin/users/3/edit');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Admin/Users/Edit'));
+    }
 }

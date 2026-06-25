@@ -89,6 +89,57 @@ class S1AdminClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateUser(int $userId, array $payload): array
+    {
+        return $this->json('PUT', "/s1/api/v1/users/{$userId}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteUser(int $userId): array
+    {
+        return $this->json('DELETE', "/s1/api/v1/users/{$userId}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function forceLogoutUser(int $userId): array
+    {
+        return $this->json('POST', "/s1/api/v1/users/{$userId}/force-logout");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function resetUserPassword(int $userId, array $payload): array
+    {
+        return $this->json('POST', "/s1/api/v1/users/{$userId}/reset-password", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function removeUserRole(int $userId, int $roleId): array
+    {
+        return $this->json('DELETE', "/s1/api/v1/users/{$userId}/roles/{$roleId}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function auditLogsForUser(int $userId, array $query = []): array
+    {
+        return $this->json('GET', "/s1/api/v1/audit-logs/user/{$userId}", $query);
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */

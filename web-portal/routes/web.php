@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Consumption\MealOrderController;
 use App\Http\Controllers\Consumption\PeriodController;
@@ -39,8 +40,15 @@ Route::middleware(RedirectIfPortalAuthenticated::class)->group(function () {
 });
 
 Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
-    Route::get('/', DashboardController::class)->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::get('/account/change-password', [ChangePasswordController::class, 'create'])
+        ->name('account.change-password.create');
+    Route::post('/account/change-password', [ChangePasswordController::class, 'store'])
+        ->name('account.change-password.store');
+
+    Route::middleware('portal.must_change_password')->group(function () {
+    Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/modules/{module}', ModulePlaceholderController::class)->name('modules.placeholder');
 
     Route::prefix('front-desk')->name('front-desk.')->group(function () {
@@ -319,6 +327,21 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/users/{user}', [AdminUserController::class, 'show'])
             ->middleware('portal.permission:S1.identity.users.read')
             ->name('users.show');
+        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])
+            ->middleware('portal.permission:S1.identity.users.update')
+            ->name('users.edit');
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])
+            ->middleware('portal.permission:S1.identity.users.update')
+            ->name('users.update');
+        Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])
+            ->middleware('portal.permission:S1.identity.users.reset_password')
+            ->name('users.reset-password');
+        Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])
+            ->middleware('portal.permission:S1.identity.users.force_logout')
+            ->name('users.force-logout');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
+            ->middleware('portal.permission:S1.identity.users.delete')
+            ->name('users.destroy');
         Route::post('/users/{user}/roles', [AdminUserController::class, 'syncRoles'])
             ->middleware('portal.permission:S1.identity.users.assign_role')
             ->name('users.roles');
@@ -340,4 +363,5 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
 
     Route::redirect('/procurement/purchase-orders', '/inventory/purchase-orders');
     Route::get('/procurement/purchase-orders/{purchaseOrder}', fn (int $purchaseOrder) => redirect()->route('inventory.purchase-orders.show', $purchaseOrder));
+    });
 });

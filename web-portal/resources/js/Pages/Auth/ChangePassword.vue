@@ -1,0 +1,105 @@
+<script setup>
+import GuestLayout from '../../Layouts/GuestLayout.vue';
+import { Link, useForm } from '@inertiajs/vue3';
+
+defineProps({
+    required: { type: Boolean, default: true },
+    username: { type: String, default: '' },
+});
+
+const form = useForm({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+});
+
+function submit() {
+    form.post('/account/change-password', {
+        preserveScroll: true,
+        onSuccess: () => form.reset(),
+    });
+}
+</script>
+
+<template>
+    <GuestLayout :title="required ? 'Change your password' : 'Update password'">
+        <div
+            v-if="required"
+            class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+            You must set a new password before continuing to Wonderland ERP.
+        </div>
+
+        <p v-if="username" class="mb-5 text-sm text-slate-600">
+            Signed in as <span class="font-medium text-slate-900">{{ username }}</span>
+        </p>
+
+        <form class="space-y-5" @submit.prevent="submit">
+            <div>
+                <label for="current_password" class="mb-1 block text-sm font-medium text-slate-700">
+                    Current password
+                </label>
+                <input
+                    id="current_password"
+                    v-model="form.current_password"
+                    type="password"
+                    autocomplete="current-password"
+                    class="wh-input"
+                    required
+                />
+                <p v-if="form.errors.current_password" class="mt-1 text-sm text-red-600">
+                    {{ form.errors.current_password }}
+                </p>
+            </div>
+
+            <div>
+                <label for="password" class="mb-1 block text-sm font-medium text-slate-700">
+                    New password
+                </label>
+                <input
+                    id="password"
+                    v-model="form.password"
+                    type="password"
+                    autocomplete="new-password"
+                    class="wh-input"
+                    required
+                />
+                <p class="mt-1 text-xs text-slate-500">
+                    At least 10 characters with uppercase, a number, and a symbol.
+                </p>
+                <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">
+                    {{ form.errors.password }}
+                </p>
+            </div>
+
+            <div>
+                <label for="password_confirmation" class="mb-1 block text-sm font-medium text-slate-700">
+                    Confirm new password
+                </label>
+                <input
+                    id="password_confirmation"
+                    v-model="form.password_confirmation"
+                    type="password"
+                    autocomplete="new-password"
+                    class="wh-input"
+                    required
+                />
+            </div>
+
+            <button type="submit" class="wh-btn-primary w-full" :disabled="form.processing">
+                {{ form.processing ? 'Saving...' : 'Save password' }}
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <Link
+                href="/logout"
+                method="post"
+                as="button"
+                class="text-sm font-medium text-slate-500 hover:text-teal-700"
+            >
+                Sign out instead
+            </Link>
+        </div>
+    </GuestLayout>
+</template>

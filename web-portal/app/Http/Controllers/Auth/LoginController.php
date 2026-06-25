@@ -44,6 +44,10 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        if ($this->auth->mustChangePassword()) {
+            return redirect()->route('account.change-password.create');
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

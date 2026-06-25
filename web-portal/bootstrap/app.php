@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'portal.auth' => EnsurePortalAuthenticated::class,
             'portal.guest' => RedirectIfPortalAuthenticated::class,
             'portal.permission' => EnsurePortalPermission::class,
+            'portal.must_change_password' => \App\Http\Middleware\EnsureMustChangePassword::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -63,7 +63,95 @@ class UserController extends Controller
             'roles' => $rolesResponse['data'] ?? [],
             'assignedRoleIds' => $assignedRoleIds,
             'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
+            'canUpdate' => $this->auth->hasAnyPermission(['S1.identity.users.update']),
+            'canResetPassword' => $this->auth->hasAnyPermission(['S1.identity.users.reset_password']),
+            'canForceLogout' => $this->auth->hasAnyPermission(['S1.identity.users.force_logout']),
+            'canDelete' => $this->auth->hasAnyPermission(['S1.identity.users.delete']),
+            'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
         ]);
+    }
+
+    public function edit(int $user): Response|RedirectResponse
+    {
+        try {
+            $userResponse = $this->s1->user($user);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e, 'admin.users.index');
+        }
+
+        return Inertia::render('Admin/Users/Edit', [
+            'user' => $userResponse['data'] ?? [],
+        ]);
+    }
+
+    public function update(Request $request, int $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:191'],
+            'display_name' => ['nullable', 'string', 'max:150'],
+            'employee_id' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $payload = [
+            'email' => $data['email'],
+            'display_name' => $data['display_name'] ?? null,
+            'employee_id' => isset($data['employee_id']) ? (int) $data['employee_id'] : null,
+            'is_active' => (bool) $data['is_active'],
+        ];
+
+        try {
+            $this->s1->updateUser($user, $payload);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return redirect()
+            ->route('admin.users.show', $user)
+            ->with('success', 'User updated.');
+    }
+
+    public function resetPassword(Request $request, int $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:10', 'confirmed'],
+            'must_change_password' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $this->s1->resetUserPassword($user, [
+                'password' => $data['password'],
+                'must_change_password' => $request->boolean('must_change_password', true),
+            ]);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Password reset. The user must sign in with the new password.');
+    }
+
+    public function forceLogout(int $user): RedirectResponse
+    {
+        try {
+            $this->s1->forceLogoutUser($user);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'All active sessions for this user were revoked.');
+    }
+
+    public function destroy(int $user): RedirectResponse
+    {
+        try {
+            $this->s1->deleteUser($user);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User deleted.');
     }
 
     public function create(): Response

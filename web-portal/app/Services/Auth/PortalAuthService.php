@@ -72,6 +72,27 @@ class PortalAuthService
         return false;
     }
 
+    public function mustChangePassword(): bool
+    {
+        $user = $this->user();
+
+        return is_array($user) && (bool) ($user['must_change_password'] ?? false);
+    }
+
+    /**
+     * @throws ApiException
+     */
+    public function changePassword(string $currentPassword, string $newPassword): void
+    {
+        $token = $this->accessToken();
+
+        if ($token === null) {
+            throw new ApiException('UNAUTHENTICATED', 'Not authenticated.', 401);
+        }
+
+        $this->s1->changePassword($token, $currentPassword, $newPassword);
+    }
+
     /**
      * @throws ApiException
      */

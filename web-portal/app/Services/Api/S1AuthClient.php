@@ -78,6 +78,22 @@ class S1AuthClient
         return $response->json() ?? [];
     }
 
+    /**
+     * @throws ApiException
+     */
+    public function changePassword(string $accessToken, string $currentPassword, string $password): void
+    {
+        $response = $this->http($accessToken)->post('/s1/api/v1/auth/change-password', [
+            'current_password' => $currentPassword,
+            'password' => $password,
+            'password_confirmation' => $password,
+        ]);
+
+        if (! $response->successful()) {
+            throw ApiException::fromResponse($response);
+        }
+    }
+
     private function http(?string $accessToken = null): \Illuminate\Http\Client\PendingRequest
     {
         $request = Http::baseUrl($this->gatewayUrl !== '' ? $this->gatewayUrl : config('portal.gateway_url'))
