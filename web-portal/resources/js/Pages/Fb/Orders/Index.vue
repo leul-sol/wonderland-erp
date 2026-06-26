@@ -6,6 +6,7 @@ import FormModal from '../../../Components/FormModal.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     orders: { type: Array, default: () => [] },
@@ -90,6 +91,15 @@ function submitCreate() {
         onSuccess: () => closeCreateModal(),
     });
 }
+
+useQueryModal(showCreateModal, {
+    onOpen(params) {
+        form.reset();
+        form.customer_type = 'hotel_guest';
+        const folioId = params.get('folio_id');
+        form.folio_id = folioId || props.folios[0]?.id || '';
+    },
+});
 </script>
 
 <template>

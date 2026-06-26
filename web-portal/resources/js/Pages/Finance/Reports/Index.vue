@@ -45,6 +45,7 @@ function formatMoney(value) {
                 <Link href="/finance/journals" class="wh-btn-secondary">Journals</Link>
                 <Link href="/finance/payables" class="wh-btn-secondary">Payables</Link>
                 <Link href="/finance/dashboard/executive" class="wh-btn-secondary">Executive KPIs</Link>
+                <Link href="/finance/dashboard/operations" class="wh-btn-secondary">Operations KPIs</Link>
             </template>
         </PageHeader>
 

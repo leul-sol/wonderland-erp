@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\PortalAuthService;
+use App\Support\PortalUserMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,13 +33,15 @@ class LoginController extends Controller
         try {
             $this->auth->login($credentials['username'], $credentials['password']);
         } catch (ApiException $exception) {
-            return $this->loginFailed($request, $exception->getMessage());
+            $friendly = PortalUserMessage::fromApiException($exception);
+
+            return $this->loginFailed($request, $friendly['message'], $friendly);
         } catch (\Throwable $exception) {
             report($exception);
 
             return $this->loginFailed(
                 $request,
-                'Unable to reach the sign-in service. Make sure Docker is running, then try again.',
+                'We could not reach the sign-in service. Check your connection and try again.',
             );
         }
 
@@ -51,12 +54,18 @@ class LoginController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    private function loginFailed(Request $request, string $message): RedirectResponse
+    private function loginFailed(Request $request, string $message, ?array $errorDetail = null): RedirectResponse
     {
-        return back()
+        $redirect = back()
             ->withInput($request->only('username'))
             ->withErrors(['login' => $message])
             ->with('error', $message);
+
+        if ($errorDetail !== null) {
+            $redirect->with('error_detail', $errorDetail);
+        }
+
+        return $redirect;
     }
 
     public function destroy(Request $request): RedirectResponse

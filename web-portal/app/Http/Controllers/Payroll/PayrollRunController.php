@@ -35,17 +35,16 @@ class PayrollRunController extends Controller
         return Inertia::render('Payroll/Runs/Index', [
             'payrollRuns' => $response['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.payroll_runs.create']),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('Payroll/Runs/Create', [
             'defaultPeriodStart' => now()->startOfMonth()->toDateString(),
             'defaultPeriodEnd' => $this->defaultPayrollPeriodEnd(),
             'maxPeriodEnd' => $this->defaultPayrollPeriodEnd(),
             'canRecordAttendance' => $this->auth->hasAnyPermission(['S2.workforce.attendance.create']),
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('payroll.runs.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse
@@ -150,7 +149,7 @@ class PayrollRunController extends Controller
 
     private function redirectPayrollCreateError(ApiException $exception): RedirectResponse
     {
-        $redirect = back()->withInput()->with('error', $exception->getMessage());
+        $redirect = back()->withInput()->with($this->flashApiError($exception));
 
         if ($exception->errorCode === 'VALIDATION_ERROR'
             && preg_match('/Missing attendance for (.+) on (\d{4}-\d{2}-\d{2})/', $exception->getMessage(), $matches) === 1) {

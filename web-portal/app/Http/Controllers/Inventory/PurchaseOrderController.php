@@ -26,6 +26,8 @@ class PurchaseOrderController extends Controller
     {
         try {
             $response = $this->s3->purchaseOrders();
+            $items = $this->s3->inventoryItems();
+            $suppliers = $this->s3->suppliers();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
@@ -37,22 +39,14 @@ class PurchaseOrderController extends Controller
 
         return Inertia::render('Inventory/PurchaseOrders/Index', [
             'purchaseOrders' => is_array($orders) ? $orders : [],
-        ]);
-    }
-
-    public function create(): Response|RedirectResponse
-    {
-        try {
-            $items = $this->s3->inventoryItems();
-            $suppliers = $this->s3->suppliers();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'inventory.purchase-orders.index');
-        }
-
-        return Inertia::render('Inventory/PurchaseOrders/Create', [
             'inventoryItems' => $items['data'] ?? [],
             'suppliers' => $suppliers['data'] ?? [],
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('inventory.purchase-orders.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

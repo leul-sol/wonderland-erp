@@ -6,6 +6,7 @@ import FormModal from '../../../Components/FormModal.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     reservations: { type: Array, default: () => [] },
@@ -85,6 +86,16 @@ function submitBooking() {
         onSuccess: () => closeBookModal(),
     });
 }
+
+useQueryModal(showBookModal, {
+    onOpen() {
+        form.reset();
+        form.room_type_id = props.roomTypes[0]?.id ?? '';
+        form.check_in_date = props.defaultCheckIn;
+        form.check_out_date = props.defaultCheckOut;
+        form.adults = 1;
+    },
+});
 </script>
 
 <template>

@@ -6,6 +6,7 @@ import FormModal from '../../Components/FormModal.vue';
 import PageHeader from '../../Components/PageHeader.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../composables/useQueryModal';
 
 const props = defineProps({
     groupBookings: { type: Array, default: () => [] },
@@ -82,6 +83,12 @@ function submitCreate() {
         onSuccess: () => closeCreateModal(),
     });
 }
+
+useQueryModal(showCreateModal, {
+    onOpen() {
+        openCreateModal();
+    },
+});
 </script>
 
 <template>

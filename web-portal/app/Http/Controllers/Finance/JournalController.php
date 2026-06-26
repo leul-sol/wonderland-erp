@@ -28,6 +28,7 @@ class JournalController extends Controller
     {
         try {
             $response = $this->s4->journalEntries(['source_module' => 'manual', 'per_page' => 50]);
+            $accounts = $this->s4->accounts();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
@@ -40,21 +41,14 @@ class JournalController extends Controller
         return Inertia::render('Finance/Journals/Index', [
             'journalEntries' => is_array($entries) ? $entries : [],
             'canCreate' => $this->auth->hasAnyPermission(['S4.finance.journal_entries.create']),
-        ]);
-    }
-
-    public function create(): Response|RedirectResponse
-    {
-        try {
-            $accounts = $this->s4->accounts();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'finance.journals.index');
-        }
-
-        return Inertia::render('Finance/Journals/Create', [
             'accounts' => $accounts['data'] ?? [],
             'defaultEntryDate' => now()->toDateString(),
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('finance.journals.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

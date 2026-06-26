@@ -46,6 +46,8 @@ class HrPayrollPagesTest extends TestCase
                     'status' => 'active',
                 ]],
             ]);
+            $mock->shouldReceive('departments')->once()->andReturn(['data' => []]);
+            $mock->shouldReceive('positions')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/hr/employees');

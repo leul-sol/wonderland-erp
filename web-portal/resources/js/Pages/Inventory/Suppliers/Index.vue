@@ -5,6 +5,7 @@ import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 defineProps({
     suppliers: { type: Array, default: () => [] },
@@ -38,6 +39,8 @@ function openCreateModal() {
 function closeCreateModal() {
     showCreateModal.value = false;
 }
+
+useQueryModal(showCreateModal, { onOpen: openCreateModal });
 
 function submitCreate() {
     form.post('/inventory/suppliers', {

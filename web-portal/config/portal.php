@@ -43,7 +43,6 @@ return [
                 ['key' => 'rooms', 'label' => 'Room status', 'route' => 'front-desk.rooms.index', 'permissions' => ['S3.hotel.rooms.read']],
                 ['key' => 'reservations', 'label' => 'Reservations', 'route' => 'front-desk.reservations.index', 'permissions' => ['S3.hotel.reservations.read']],
                 ['key' => 'guests', 'label' => 'Guests', 'route' => 'front-desk.guests.index', 'permissions' => ['S3.hotel.guests.read']],
-                ['key' => 'check_in', 'label' => 'Check in guest', 'route' => 'front-desk.check-in.create', 'permissions' => ['S3.hotel.checkinout.write', 'S3.hotel.reservations.write']],
                 ['key' => 'folios', 'label' => 'Folios', 'route' => 'front-desk.folios.index', 'permissions' => ['S3.hotel.folios.read']],
                 ['key' => 'cashier_shifts', 'label' => 'Cashier shifts', 'route' => 'front-desk.cashier-shifts.index', 'permissions' => ['S3.hotel.cashier.read']],
                 ['key' => 'settings', 'label' => 'Hotel settings', 'route' => 'front-desk.settings.index', 'permissions' => ['S3.hotel.rooms.read']],
@@ -93,9 +92,6 @@ return [
             'route' => 'group-bookings.index',
             'permissions' => ['S3.hotel.group_bookings.read'],
             'phase' => 5,
-            'children' => [
-                ['key' => 'list', 'label' => 'All bookings', 'route' => 'group-bookings.index', 'permissions' => ['S3.hotel.group_bookings.read']],
-            ],
         ],
         [
             'key' => 'hr',
@@ -156,8 +152,6 @@ return [
                 ['key' => 'receivables', 'label' => 'Receivables', 'route' => 'finance.receivables.index', 'permissions' => ['S4.finance.receivables.read']],
                 ['key' => 'budget', 'label' => 'Budget', 'route' => 'finance.budget.index', 'permissions' => ['S4.finance.budgets.read', 'S4.bi.reports.read']],
                 ['key' => 'fiscal_periods', 'label' => 'Fiscal periods', 'route' => 'finance.fiscal-periods.index', 'permissions' => ['S4.finance.fiscal_periods.read']],
-                ['key' => 'executive_dashboard', 'label' => 'Executive dashboard', 'route' => 'finance.dashboard.executive', 'permissions' => ['S4.bi.dashboards.read']],
-                ['key' => 'operations_dashboard', 'label' => 'Operations dashboard', 'route' => 'finance.dashboard.operations', 'permissions' => ['S4.bi.dashboards.read']],
             ],
         ],
         [
@@ -216,7 +210,8 @@ return [
         [
             'key' => 'create_po',
             'label' => 'Create purchase order',
-            'route' => 'inventory.purchase-orders.create',
+            'route' => 'inventory.purchase-orders.index',
+            'route_params' => ['open' => 'create'],
             'module' => 'inventory',
             'permissions' => ['S3.inventory.purchase_orders.write'],
         ],
@@ -230,7 +225,8 @@ return [
         [
             'key' => 'post_fb_to_folio',
             'label' => 'Post F&B to folio',
-            'route' => 'fb.orders.create',
+            'route' => 'fb.orders.index',
+            'route_params' => ['open' => 'create'],
             'module' => 'fb',
             'permissions' => ['S3.restaurant.orders.write'],
         ],
@@ -251,14 +247,16 @@ return [
         [
             'key' => 'create_group',
             'label' => 'Create group booking',
-            'route' => 'group-bookings.create',
+            'route' => 'group-bookings.index',
+            'route_params' => ['open' => 'create'],
             'module' => 'group_bookings',
             'permissions' => ['S3.hotel.group_bookings.create'],
         ],
         [
             'key' => 'create_payroll_run',
             'label' => 'Create payroll run',
-            'route' => 'payroll.runs.create',
+            'route' => 'payroll.runs.index',
+            'route_params' => ['open' => 'create'],
             'module' => 'payroll',
             'permissions' => ['S2.workforce.payroll_runs.create'],
         ],
@@ -279,7 +277,8 @@ return [
         [
             'key' => 'create_journal',
             'label' => 'Create journal',
-            'route' => 'finance.journals.create',
+            'route' => 'finance.journals.index',
+            'route_params' => ['open' => 'create'],
             'module' => 'finance',
             'permissions' => ['S4.finance.journal_entries.create'],
         ],

@@ -50,7 +50,7 @@ class GroupBookingController extends Controller
 
     public function create(): RedirectResponse
     {
-        return redirect()->route('group-bookings.index');
+        return redirect()->route('group-bookings.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

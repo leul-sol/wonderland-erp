@@ -137,7 +137,7 @@ function payFullBalance() {
                 </a>
                 <Link
                     v-if="folio.status === 'open'"
-                    :href="`/fb/orders/create?folio_id=${folio.id}`"
+                    :href="`/fb/orders?open=create&folio_id=${folio.id}`"
                     class="wh-btn-secondary text-xs"
                 >
                     Post F&B

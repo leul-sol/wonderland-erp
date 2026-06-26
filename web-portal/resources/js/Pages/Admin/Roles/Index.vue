@@ -1,11 +1,14 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormModal from '../../../Components/FormModal.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 defineProps({
     roles: { type: Array, default: () => [] },
@@ -16,6 +19,16 @@ defineProps({
     canBrowsePermissions: { type: Boolean, default: false },
     loadError: { type: String, default: null },
     loadErrorCode: { type: String, default: null },
+    loadErrorTitle: { type: String, default: null },
+    loadErrorRecommendation: { type: String, default: null },
+});
+
+const showCreateModal = ref(false);
+
+const createForm = useForm({
+    name: '',
+    display_name: '',
+    description: '',
 });
 
 const breadcrumbs = [
@@ -50,6 +63,24 @@ async function deleteRole(role) {
 
     router.delete(`/admin/roles/${role.id}`);
 }
+
+function openCreateModal() {
+    createForm.reset();
+    showCreateModal.value = true;
+}
+
+function closeCreateModal() {
+    showCreateModal.value = false;
+}
+
+function submitCreate() {
+    createForm.post('/admin/roles', {
+        preserveScroll: true,
+        onSuccess: () => closeCreateModal(),
+    });
+}
+
+useQueryModal(showCreateModal, { onOpen: openCreateModal });
 </script>
 
 <template>
@@ -63,12 +94,18 @@ async function deleteRole(role) {
                 <Link v-if="canBrowsePermissions" href="/admin/permissions" class="wh-btn-secondary">
                     Permission catalog
                 </Link>
-                <Link v-if="canCreate" href="/admin/roles/create" class="wh-btn-primary">New role</Link>
+                <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openCreateModal">New role</button>
                 <Link href="/admin/users" class="wh-btn-secondary">Users</Link>
             </template>
         </PageHeader>
 
-        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
+        <LoadErrorBanner
+            v-if="loadError"
+            :title="loadErrorTitle"
+            :message="loadError"
+            :recommendation="loadErrorRecommendation"
+            :code="loadErrorCode"
+        />
 
         <DataTable list-title="Role list" selectable :columns="columns" :rows="roles" empty-message="No roles configured.">
             <template #cell-type="{ row }">
@@ -102,5 +139,30 @@ async function deleteRole(role) {
                 </div>
             </template>
         </DataTable>
+
+        <FormModal :open="showCreateModal" title="Create custom role" subtitle="System roles are seeded; add roles for special access bundles" @close="closeCreateModal">
+            <form class="space-y-4" @submit.prevent="submitCreate">
+                <div>
+                    <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Role slug</label>
+                    <input id="name" v-model="createForm.name" type="text" required pattern="[A-Za-z0-9_-]+" class="wh-input" placeholder="e.g. night_auditor" />
+                    <p v-if="createForm.errors.name" class="mt-1 text-sm text-red-600">{{ createForm.errors.name }}</p>
+                </div>
+                <div>
+                    <label for="display_name" class="mb-1 block text-sm font-medium text-slate-700">Display name</label>
+                    <input id="display_name" v-model="createForm.display_name" type="text" required class="wh-input" />
+                    <p v-if="createForm.errors.display_name" class="mt-1 text-sm text-red-600">{{ createForm.errors.display_name }}</p>
+                </div>
+                <div>
+                    <label for="description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                    <textarea id="description" v-model="createForm.description" rows="3" class="wh-input" />
+                </div>
+            </form>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="wh-btn-secondary" @click="closeCreateModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="createForm.processing" @click="submitCreate">Create role</button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

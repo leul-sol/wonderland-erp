@@ -31,7 +31,7 @@ class InventoryPagesTest extends TestCase
     public function test_inventory_items_page_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('inventoryItems')->once()->andReturn([
+            $mock->shouldReceive('inventoryItems')->once()->with(false)->andReturn([
                 'data' => [[
                     'id' => 1,
                     'sku' => 'BEEF-001',
@@ -42,6 +42,7 @@ class InventoryPagesTest extends TestCase
                     'unit_cost' => '450.00',
                 ]],
             ]);
+            $mock->shouldReceive('itemCategories')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/inventory/items');
@@ -198,17 +199,11 @@ class InventoryPagesTest extends TestCase
         $response->assertRedirect(route('inventory.suppliers.show', 4));
     }
 
-    public function test_purchase_order_create_page_renders(): void
+    public function test_purchase_order_create_redirects_to_index(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('inventoryItems')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('suppliers')->once()->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/inventory/purchase-orders/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Inventory/PurchaseOrders/Create'));
+        $response->assertRedirect(route('inventory.purchase-orders.index', ['open' => 'create']));
     }
 
     public function test_purchase_order_show_includes_workflow_flags(): void

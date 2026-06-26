@@ -49,7 +49,7 @@ class ReservationController extends Controller
 
     public function create(): RedirectResponse
     {
-        return redirect()->route('front-desk.reservations.index');
+        return redirect()->route('front-desk.reservations.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

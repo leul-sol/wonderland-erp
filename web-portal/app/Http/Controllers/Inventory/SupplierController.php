@@ -81,7 +81,7 @@ class SupplierController extends Controller
 
     public function create(): RedirectResponse
     {
-        return redirect()->route('inventory.suppliers.index');
+        return redirect()->route('inventory.suppliers.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

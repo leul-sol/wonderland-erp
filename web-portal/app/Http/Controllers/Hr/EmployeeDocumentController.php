@@ -25,7 +25,7 @@ class EmployeeDocumentController extends Controller
         } catch (ApiException $e) {
             return redirect()
                 ->route('hr.employees.show', ['employee' => $employee, 'tab' => 'payslips'])
-                ->with('error', $e->getMessage());
+                ->with($this->flashApiError($e));
         }
 
         $filename = "payslip-{$employee}-{$payrollRun}.pdf";
@@ -46,7 +46,7 @@ class EmployeeDocumentController extends Controller
         } catch (ApiException $e) {
             return redirect()
                 ->route('hr.employees.show', ['employee' => $employee, 'tab' => 'guarantors'])
-                ->with('error', $e->getMessage());
+                ->with($this->flashApiError($e));
         }
 
         $filename = "guarantor-{$guarantor}.pdf";

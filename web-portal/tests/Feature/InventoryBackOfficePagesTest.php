@@ -45,7 +45,7 @@ class InventoryBackOfficePagesTest extends TestCase
     {
         $response = $this->get('/inventory/items/create');
 
-        $response->assertRedirect(route('inventory.items.index'));
+        $response->assertRedirect(route('inventory.items.index', ['open' => 'create']));
     }
 
     public function test_create_inventory_item_posts_to_s3(): void
@@ -95,7 +95,7 @@ class InventoryBackOfficePagesTest extends TestCase
     {
         $response = $this->get('/inventory/suppliers/create');
 
-        $response->assertRedirect(route('inventory.suppliers.index'));
+        $response->assertRedirect(route('inventory.suppliers.index', ['open' => 'create']));
     }
 
     public function test_create_supplier_posts_to_s3(): void

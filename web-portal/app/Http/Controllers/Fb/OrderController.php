@@ -67,7 +67,13 @@ class OrderController extends Controller
 
     public function create(Request $request): RedirectResponse
     {
-        return redirect()->route('fb.orders.index', $request->integer('folio_id') ? ['folio_id' => $request->integer('folio_id')] : []);
+        $params = ['open' => 'create'];
+
+        if ($request->integer('folio_id')) {
+            $params['folio_id'] = $request->integer('folio_id');
+        }
+
+        return redirect()->route('fb.orders.index', $params);
     }
 
     public function store(Request $request): RedirectResponse

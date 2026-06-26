@@ -89,6 +89,8 @@ class FrontDeskPagesTest extends TestCase
                     'check_out_date' => '2026-06-25',
                 ]],
             ]);
+            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
+            $mock->shouldReceive('guestProfiles')->once()->andReturn(['data' => ['data' => []]]);
         });
 
         $this->get('/front-desk/reservations')

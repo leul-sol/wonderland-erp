@@ -259,7 +259,9 @@ function onRowClick(row) {
                 <tbody>
                     <tr v-if="rows.length === 0">
                         <td :colspan="columns.length + (selectable ? 1 : 0)" class="py-12 text-center text-slate-500">
-                            {{ emptyMessage }}
+                            <slot name="empty">
+                                {{ emptyMessage }}
+                            </slot>
                         </td>
                     </tr>
                     <tr

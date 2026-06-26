@@ -37,7 +37,7 @@ class ItemController extends Controller
 
     public function create(): RedirectResponse
     {
-        return redirect()->route('inventory.items.index');
+        return redirect()->route('inventory.items.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

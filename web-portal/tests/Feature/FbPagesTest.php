@@ -59,6 +59,8 @@ class FbPagesTest extends TestCase
                     'bill' => null,
                 ]],
             ]);
+            $mock->shouldReceive('folios')->once()->with('open')->andReturn(['data' => ['data' => []]]);
+            $mock->shouldReceive('diningTables')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/fb/orders?tab=open');
@@ -71,33 +73,11 @@ class FbPagesTest extends TestCase
         );
     }
 
-    public function test_order_create_page_lists_open_folios_and_tables(): void
+    public function test_order_create_redirects_to_index_with_folio_query(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('folios')->once()->with('open')->andReturn([
-                'data' => [
-                    'data' => [[
-                        'id' => 5,
-                        'reservation_id' => 9,
-                        'status' => 'open',
-                        'balance' => '3000.00',
-                    ]],
-                ],
-            ]);
-            $mock->shouldReceive('diningTables')->once()->andReturn([
-                'data' => [['id' => 1, 'table_number' => 'T-01', 'location' => 'Terrace']],
-            ]);
-        });
-
         $response = $this->get('/fb/orders/create?folio_id=5');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/Orders/Create')
-            ->where('selectedFolioId', 5)
-            ->has('customerTypes', 4)
-            ->has('diningTables', 1)
-        );
+        $response->assertRedirect('/fb/orders?open=create&folio_id=5');
     }
 
     public function test_order_show_renders_menu_and_lines(): void

@@ -36,11 +36,9 @@ class GuestProfileController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('FrontDesk/Guests/Edit', [
-            'guest' => null,
-        ]);
+        return redirect()->route('front-desk.guests.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

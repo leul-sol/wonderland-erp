@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\PortalAuthService;
+use App\Support\PortalUserMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,11 +48,13 @@ class ChangePasswordController extends Controller
             $this->auth->changePassword($data['current_password'], $data['password']);
             $this->auth->login($username, $data['password']);
         } catch (ApiException $exception) {
+            $friendly = PortalUserMessage::fromApiException($exception);
             $field = $exception->errorCode === 'UNAUTHENTICATED' ? 'current_password' : 'password';
 
             return back()
-                ->withErrors([$field => $exception->getMessage()])
-                ->with('error', $exception->getMessage());
+                ->withErrors([$field => $friendly['message']])
+                ->with('error', $friendly['message'])
+                ->with('error_detail', $friendly);
         } catch (\Throwable $exception) {
             report($exception);
 

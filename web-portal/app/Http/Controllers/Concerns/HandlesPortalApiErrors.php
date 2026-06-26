@@ -29,7 +29,19 @@ trait HandlesPortalApiErrors
 
         return $redirect
             ->withInput()
-            ->with('error', $friendly['message'])
-            ->with('error_detail', $friendly);
+            ->with($this->flashApiError($exception));
+    }
+
+    /**
+     * @return array{error: string, error_detail: array{title: string, message: string, recommendation: string, code: string}}
+     */
+    protected function flashApiError(ApiException $exception): array
+    {
+        $friendly = $exception->userMessage();
+
+        return [
+            'error' => $friendly['message'],
+            'error_detail' => $friendly,
+        ];
     }
 }

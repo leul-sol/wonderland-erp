@@ -6,6 +6,7 @@ import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
@@ -52,6 +53,12 @@ function submitCreate() {
         onSuccess: () => closeCreateModal(),
     });
 }
+
+useQueryModal(showCreateModal, {
+    onOpen() {
+        openCreateModal();
+    },
+});
 </script>
 
 <template>
@@ -62,7 +69,7 @@ function submitCreate() {
                 <button type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
                 <Link href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
                 <Link href="/inventory/purchase-orders" class="wh-btn-secondary">Purchase orders</Link>
-                <Link href="/inventory/purchase-orders/create" class="wh-btn-secondary">Create PO</Link>
+                <Link href="/inventory/purchase-orders?open=create" class="wh-btn-secondary">Create PO</Link>
             </template>
         </PageHeader>
 

@@ -131,12 +131,11 @@ class AdminPagesTest extends TestCase
         $response->assertSessionHas('success', 'User roles updated.');
     }
 
-    public function test_user_create_page_renders(): void
+    public function test_user_create_redirects_to_index(): void
     {
         $response = $this->get('/admin/users/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Admin/Users/Create'));
+        $response->assertRedirect(route('admin.users.index', ['open' => 'create']));
     }
 
     public function test_roles_show_includes_permission_catalog(): void
@@ -271,12 +270,11 @@ class AdminPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page->component('Admin/Users/Edit'));
     }
 
-    public function test_role_create_page_renders(): void
+    public function test_role_create_redirects_to_index(): void
     {
         $response = $this->get('/admin/roles/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Admin/Roles/Create'));
+        $response->assertRedirect(route('admin.roles.index', ['open' => 'create']));
     }
 
     public function test_role_edit_renders(): void

@@ -1,12 +1,27 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormModal from '../../../Components/FormModal.vue';
+import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
-defineProps({
+const props = defineProps({
     menuItems: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
+});
+
+const showCreateModal = ref(false);
+
+const form = useForm({
+    code: '',
+    name: '',
+    price: '',
+    employee_price: '',
+    category_id: '',
 });
 
 const columns = [
@@ -27,6 +42,24 @@ function formatMoney(value) {
     const amount = Number.parseFloat(value);
     return Number.isFinite(amount) ? amount.toFixed(2) : '—';
 }
+
+function openCreateModal() {
+    form.reset();
+    showCreateModal.value = true;
+}
+
+function closeCreateModal() {
+    showCreateModal.value = false;
+}
+
+function submitCreate() {
+    form.post('/fb/menu-items', {
+        preserveScroll: true,
+        onSuccess: () => closeCreateModal(),
+    });
+}
+
+useQueryModal(showCreateModal, { onOpen: openCreateModal });
 </script>
 
 <template>
@@ -34,11 +67,15 @@ function formatMoney(value) {
         <PageHeader title="Menu items" subtitle="Catalog admin — prices, availability, and recipes">
             <template #actions>
                 <Link href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
-                <Link href="/fb/menu-items/create" class="wh-btn-primary">New item</Link>
+                <button type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
             </template>
         </PageHeader>
 
         <DataTable list-title="All menu items" :columns="columns" :rows="menuItems" empty-message="No menu items found.">
+            <template #empty>
+                <p>No menu items found.</p>
+                <button type="button" class="wh-btn-primary mt-3" @click="openCreateModal">Add your first menu item</button>
+            </template>
             <template #cell-code="{ row }">
                 <Link :href="`/fb/menu-items/${row.id}/edit`" class="wh-table-link">{{ row.code }}</Link>
             </template>
@@ -61,5 +98,43 @@ function formatMoney(value) {
                 <StatusBadge :status="row.is_active ? 'active' : 'inactive'" />
             </template>
         </DataTable>
+
+        <FormModal :open="showCreateModal" title="New menu item" subtitle="Add a sellable item to the restaurant catalog" @close="closeCreateModal">
+            <form class="space-y-4" @submit.prevent="submitCreate">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="code" class="mb-1 block text-sm font-medium text-slate-700">Item code</label>
+                        <input id="code" v-model="form.code" type="text" required class="wh-input" placeholder="BURGER-CL" />
+                    </div>
+                    <div>
+                        <label for="category_id" class="mb-1 block text-sm font-medium text-slate-700">Category</label>
+                        <select id="category_id" v-model="form.category_id" class="wh-input">
+                            <option value="">Uncategorized</option>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">
+                                {{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                        <input id="name" v-model="form.name" type="text" required class="wh-input" />
+                    </div>
+                    <div>
+                        <label for="price" class="mb-1 block text-sm font-medium text-slate-700">Guest price (ETB)</label>
+                        <MoneyField id="price" v-model="form.price" required />
+                    </div>
+                    <div>
+                        <label for="employee_price" class="mb-1 block text-sm font-medium text-slate-700">Staff meal price (ETB)</label>
+                        <MoneyField id="employee_price" v-model="form.employee_price" />
+                    </div>
+                </div>
+            </form>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="wh-btn-secondary" @click="closeCreateModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="form.processing" @click="submitCreate">Create item</button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

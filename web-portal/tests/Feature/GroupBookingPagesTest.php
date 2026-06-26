@@ -66,7 +66,7 @@ class GroupBookingPagesTest extends TestCase
     {
         $response = $this->get('/group-bookings/create');
 
-        $response->assertRedirect(route('group-bookings.index'));
+        $response->assertRedirect(route('group-bookings.index', ['open' => 'create']));
     }
 
     public function test_group_booking_show_includes_lifecycle_and_folios(): void

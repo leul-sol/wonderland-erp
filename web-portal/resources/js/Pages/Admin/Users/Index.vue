@@ -1,12 +1,15 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
+import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormModal from '../../../Components/FormModal.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -17,6 +20,18 @@ const props = defineProps({
     canAssignRoles: { type: Boolean, default: false },
     loadError: { type: String, default: null },
     loadErrorCode: { type: String, default: null },
+    loadErrorTitle: { type: String, default: null },
+    loadErrorRecommendation: { type: String, default: null },
+});
+
+const showCreateModal = ref(false);
+
+const createForm = useForm({
+    username: '',
+    email: '',
+    password: '',
+    display_name: '',
+    employee_id: '',
 });
 
 const columns = [
@@ -66,6 +81,24 @@ function rowActions(row) {
     }
     return items;
 }
+
+function openCreateModal() {
+    createForm.reset();
+    showCreateModal.value = true;
+}
+
+function closeCreateModal() {
+    showCreateModal.value = false;
+}
+
+function submitCreate() {
+    createForm.post('/admin/users', {
+        preserveScroll: true,
+        onSuccess: () => closeCreateModal(),
+    });
+}
+
+useQueryModal(showCreateModal, { onOpen: openCreateModal });
 </script>
 
 <template>
@@ -78,14 +111,20 @@ function rowActions(row) {
             <template #actions>
                 <Link href="/admin/roles" class="wh-btn-outline">Roles</Link>
                 <Link href="/admin/audit-logs" class="wh-btn-outline">Audit log</Link>
-                <Link v-if="canCreate" href="/admin/users/create" class="wh-btn-primary">
+                <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openCreateModal">
                     <Plus class="h-4 w-4" />
                     Create user
-                </Link>
+                </button>
             </template>
         </PageHeader>
 
-        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
+        <LoadErrorBanner
+            v-if="loadError"
+            :title="loadErrorTitle"
+            :message="loadError"
+            :recommendation="loadErrorRecommendation"
+            :code="loadErrorCode"
+        />
 
         <DataTable
             list-title="User list"
@@ -114,5 +153,36 @@ function rowActions(row) {
                 <RowActions v-if="rowActions(row).length" :items="rowActions(row)" />
             </template>
         </DataTable>
+
+        <FormModal :open="showCreateModal" title="Create platform user" subtitle="User must change password on first login" @close="closeCreateModal">
+            <form class="space-y-4" @submit.prevent="submitCreate">
+                <div>
+                    <label for="username" class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                    <input id="username" v-model="createForm.username" type="text" required class="wh-input" />
+                </div>
+                <div>
+                    <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                    <input id="email" v-model="createForm.email" type="email" required class="wh-input" />
+                </div>
+                <div>
+                    <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Temporary password</label>
+                    <input id="password" v-model="createForm.password" type="password" required minlength="10" class="wh-input" />
+                </div>
+                <div>
+                    <label for="display_name" class="mb-1 block text-sm font-medium text-slate-700">Display name</label>
+                    <input id="display_name" v-model="createForm.display_name" type="text" class="wh-input" />
+                </div>
+                <div>
+                    <label for="employee_id" class="mb-1 block text-sm font-medium text-slate-700">Employee ID (optional)</label>
+                    <input id="employee_id" v-model="createForm.employee_id" type="number" min="1" class="wh-input" />
+                </div>
+            </form>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="wh-btn-secondary" @click="closeCreateModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="createForm.processing" @click="submitCreate">Create user</button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

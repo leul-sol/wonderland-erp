@@ -63,7 +63,9 @@ class S3PortalNavigationTest extends TestCase
             $mock->shouldReceive('orders')->andReturn($empty);
             $mock->shouldReceive('diningTables')->andReturn($empty);
             $mock->shouldReceive('menuCategories')->andReturn($empty);
+            $mock->shouldReceive('menuCategories')->with(false)->andReturn($empty);
             $mock->shouldReceive('menuItemsCatalog')->andReturn($empty);
+            $mock->shouldReceive('menuItemsCatalog')->with(false)->andReturn($empty);
             $mock->shouldReceive('inventoryItems')->andReturn($empty);
             $mock->shouldReceive('itemCategories')->andReturn($empty);
             $mock->shouldReceive('lowStockAlerts')->andReturn($empty);
@@ -83,7 +85,6 @@ class S3PortalNavigationTest extends TestCase
             ['/front-desk/rooms', 'FrontDesk/Rooms/Index'],
             ['/front-desk/reservations', 'FrontDesk/Reservations/Index'],
             ['/front-desk/guests', 'FrontDesk/Guests/Index'],
-            ['/front-desk/guests/create', 'FrontDesk/Guests/Edit'],
             ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
             ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
@@ -93,7 +94,6 @@ class S3PortalNavigationTest extends TestCase
             ['/fb/settings', 'Fb/Settings/Index'],
             ['/fb/menu-categories', 'Fb/MenuCategories/Index'],
             ['/fb/menu-items', 'Fb/MenuItems/Index'],
-            ['/fb/menu-items/create', 'Fb/MenuItems/Create'],
             ['/fb/dining-tables', 'Fb/DiningTables/Index'],
             ['/inventory/items', 'Inventory/Items/Index'],
             ['/inventory/item-categories', 'Inventory/ItemCategories/Index'],
@@ -101,7 +101,6 @@ class S3PortalNavigationTest extends TestCase
             ['/inventory/valuation', 'Inventory/Valuation/Index'],
             ['/inventory/suppliers', 'Inventory/Suppliers/Index'],
             ['/inventory/purchase-orders', 'Inventory/PurchaseOrders/Index'],
-            ['/inventory/purchase-orders/create', 'Inventory/PurchaseOrders/Create'],
             ['/consumption/periods', 'Consumption/Periods/Index'],
             ['/group-bookings', 'GroupBookings/Index'],
         ];
@@ -113,12 +112,15 @@ class S3PortalNavigationTest extends TestCase
         }
 
         $redirects = [
-            '/front-desk/reservations/create' => '/front-desk/reservations',
+            '/front-desk/reservations/create' => '/front-desk/reservations?open=create',
+            '/front-desk/guests/create' => '/front-desk/guests?open=create',
             '/front-desk/settings/rooms' => '/front-desk/settings',
-            '/fb/orders/create' => '/fb/orders',
-            '/inventory/items/create' => '/inventory/items',
-            '/inventory/suppliers/create' => '/inventory/suppliers',
-            '/group-bookings/create' => '/group-bookings',
+            '/fb/orders/create' => '/fb/orders?open=create',
+            '/fb/menu-items/create' => '/fb/menu-items?open=create',
+            '/inventory/items/create' => '/inventory/items?open=create',
+            '/inventory/suppliers/create' => '/inventory/suppliers?open=create',
+            '/inventory/purchase-orders/create' => '/inventory/purchase-orders?open=create',
+            '/group-bookings/create' => '/group-bookings?open=create',
         ];
 
         foreach ($redirects as $path => $target) {

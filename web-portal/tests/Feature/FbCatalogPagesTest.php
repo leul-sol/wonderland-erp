@@ -66,6 +66,7 @@ class FbCatalogPagesTest extends TestCase
                     'is_active' => true,
                 ]],
             ]);
+            $mock->shouldReceive('menuCategories')->once()->with(false)->andReturn(['data' => []]);
         });
 
         $response = $this->get('/fb/menu-items');
@@ -77,21 +78,11 @@ class FbCatalogPagesTest extends TestCase
         );
     }
 
-    public function test_menu_item_create_page_renders_categories(): void
+    public function test_menu_item_create_redirects_to_index(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('menuCategories')->once()->with(false)->andReturn([
-                'data' => [['id' => 1, 'name' => 'Mains']],
-            ]);
-        });
-
         $response = $this->get('/fb/menu-items/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/MenuItems/Create')
-            ->has('categories', 1)
-        );
+        $response->assertRedirect(route('fb.menu-items.index', ['open' => 'create']));
     }
 
     public function test_menu_item_edit_page_renders_recipe_data(): void

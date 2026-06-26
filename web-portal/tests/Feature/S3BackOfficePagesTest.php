@@ -29,7 +29,7 @@ class S3BackOfficePagesTest extends TestCase
     {
         $response = $this->get('/front-desk/reservations/create');
 
-        $response->assertRedirect(route('front-desk.reservations.index'));
+        $response->assertRedirect(route('front-desk.reservations.index', ['open' => 'create']));
     }
 
     public function test_store_reservation_without_check_in(): void

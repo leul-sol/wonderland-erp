@@ -190,9 +190,9 @@ class UserController extends Controller
             ->with('success', 'User deleted.');
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Admin/Users/Create');
+        return redirect()->route('admin.users.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

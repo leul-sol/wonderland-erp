@@ -101,7 +101,7 @@ class FolioController extends Controller
         } catch (ApiException $e) {
             return redirect()
                 ->route('front-desk.folios.show', $folio)
-                ->with('error', $e->getMessage());
+                ->with($this->flashApiError($e));
         }
 
         $payload = $invoice['data'] ?? [];

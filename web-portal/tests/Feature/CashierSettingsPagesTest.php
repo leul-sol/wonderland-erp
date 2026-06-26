@@ -123,6 +123,7 @@ class CashierSettingsPagesTest extends TestCase
                     'is_active' => true,
                 ]],
             ]);
+            $mock->shouldReceive('rooms')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/front-desk/settings');

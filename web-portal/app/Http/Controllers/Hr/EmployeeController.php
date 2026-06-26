@@ -28,6 +28,8 @@ class EmployeeController extends Controller
     {
         try {
             $response = $this->s2->employees();
+            $departments = $this->s2->departments();
+            $positions = $this->s2->positions();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
@@ -35,23 +37,15 @@ class EmployeeController extends Controller
         return Inertia::render('Hr/Employees/Index', [
             'employees' => $response['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.employees.create']),
-        ]);
-    }
-
-    public function create(): Response|RedirectResponse
-    {
-        try {
-            $departments = $this->s2->departments();
-            $positions = $this->s2->positions();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.employees.index');
-        }
-
-        return Inertia::render('Hr/Employees/Create', [
             'departments' => $departments['data'] ?? [],
             'positions' => $positions['data'] ?? [],
             'defaultHireDate' => now()->toDateString(),
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('hr.employees.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

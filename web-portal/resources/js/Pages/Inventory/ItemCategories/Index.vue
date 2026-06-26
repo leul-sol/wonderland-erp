@@ -47,7 +47,7 @@ async function deactivate(category) {
         <PageHeader title="Item categories" subtitle="Organize inventory for procurement and reporting">
             <template #actions>
                 <Link href="/inventory/items" class="wh-btn-secondary">Items</Link>
-                <Link href="/inventory/items/create" class="wh-btn-primary">New item</Link>
+                <Link href="/inventory/items?open=create" class="wh-btn-primary">New item</Link>
             </template>
         </PageHeader>
 

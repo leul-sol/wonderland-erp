@@ -47,6 +47,8 @@ class HrPortalNavigationTest extends TestCase
             $mock->shouldReceive('employees')->andReturn($empty);
             $mock->shouldReceive('departments')->andReturn($empty);
             $mock->shouldReceive('positions')->andReturn($empty);
+            $mock->shouldReceive('departments')->andReturn($empty);
+            $mock->shouldReceive('positions')->andReturn($empty);
             $mock->shouldReceive('overtimeRecords')->andReturn($empty);
             $mock->shouldReceive('overtimeRates')->andReturn($empty);
             $mock->shouldReceive('offboardingRecords')->andReturn($empty);
@@ -60,7 +62,6 @@ class HrPortalNavigationTest extends TestCase
 
         $pages = [
             ['/hr/employees', 'Hr/Employees/Index'],
-            ['/hr/employees/create', 'Hr/Employees/Create'],
             ['/hr/departments', 'Hr/Organization/Departments/Index'],
             ['/hr/positions', 'Hr/Organization/Positions/Index'],
             ['/hr/overtime', 'Hr/Overtime/Index'],
@@ -69,7 +70,6 @@ class HrPortalNavigationTest extends TestCase
             ['/hr/attendance', 'Hr/Attendance/Index'],
             ['/hr/settings', 'Hr/Settings/Index'],
             ['/payroll/runs', 'Payroll/Runs/Index'],
-            ['/payroll/runs/create', 'Payroll/Runs/Create'],
             ['/payroll/severance', 'Payroll/Severance/Index'],
         ];
 
@@ -78,5 +78,8 @@ class HrPortalNavigationTest extends TestCase
             $response->assertOk();
             $response->assertInertia(fn ($page) => $page->component($component));
         }
+
+        $this->get('/hr/employees/create')->assertRedirect(route('hr.employees.index', ['open' => 'create']));
+        $this->get('/payroll/runs/create')->assertRedirect(route('payroll.runs.index', ['open' => 'create']));
     }
 }

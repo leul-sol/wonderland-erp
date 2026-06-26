@@ -50,13 +50,13 @@ class RoleController extends Controller
         ]);
     }
 
-    public function create(): Response|RedirectResponse
+    public function create(): RedirectResponse
     {
         if (! $this->auth->hasAnyPermission(['S1.identity.roles.create'])) {
             abort(403);
         }
 
-        return Inertia::render('Admin/Roles/Create');
+        return redirect()->route('admin.roles.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse

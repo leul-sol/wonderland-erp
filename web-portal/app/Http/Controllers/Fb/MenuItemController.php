@@ -24,26 +24,20 @@ class MenuItemController extends Controller
     {
         try {
             $response = $this->s3->menuItemsCatalog(false);
+            $categories = $this->s3->menuCategories(false);
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'fb.settings.index');
         }
 
         return Inertia::render('Fb/MenuItems/Index', [
             'menuItems' => $response['data'] ?? [],
+            'categories' => $categories['data'] ?? [],
         ]);
     }
 
-    public function create(): Response|RedirectResponse
+    public function create(): RedirectResponse
     {
-        try {
-            $categories = $this->s3->menuCategories(false);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'fb.menu-items.index');
-        }
-
-        return Inertia::render('Fb/MenuItems/Create', [
-            'categories' => $categories['data'] ?? [],
-        ]);
+        return redirect()->route('fb.menu-items.index', ['open' => 'create']);
     }
 
     public function store(Request $request): RedirectResponse
