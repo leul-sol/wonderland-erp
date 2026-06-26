@@ -1,4 +1,5 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -22,7 +23,11 @@ function formatMoney(value) {
 
 <template>
     <AppLayout title="Menu">
-        <PageHeader title="Restaurant menu" subtitle="Active items available for folio and cashier orders" />
+        <PageHeader title="Restaurant menu" subtitle="Active items available for folio and cashier orders">
+            <template #actions>
+                <Link href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
+            </template>
+        </PageHeader>
 
         <DataTable list-title="Menu item list" selectable :columns="columns" :rows="menuItems" empty-message="No menu items found.">
             <template #cell-category="{ row }">

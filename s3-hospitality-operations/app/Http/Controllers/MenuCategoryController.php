@@ -11,10 +11,16 @@ class MenuCategoryController extends Controller
 {
     use RespondsWithApiErrors;
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $query = MenuCategory::query()->orderBy('display_order');
+
+        if ($request->boolean('active_only', true)) {
+            $query->where('is_active', true);
+        }
+
         return response()->json([
-            'data' => MenuCategory::query()->where('is_active', true)->orderBy('display_order')->get(),
+            'data' => $query->get(),
         ]);
     }
 

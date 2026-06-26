@@ -58,6 +58,7 @@ return [
                 ['key' => 'menu', 'label' => 'Menu', 'route' => 'fb.menu.index', 'permissions' => ['S3.restaurant.menu.read']],
                 ['key' => 'orders', 'label' => 'Orders', 'route' => 'fb.orders.index', 'permissions' => ['S3.restaurant.orders.read']],
                 ['key' => 'orders_create', 'label' => 'New order', 'route' => 'fb.orders.create', 'permissions' => ['S3.restaurant.orders.write']],
+                ['key' => 'settings', 'label' => 'Catalog admin', 'route' => 'fb.settings.index', 'permissions' => ['S3.restaurant.menu.write']],
             ],
         ],
         [

@@ -215,6 +215,101 @@ class S3HospitalityClient extends GatewayClient
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function menuItemsCatalog(bool $activeOnly = false): array
+    {
+        return $this->json('GET', '/s3/api/v1/menu-items', ['active_only' => $activeOnly]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function menuItem(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/menu-items/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createMenuItem(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/menu-items', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateMenuItem(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/menu-items/{$id}", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateMenuItemRecipe(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/menu-items/{$id}/recipe", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function menuCategories(bool $activeOnly = false): array
+    {
+        return $this->json('GET', '/s3/api/v1/menu-categories', ['active_only' => $activeOnly]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createMenuCategory(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/menu-categories', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateMenuCategory(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/menu-categories/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function diningTables(bool $activeOnly = true): array
+    {
+        return $this->json('GET', '/s3/api/v1/dining-tables', ['active_only' => $activeOnly]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createDiningTable(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/dining-tables', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateDiningTable(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/dining-tables/{$id}", $payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
@@ -256,14 +351,6 @@ class S3HospitalityClient extends GatewayClient
         $query = $status ? ['status' => $status] : [];
 
         return $this->json('GET', '/s3/api/v1/orders', $query);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function diningTables(): array
-    {
-        return $this->json('GET', '/s3/api/v1/dining-tables');
     }
 
     /**

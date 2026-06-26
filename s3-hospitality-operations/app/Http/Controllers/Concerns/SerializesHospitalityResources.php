@@ -120,14 +120,17 @@ trait SerializesHospitalityResources
 
     protected function menuItemPayload(MenuItem $item): array
     {
-        $item->loadMissing('ingredients');
+        $item->loadMissing(['ingredients', 'category']);
 
         return [
             'id' => $item->id,
             'code' => $item->code,
             'name' => $item->name,
             'price' => (string) $item->price,
-            'category' => $item->getAttributes()['category'] ?? null,
+            'employee_price' => $item->employee_price !== null ? (string) $item->employee_price : null,
+            'category_id' => $item->category_id,
+            'category' => $item->category?->name ?? ($item->getAttributes()['category'] ?? null),
+            'has_recipe' => (bool) $item->has_recipe,
             'is_active' => $item->is_active,
             'ingredients' => $item->ingredients->map(fn ($ingredient) => [
                 'inventory_item_id' => $ingredient->id,

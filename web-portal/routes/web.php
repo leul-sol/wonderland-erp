@@ -11,7 +11,11 @@ use App\Http\Controllers\Consumption\PeriodController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fb\MenuController;
 use App\Http\Controllers\Fb\BillController;
+use App\Http\Controllers\Fb\DiningTableController;
+use App\Http\Controllers\Fb\MenuCategoryController;
+use App\Http\Controllers\Fb\MenuItemController as FbMenuItemController;
 use App\Http\Controllers\Fb\OrderController as FbOrderController;
+use App\Http\Controllers\Fb\SettingsController as FbSettingsController;
 use App\Http\Controllers\Finance\BiDashboardController;
 use App\Http\Controllers\Finance\BudgetController;
 use App\Http\Controllers\Finance\FiscalPeriodController;
@@ -157,6 +161,49 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/bills/{bill}/payments', [BillController::class, 'pay'])
             ->middleware('portal.permission:S3.restaurant.billing.write')
             ->name('bills.pay');
+
+        Route::get('/settings', [FbSettingsController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('settings.index');
+
+        Route::get('/menu-categories', [MenuCategoryController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('menu-categories.index');
+        Route::post('/menu-categories', [MenuCategoryController::class, 'store'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-categories.store');
+        Route::put('/menu-categories/{menuCategory}', [MenuCategoryController::class, 'update'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-categories.update');
+
+        Route::get('/menu-items', [FbMenuItemController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('menu-items.index');
+        Route::get('/menu-items/create', [FbMenuItemController::class, 'create'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-items.create');
+        Route::post('/menu-items', [FbMenuItemController::class, 'store'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-items.store');
+        Route::get('/menu-items/{menuItem}/edit', [FbMenuItemController::class, 'edit'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('menu-items.edit');
+        Route::put('/menu-items/{menuItem}', [FbMenuItemController::class, 'update'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-items.update');
+        Route::put('/menu-items/{menuItem}/recipe', [FbMenuItemController::class, 'updateRecipe'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('menu-items.recipe');
+
+        Route::get('/dining-tables', [DiningTableController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.menu.read')
+            ->name('dining-tables.index');
+        Route::post('/dining-tables', [DiningTableController::class, 'store'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('dining-tables.store');
+        Route::put('/dining-tables/{diningTable}', [DiningTableController::class, 'update'])
+            ->middleware('portal.permission:S3.restaurant.menu.write')
+            ->name('dining-tables.update');
     });
 
     Route::prefix('inventory')->name('inventory.')->group(function () {
