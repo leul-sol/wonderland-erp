@@ -12,23 +12,23 @@ const props = defineProps({
     },
 });
 
-const enriched = computed(() =>
-    props.steps.map((step, index) => {
-        const keys = props.steps.map((s) => s.key);
-        const currentIndex = keys.indexOf(props.currentKey);
+const enriched = computed(() => {
+    const keys = props.steps.map((s) => s.key);
+    const currentIndex = keys.indexOf(props.currentKey);
+    const allComplete = props.currentKey === 'locked';
+
+    return props.steps.map((step, index) => {
         let state = 'upcoming';
 
-        if (props.currentKey === 'approved' || props.currentKey === 'complete') {
+        if (allComplete || (currentIndex >= 0 && index < currentIndex)) {
             state = 'complete';
-        } else if (index < currentIndex) {
-            state = 'complete';
-        } else if (step.key === props.currentKey) {
+        } else if (currentIndex >= 0 && index === currentIndex) {
             state = 'current';
         }
 
         return { ...step, state };
-    }),
-);
+    });
+});
 </script>
 
 <template>

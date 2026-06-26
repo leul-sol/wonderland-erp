@@ -13,6 +13,7 @@ class PayrollRunApprovalSteps
             ['key' => 'draft', 'label' => 'Draft', 'hint' => 'Review payroll lines'],
             ['key' => 'pending_approval', 'label' => 'Pending approval', 'hint' => 'Awaiting sign-off'],
             ['key' => 'approved', 'label' => 'Approved', 'hint' => 'Posted to finance'],
+            ['key' => 'locked', 'label' => 'Locked', 'hint' => 'Immutable — payslips final'],
         ];
     }
 
@@ -20,7 +21,11 @@ class PayrollRunApprovalSteps
     {
         $status = (string) ($run['status'] ?? '');
 
-        if (in_array($status, ['approved', 'locked'], true)) {
+        if ($status === 'locked') {
+            return 'locked';
+        }
+
+        if ($status === 'approved') {
             return 'approved';
         }
 

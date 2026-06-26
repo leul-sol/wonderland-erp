@@ -329,6 +329,14 @@ class S2WorkforceClient extends GatewayClient
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function lockPayrollRun(int $id): array
+    {
+        return $this->json('POST', "/s2/api/v1/payroll-runs/{$id}/lock");
+    }
+
     public function downloadPayslip(int $employeeId, int $payrollRunId): Response
     {
         return $this->download('GET', "/s2/api/v1/employees/{$employeeId}/payslip/{$payrollRunId}");

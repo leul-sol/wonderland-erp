@@ -40,12 +40,11 @@ class PayrollRunController extends Controller
 
     public function create(): Response
     {
-        $start = now()->startOfMonth()->toDateString();
-        $end = now()->endOfMonth()->toDateString();
-
         return Inertia::render('Payroll/Runs/Create', [
-            'defaultPeriodStart' => $start,
-            'defaultPeriodEnd' => $end,
+            'defaultPeriodStart' => now()->startOfMonth()->toDateString(),
+            'defaultPeriodEnd' => $this->defaultPayrollPeriodEnd(),
+            'maxPeriodEnd' => $this->defaultPayrollPeriodEnd(),
+            'canRecordAttendance' => $this->auth->hasAnyPermission(['S2.workforce.attendance.create']),
         ]);
     }
 
@@ -56,13 +55,19 @@ class PayrollRunController extends Controller
             'period_end' => ['required', 'date', 'after_or_equal:period_start'],
         ]);
 
+        if ($data['period_end'] > now()->toDateString()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Period end cannot be in the future. Use today or the last completed weekday, and ensure weekday attendance exists for every active employee in the range.');
+        }
+
         try {
             $response = $this->s2->createPayrollRun([
                 'period_start' => $data['period_start'],
                 'period_end' => $data['period_end'],
             ]);
         } catch (ApiException $e) {
-            return $this->redirectApiError($e);
+            return $this->redirectPayrollCreateError($e);
         }
 
         $runId = (int) ($response['data']['id'] ?? 0);
@@ -93,6 +98,9 @@ class PayrollRunController extends Controller
             'approvalCurrentStep' => PayrollRunApprovalSteps::currentStepKey($run),
             'canSubmit' => $status === 'draft' && $this->auth->hasAnyPermission(['S2.workforce.payroll_runs.create']),
             'canApprove' => $status === 'pending_approval' && $this->auth->hasAnyPermission(['S2.workforce.payroll_runs.approve']),
+            'canLock' => $status === 'approved' && $this->auth->hasAnyPermission(['S2.workforce.payroll_runs.approve']),
+            'canReadPayslips' => in_array($status, ['approved', 'locked'], true)
+                && $this->auth->hasAnyPermission(['S2.payroll.payslips.read']),
         ]);
     }
 
@@ -116,5 +124,42 @@ class PayrollRunController extends Controller
         }
 
         return back()->with('success', 'Payroll run approved and posted to finance.');
+    }
+
+    public function lock(int $payrollRun): RedirectResponse
+    {
+        try {
+            $this->s2->lockPayrollRun($payrollRun);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Payroll run locked. Payslips are final and the run cannot be changed.');
+    }
+
+    private function defaultPayrollPeriodEnd(): string
+    {
+        $today = now();
+
+        if ($today->isWeekend()) {
+            return $today->previousWeekday()->toDateString();
+        }
+
+        return $today->toDateString();
+    }
+
+    private function redirectPayrollCreateError(ApiException $exception): RedirectResponse
+    {
+        $redirect = back()->withInput()->with('error', $exception->getMessage());
+
+        if ($exception->errorCode === 'VALIDATION_ERROR'
+            && preg_match('/Missing attendance for (.+) on (\d{4}-\d{2}-\d{2})/', $exception->getMessage(), $matches) === 1) {
+            $redirect->with('attendanceGap', [
+                'employee_name' => $matches[1],
+                'work_date' => $matches[2],
+            ]);
+        }
+
+        return $redirect;
     }
 }

@@ -370,6 +370,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/runs/{payrollRun}/approve', [PayrollRunController::class, 'approve'])
             ->middleware('portal.permission:S2.workforce.payroll_runs.approve')
             ->name('runs.approve');
+        Route::post('/runs/{payrollRun}/lock', [PayrollRunController::class, 'lock'])
+            ->middleware('portal.permission:S2.workforce.payroll_runs.approve')
+            ->name('runs.lock');
 
         Route::get('/severance', [SeveranceController::class, 'index'])
             ->middleware('portal.permission:S2.workforce.severance.read')
