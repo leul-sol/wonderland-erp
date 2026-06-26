@@ -50,6 +50,7 @@ function formatMoney(value) {
         >
             <template #actions>
                 <Link href="/hr/leave-requests" class="wh-btn-outline">Leave</Link>
+                <Link href="/hr/departments" class="wh-btn-outline">Departments</Link>
                 <Link href="/hr/attendance" class="wh-btn-outline">Attendance</Link>
                 <Link v-if="canCreate" href="/hr/employees/create" class="wh-btn-primary">
                     <Plus class="h-4 w-4" />

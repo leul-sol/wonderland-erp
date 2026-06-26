@@ -23,10 +23,12 @@ use App\Http\Controllers\FrontDesk\FolioController;
 use App\Http\Controllers\FrontDesk\RoomController;
 use App\Http\Controllers\GroupBookings\GroupBookingController;
 use App\Http\Controllers\Hr\AttendanceController;
+use App\Http\Controllers\Hr\DepartmentController;
 use App\Http\Controllers\Hr\EmployeeController;
 use App\Http\Controllers\Hr\EmployeeDocumentController;
 use App\Http\Controllers\Hr\EmployeeRecordController;
 use App\Http\Controllers\Hr\LeaveRequestController;
+use App\Http\Controllers\Hr\PositionController;
 use App\Http\Controllers\Inventory\ItemController;
 use App\Http\Controllers\Payroll\PayrollRunController;
 use App\Http\Controllers\Payroll\SeveranceController;
@@ -292,6 +294,38 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/employees/{employee}/guarantors/{guarantor}/letter', [EmployeeDocumentController::class, 'guarantorLetter'])
             ->middleware('portal.permission:S2.hr.guarantors.read')
             ->name('employees.guarantors.letter');
+
+        Route::get('/departments', [DepartmentController::class, 'index'])
+            ->middleware('portal.permission:S2.hr.departments.read')
+            ->name('departments.index');
+        Route::post('/departments', [DepartmentController::class, 'store'])
+            ->middleware('portal.permission:S2.hr.departments.write')
+            ->name('departments.store');
+        Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])
+            ->middleware('portal.permission:S2.hr.departments.write')
+            ->name('departments.edit');
+        Route::patch('/departments/{department}', [DepartmentController::class, 'update'])
+            ->middleware('portal.permission:S2.hr.departments.write')
+            ->name('departments.update');
+        Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])
+            ->middleware('portal.permission:S2.hr.departments.write')
+            ->name('departments.destroy');
+
+        Route::get('/positions', [PositionController::class, 'index'])
+            ->middleware('portal.permission:S2.workforce.positions.read')
+            ->name('positions.index');
+        Route::post('/positions', [PositionController::class, 'store'])
+            ->middleware('portal.permission:S2.workforce.positions.create')
+            ->name('positions.store');
+        Route::get('/positions/{position}/edit', [PositionController::class, 'edit'])
+            ->middleware('portal.permission:S2.workforce.positions.update')
+            ->name('positions.edit');
+        Route::patch('/positions/{position}', [PositionController::class, 'update'])
+            ->middleware('portal.permission:S2.workforce.positions.update')
+            ->name('positions.update');
+        Route::delete('/positions/{position}', [PositionController::class, 'destroy'])
+            ->middleware('portal.permission:S2.workforce.positions.delete')
+            ->name('positions.destroy');
 
         Route::get('/leave-requests', [LeaveRequestController::class, 'index'])
             ->middleware('portal.permission:S2.workforce.leave_requests.read')

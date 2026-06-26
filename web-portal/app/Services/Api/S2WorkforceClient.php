@@ -54,9 +54,77 @@ class S2WorkforceClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
+    public function department(int $id): array
+    {
+        return $this->json('GET', "/s2/api/v1/departments/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createDepartment(array $payload): array
+    {
+        return $this->json('POST', '/s2/api/v1/departments', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateDepartment(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/departments/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteDepartment(int $id): array
+    {
+        return $this->json('DELETE', "/s2/api/v1/departments/{$id}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function positions(): array
     {
         return $this->json('GET', '/s2/api/v1/positions');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function position(int $id): array
+    {
+        return $this->json('GET', "/s2/api/v1/positions/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createPosition(array $payload): array
+    {
+        return $this->json('POST', '/s2/api/v1/positions', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updatePosition(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/positions/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deletePosition(int $id): array
+    {
+        return $this->json('DELETE', "/s2/api/v1/positions/{$id}");
     }
 
     /**
