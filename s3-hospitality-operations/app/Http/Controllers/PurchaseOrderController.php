@@ -82,8 +82,16 @@ class PurchaseOrderController extends Controller
     {
         $receivedBy = (int) $request->attributes->get('auth_user_id', 0);
 
+        $data = $request->validate([
+            'lines' => ['nullable', 'array', 'min:1'],
+            'lines.*.purchase_order_line_id' => ['required_with:lines', 'integer'],
+            'lines.*.quantity_received' => ['required_with:lines', 'numeric', 'gt:0'],
+        ]);
+
+        $lineReceipts = isset($data['lines']) ? $data['lines'] : null;
+
         try {
-            $po = $this->purchaseOrders->receive($purchaseOrder, $receivedBy);
+            $po = $this->purchaseOrders->receive($purchaseOrder, $receivedBy, $lineReceipts);
         } catch (\InvalidArgumentException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
         }

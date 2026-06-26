@@ -159,6 +159,7 @@ trait SerializesHospitalityResources
                 'sku' => $line->inventoryItem?->sku,
                 'name' => $line->inventoryItem?->name,
                 'quantity' => (string) $line->quantity,
+                'quantity_received' => (string) $line->quantity_received,
                 'unit_cost' => (string) $line->unit_cost,
                 'line_total' => (string) $line->line_total,
             ])->values()->all(),

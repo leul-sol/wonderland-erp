@@ -69,6 +69,8 @@ return [
             'phase' => 3,
             'children' => [
                 ['key' => 'items', 'label' => 'Items', 'route' => 'inventory.items.index', 'permissions' => ['S3.inventory.items.read']],
+                ['key' => 'alerts', 'label' => 'Stock alerts', 'route' => 'inventory.alerts.index', 'permissions' => ['S3.inventory.items.read']],
+                ['key' => 'valuation', 'label' => 'Valuation', 'route' => 'inventory.valuation.index', 'permissions' => ['S3.inventory.reports.read']],
                 ['key' => 'suppliers', 'label' => 'Suppliers', 'route' => 'inventory.suppliers.index', 'permissions' => ['S3.inventory.suppliers.read']],
                 ['key' => 'purchase_orders', 'label' => 'Purchase orders', 'route' => 'inventory.purchase-orders.index', 'permissions' => ['S3.inventory.purchase_orders.read']],
             ],

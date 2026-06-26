@@ -1,4 +1,5 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -21,6 +22,9 @@ const columns = [
         <PageHeader title="Suppliers" subtitle="Vendor master for procurement" />
 
         <DataTable list-title="Supplier list" selectable :columns="columns" :rows="suppliers" empty-message="No suppliers found.">
+            <template #cell-name="{ row }">
+                <Link :href="`/inventory/suppliers/${row.id}`" class="wh-table-link">{{ row.name }}</Link>
+            </template>
             <template #cell-outstanding_balance="{ row }">
                 <span class="wh-money">ETB {{ row.outstanding_balance ?? '0.00' }}</span>
             </template>

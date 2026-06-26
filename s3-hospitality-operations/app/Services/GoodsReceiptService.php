@@ -18,7 +18,10 @@ class GoodsReceiptService
     {
     }
 
-    public function receive(PurchaseOrder $po, int $receivedBy): GoodsReceipt
+    /**
+     * @param  array<int, array{purchase_order_line_id: int, quantity_received: float|int}>|null  $lineReceipts
+     */
+    public function receive(PurchaseOrder $po, int $receivedBy, ?array $lineReceipts = null): GoodsReceipt
     {
         if (! in_array($po->status, ['approved', 'partially_received'], true)) {
             throw new InvalidArgumentException('Only approved purchase orders can be received.');
@@ -26,7 +29,14 @@ class GoodsReceiptService
 
         $po->loadMissing(['lines.inventoryItem', 'supplier']);
 
-        return DB::transaction(function () use ($po, $receivedBy) {
+        $quantitiesByLineId = [];
+        if ($lineReceipts !== null) {
+            foreach ($lineReceipts as $receipt) {
+                $quantitiesByLineId[(int) $receipt['purchase_order_line_id']] = round((float) $receipt['quantity_received'], 3);
+            }
+        }
+
+        return DB::transaction(function () use ($po, $receivedBy, $lineReceipts, $quantitiesByLineId) {
             $receipt = GoodsReceipt::query()->create([
                 'purchase_order_id' => $po->id,
                 'received_by' => $receivedBy > 0 ? $receivedBy : null,
@@ -38,25 +48,42 @@ class GoodsReceiptService
 
             foreach ($po->lines as $line) {
                 $remaining = round((float) $line->quantity - (float) $line->quantity_received, 3);
-                if ($remaining <= 0) {
+
+                if ($lineReceipts !== null) {
+                    if (! isset($quantitiesByLineId[$line->id])) {
+                        continue;
+                    }
+
+                    $toReceive = $quantitiesByLineId[$line->id];
+
+                    if ($toReceive > $remaining) {
+                        throw new InvalidArgumentException(
+                            "Quantity received exceeds remaining quantity for line {$line->id}."
+                        );
+                    }
+                } else {
+                    $toReceive = $remaining;
+                }
+
+                if ($toReceive <= 0) {
                     continue;
                 }
 
                 $hasLines = true;
                 $unitCost = (float) $line->unit_cost;
-                $lineTotal = round($remaining * $unitCost, 2);
+                $lineTotal = round($toReceive * $unitCost, 2);
                 $receiptTotal += $lineTotal;
 
                 $receiptLine = GoodsReceiptLine::query()->create([
                     'goods_receipt_id' => $receipt->id,
                     'purchase_order_line_id' => $line->id,
                     'inventory_item_id' => $line->inventory_item_id,
-                    'quantity_received' => $remaining,
+                    'quantity_received' => $toReceive,
                     'unit_cost' => $unitCost,
                 ]);
 
                 $item = InventoryItem::query()->lockForUpdate()->findOrFail($line->inventory_item_id);
-                $item->increment('quantity_on_hand', $remaining);
+                $item->increment('quantity_on_hand', $toReceive);
                 $item->update(['unit_cost' => $unitCost]);
 
                 $receivedDate = now()->toDateString();
@@ -64,8 +91,8 @@ class GoodsReceiptService
                     'inventory_item_id' => $item->id,
                     'goods_receipt_line_id' => $receiptLine->id,
                     'batch_code' => 'GR-'.$receipt->id.'-'.$receiptLine->id,
-                    'quantity_received' => $remaining,
-                    'quantity_remaining' => $remaining,
+                    'quantity_received' => $toReceive,
+                    'quantity_remaining' => $toReceive,
                     'unit_cost' => $unitCost,
                     'received_date' => $receivedDate,
                     'expiry_date' => $item->is_perishable ? now()->addDays(30)->toDateString() : null,
@@ -75,14 +102,14 @@ class GoodsReceiptService
                 StockMovement::query()->create([
                     'inventory_item_id' => $item->id,
                     'movement_type' => 'receipt',
-                    'quantity' => $remaining,
+                    'quantity' => $toReceive,
                     'unit_cost' => $unitCost,
                     'reference_type' => 'goods_receipt',
                     'reference_id' => $receipt->id,
                     'created_by' => $receivedBy > 0 ? $receivedBy : null,
                 ]);
 
-                $line->increment('quantity_received', $remaining);
+                $line->increment('quantity_received', $toReceive);
             }
 
             if (! $hasLines) {

@@ -117,9 +117,12 @@ class PurchaseOrderService
         return $po->fresh('lines.inventoryItem');
     }
 
-    public function receive(PurchaseOrder $po, int $receivedBy = 0): PurchaseOrder
+    /**
+     * @param  array<int, array{purchase_order_line_id: int, quantity_received: float|int}>|null  $lineReceipts
+     */
+    public function receive(PurchaseOrder $po, int $receivedBy = 0, ?array $lineReceipts = null): PurchaseOrder
     {
-        $this->goodsReceipt->receive($po, $receivedBy);
+        $this->goodsReceipt->receive($po, $receivedBy, $lineReceipts);
 
         return $po->fresh('lines.inventoryItem');
     }

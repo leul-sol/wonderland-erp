@@ -22,12 +22,19 @@ const columns = [
     <AppLayout title="Inventory items">
         <PageHeader title="Inventory items" subtitle="Stock on hand and reorder levels">
             <template #actions>
+                <Link href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
                 <Link href="/inventory/purchase-orders" class="wh-btn-secondary">Purchase orders</Link>
                 <Link href="/inventory/purchase-orders/create" class="wh-btn-primary">Create PO</Link>
             </template>
         </PageHeader>
 
         <DataTable list-title="Inventory item list" selectable :columns="columns" :rows="items" empty-message="No inventory items found.">
+            <template #cell-sku="{ row }">
+                <Link :href="`/inventory/items/${row.id}`" class="wh-table-link">{{ row.sku }}</Link>
+            </template>
+            <template #cell-name="{ row }">
+                <Link :href="`/inventory/items/${row.id}`" class="wh-table-link">{{ row.name }}</Link>
+            </template>
             <template #cell-quantity_on_hand="{ row }">
                 <span class="font-mono tabular-nums">{{ row.quantity_on_hand }}</span>
             </template>

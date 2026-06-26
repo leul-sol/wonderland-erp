@@ -106,9 +106,10 @@ class PurchaseOrderController extends Controller
             'purchaseOrder' => $po,
             'approvalSteps' => PurchaseOrderApprovalSteps::forPo($po),
             'approvalCurrentStep' => PurchaseOrderApprovalSteps::currentStepKey($po),
+            'approvalTierLabel' => PurchaseOrderApprovalSteps::tierLabel($po),
             'canSubmit' => $status === 'draft',
             'canApprove' => in_array($status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true),
-            'canReceive' => $status === 'approved',
+            'canReceive' => in_array($status, ['approved', 'partially_received'], true),
         ]);
     }
 
@@ -134,10 +135,21 @@ class PurchaseOrderController extends Controller
         return back()->with('success', 'Approval step recorded.');
     }
 
-    public function receive(int $purchaseOrder): RedirectResponse
+    public function receive(Request $request, int $purchaseOrder): RedirectResponse
     {
+        $data = $request->validate([
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.purchase_order_line_id' => ['required', 'integer'],
+            'lines.*.quantity_received' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        $lines = collect($data['lines'])->map(fn (array $line) => [
+            'purchase_order_line_id' => (int) $line['purchase_order_line_id'],
+            'quantity_received' => (float) $line['quantity_received'],
+        ])->values()->all();
+
         try {
-            $this->s3->receivePurchaseOrder($purchaseOrder);
+            $this->s3->receivePurchaseOrder($purchaseOrder, ['lines' => $lines]);
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }

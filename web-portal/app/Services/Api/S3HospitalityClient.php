@@ -296,9 +296,76 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
+    public function inventoryItem(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/items/{$id}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function inventoryItemStock(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/items/{$id}/stock");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function inventoryItemMovements(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/items/{$id}/movements", ['per_page' => 25]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function lowStockAlerts(): array
+    {
+        return $this->json('GET', '/s3/api/v1/stock/low-stock-alerts');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function expiryAlerts(): array
+    {
+        return $this->json('GET', '/s3/api/v1/stock/expiry-alerts');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function stockValuation(): array
+    {
+        return $this->json('GET', '/s3/api/v1/stock/valuation');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function suppliers(): array
     {
         return $this->json('GET', '/s3/api/v1/suppliers');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function supplier(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/suppliers/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function paySupplier(int $supplierId, array $payload, string $idempotencyKey): array
+    {
+        return $this->json('POST', "/s3/api/v1/suppliers/{$supplierId}/payments", $payload, [
+            'Idempotency-Key' => $idempotencyKey,
+        ]);
     }
 
     /**
@@ -311,11 +378,12 @@ class S3HospitalityClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function receivePurchaseOrder(int $id): array
+    public function receivePurchaseOrder(int $id, array $payload = []): array
     {
-        return $this->json('POST', "/s3/api/v1/purchase-orders/{$id}/receive");
+        return $this->json('POST', "/s3/api/v1/purchase-orders/{$id}/receive", $payload);
     }
 
     /**

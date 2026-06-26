@@ -35,11 +35,13 @@ use App\Http\Controllers\Hr\OffboardingController;
 use App\Http\Controllers\Hr\OvertimeController;
 use App\Http\Controllers\Hr\PositionController;
 use App\Http\Controllers\Hr\SettingsController;
+use App\Http\Controllers\Inventory\AlertController;
 use App\Http\Controllers\Inventory\ItemController;
-use App\Http\Controllers\Payroll\PayrollRunController;
-use App\Http\Controllers\Payroll\SeveranceController;
 use App\Http\Controllers\Inventory\PurchaseOrderController;
 use App\Http\Controllers\Inventory\SupplierController;
+use App\Http\Controllers\Inventory\ValuationController;
+use App\Http\Controllers\Payroll\PayrollRunController;
+use App\Http\Controllers\Payroll\SeveranceController;
 use App\Http\Controllers\ModulePlaceholderController;
 use App\Http\Middleware\EnsurePortalAuthenticated;
 use App\Http\Middleware\RedirectIfPortalAuthenticated;
@@ -161,9 +163,24 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/items', [ItemController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.items.read')
             ->name('items.index');
+        Route::get('/items/{item}', [ItemController::class, 'show'])
+            ->middleware('portal.permission:S3.inventory.items.read')
+            ->name('items.show');
+        Route::get('/alerts', [AlertController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.items.read')
+            ->name('alerts.index');
+        Route::get('/valuation', [ValuationController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.reports.read')
+            ->name('valuation.index');
         Route::get('/suppliers', [SupplierController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.suppliers.read')
             ->name('suppliers.index');
+        Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])
+            ->middleware('portal.permission:S3.inventory.suppliers.read')
+            ->name('suppliers.show');
+        Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'pay'])
+            ->middleware('portal.permission:S3.inventory.suppliers.write')
+            ->name('suppliers.pay');
 
         Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.purchase_orders.read')
