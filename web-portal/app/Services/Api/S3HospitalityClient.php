@@ -17,9 +17,69 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
-    public function roomTypes(): array
+    public function roomTypes(bool $activeOnly = true): array
     {
-        return $this->json('GET', '/s3/api/v1/room-types');
+        return $this->json('GET', '/s3/api/v1/room-types', ['active_only' => $activeOnly]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createRoomType(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/room-types', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateRoomType(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/room-types/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function cashierShifts(): array
+    {
+        return $this->json('GET', '/s3/api/v1/cashier-shifts');
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function openCashierShift(array $payload = []): array
+    {
+        return $this->json('POST', '/s3/api/v1/cashier-shifts', $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function cashierShift(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/cashier-shifts/{$id}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function cashierShiftReport(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/cashier-shifts/{$id}/report");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function closeCashierShift(int $id, array $payload): array
+    {
+        return $this->json('POST', "/s3/api/v1/cashier-shifts/{$id}/close", $payload);
     }
 
     /**

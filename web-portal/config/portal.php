@@ -45,6 +45,8 @@ return [
                 ['key' => 'guests', 'label' => 'Guests', 'route' => 'front-desk.guests.index', 'permissions' => ['S3.hotel.guests.read']],
                 ['key' => 'check_in', 'label' => 'Check in guest', 'route' => 'front-desk.check-in.create', 'permissions' => ['S3.hotel.checkinout.write', 'S3.hotel.reservations.write']],
                 ['key' => 'folios', 'label' => 'Folios', 'route' => 'front-desk.folios.index', 'permissions' => ['S3.hotel.folios.read']],
+                ['key' => 'cashier_shifts', 'label' => 'Cashier shifts', 'route' => 'front-desk.cashier-shifts.index', 'permissions' => ['S3.hotel.cashier.read']],
+                ['key' => 'settings', 'label' => 'Hotel settings', 'route' => 'front-desk.settings.index', 'permissions' => ['S3.hotel.rooms.read']],
             ],
         ],
         [

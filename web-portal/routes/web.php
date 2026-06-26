@@ -23,11 +23,13 @@ use App\Http\Controllers\Finance\JournalController;
 use App\Http\Controllers\Finance\PayableController;
 use App\Http\Controllers\Finance\ReceivableController;
 use App\Http\Controllers\Finance\ReportController;
+use App\Http\Controllers\FrontDesk\CashierShiftController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
 use App\Http\Controllers\FrontDesk\GuestProfileController;
 use App\Http\Controllers\FrontDesk\ReservationController;
 use App\Http\Controllers\FrontDesk\RoomController;
+use App\Http\Controllers\FrontDesk\SettingsController as FrontDeskSettingsController;
 use App\Http\Controllers\GroupBookings\GroupBookingController;
 use App\Http\Controllers\Hr\AttendanceController;
 use App\Http\Controllers\Hr\DepartmentController;
@@ -133,6 +135,29 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/folios/{folio}/check-out', [FolioController::class, 'checkOut'])
             ->middleware('portal.permission:S3.hotel.checkinout.write')
             ->name('folios.check-out');
+
+        Route::get('/cashier-shifts', [CashierShiftController::class, 'index'])
+            ->middleware('portal.permission:S3.hotel.cashier.read')
+            ->name('cashier-shifts.index');
+        Route::post('/cashier-shifts', [CashierShiftController::class, 'store'])
+            ->middleware('portal.permission:S3.hotel.cashier.write')
+            ->name('cashier-shifts.store');
+        Route::get('/cashier-shifts/{cashierShift}', [CashierShiftController::class, 'show'])
+            ->middleware('portal.permission:S3.hotel.cashier.read')
+            ->name('cashier-shifts.show');
+        Route::post('/cashier-shifts/{cashierShift}/close', [CashierShiftController::class, 'close'])
+            ->middleware('portal.permission:S3.hotel.cashier.write')
+            ->name('cashier-shifts.close');
+
+        Route::get('/settings', [FrontDeskSettingsController::class, 'index'])
+            ->middleware('portal.permission:S3.hotel.rooms.read')
+            ->name('settings.index');
+        Route::post('/settings/room-types', [FrontDeskSettingsController::class, 'storeRoomType'])
+            ->middleware('portal.permission:S3.hotel.rooms.write')
+            ->name('settings.room-types.store');
+        Route::put('/settings/room-types/{roomType}', [FrontDeskSettingsController::class, 'updateRoomType'])
+            ->middleware('portal.permission:S3.hotel.rooms.write')
+            ->name('settings.room-types.update');
     });
 
     Route::prefix('fb')->name('fb.')->group(function () {

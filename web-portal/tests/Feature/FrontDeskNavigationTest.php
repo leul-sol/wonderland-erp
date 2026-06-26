@@ -25,6 +25,9 @@ class FrontDeskNavigationTest extends TestCase
             'S3.hotel.guests.write',
             'S3.hotel.folios.read',
             'S3.hotel.folios.write',
+            'S3.hotel.cashier.read',
+            'S3.hotel.cashier.write',
+            'S3.hotel.rooms.write',
         ]);
     }
 
@@ -36,6 +39,8 @@ class FrontDeskNavigationTest extends TestCase
             $mock->shouldReceive('guestProfiles')->andReturn(['data' => ['data' => []]]);
             $mock->shouldReceive('roomTypes')->andReturn(['data' => []]);
             $mock->shouldReceive('folios')->andReturn(['data' => ['data' => []]]);
+            $mock->shouldReceive('cashierShifts')->andReturn(['data' => ['data' => []]]);
+            $mock->shouldReceive('roomTypes')->andReturn(['data' => []]);
         });
 
         $pages = [
@@ -45,6 +50,8 @@ class FrontDeskNavigationTest extends TestCase
             ['/front-desk/guests/create', 'FrontDesk/Guests/Edit'],
             ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
+            ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
+            ['/front-desk/settings', 'FrontDesk/Settings/Index'],
         ];
 
         foreach ($pages as [$path, $component]) {

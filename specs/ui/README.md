@@ -1,7 +1,7 @@
 # Wonderland ERP — Web Portal UI Plan
 
 **Stack:** Laravel 11 + Inertia.js + Vue 3 + Tailwind (BFF portal)  
-**Status:** Implemented — portal Phases 0–8; **S1 Identity & Access admin UI sign-off complete** (checklist Phases 1–7)  
+**Status:** Implemented — portal Phases 0–8; **S1 Identity & Access admin UI sign-off complete**; **S3 hospitality UI polish Phases 1–6 complete** (`scripts/portal-hospitality-smoke.ps1`)  
 **Gate:** Pilot gate green (UAT 27/27); APIs unchanged; UI is presentation only
 
 PDFs and `specs/traceability/matrix.yaml` remain source of truth for business rules. This folder defines **screens, routes, permissions, and API calls** for the staff portal.
@@ -103,7 +103,7 @@ See [`phases.yaml`](phases.yaml) for the **original portal build** (Phases 0–8
 |-------|--------|--------|
 | Portal MVP | 0–5 in `phases.yaml` | Thin screens per module; golden path smoke |
 | S2 HR polish | 6 sub-phases (done) | Employee hub → settings + `portal-hr-smoke.ps1` |
-| **S3 hospitality polish** | 6 sub-phases in `s3-phases.yaml` | Front desk hub → cashier + hospitality smoke |
+| **S3 hospitality polish** | 6 sub-phases in `s3-phases.yaml` | Front desk hub → cashier + hospitality smoke — **complete** |
 
 Order is by **hotel operational value**, not system number.
 

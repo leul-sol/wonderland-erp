@@ -11,9 +11,15 @@ class RoomTypeController extends Controller
 {
     use RespondsWithApiErrors;
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => RoomType::query()->where('is_active', true)->orderBy('name')->get()]);
+        $query = RoomType::query()->orderBy('name');
+
+        if ($request->boolean('active_only', true)) {
+            $query->where('is_active', true);
+        }
+
+        return response()->json(['data' => $query->get()]);
     }
 
     public function store(Request $request): JsonResponse
