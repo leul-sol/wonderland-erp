@@ -72,6 +72,7 @@ docker compose exec s1-identity php artisan app:sync-super-admin   # if super.ad
 
 ```powershell
 .\scripts\portal-admin-smoke.ps1   # S1 admin: login, users, roles, audit, change-password
+.\scripts\portal-hr-smoke.ps1      # S2 HR & payroll: employees, org, overtime, offboarding, settings
 .\scripts\portal-smoke.ps1         # Front desk golden path through portal UI
 ```
 

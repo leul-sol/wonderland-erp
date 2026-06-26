@@ -31,6 +31,7 @@ use App\Http\Controllers\Hr\LeaveRequestController;
 use App\Http\Controllers\Hr\OffboardingController;
 use App\Http\Controllers\Hr\OvertimeController;
 use App\Http\Controllers\Hr\PositionController;
+use App\Http\Controllers\Hr\SettingsController;
 use App\Http\Controllers\Inventory\ItemController;
 use App\Http\Controllers\Payroll\PayrollRunController;
 use App\Http\Controllers\Payroll\SeveranceController;
@@ -374,6 +375,19 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::patch('/offboarding/{offboarding}', [OffboardingController::class, 'update'])
             ->middleware('portal.permission:S2.workforce.offboarding.update')
             ->name('offboarding.update');
+
+        Route::get('/settings', [SettingsController::class, 'index'])
+            ->middleware('portal.permission:S2.workforce.leave_types.read,S2.workforce.overtime.read,S2.hr.assets.read')
+            ->name('settings.index');
+        Route::patch('/settings/overtime-rates/{overtimeRate}', [SettingsController::class, 'updateOvertimeRate'])
+            ->middleware('portal.permission:S2.workforce.overtime.update')
+            ->name('settings.overtime-rates.update');
+        Route::post('/settings/asset-types', [SettingsController::class, 'storeAssetType'])
+            ->middleware('portal.permission:S2.hr.assets.write')
+            ->name('settings.asset-types.store');
+        Route::delete('/settings/asset-types/{assetType}', [SettingsController::class, 'destroyAssetType'])
+            ->middleware('portal.permission:S2.hr.assets.write')
+            ->name('settings.asset-types.destroy');
     });
 
     Route::prefix('payroll')->name('payroll.')->group(function () {

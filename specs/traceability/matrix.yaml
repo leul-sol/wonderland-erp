@@ -39,7 +39,7 @@ requirements:
 
   # --- S2 Workforce ---
   - { key: S2-HR-001, system: S2, section: "§4.1", title: Employee CRUD, status: implemented, priority: critical, evidence: "HrWorkflowTest" }
-  - { key: S2-HR-002, system: S2, section: "§9", title: Disciplinary / assets / guarantors / offboarding, status: partial, priority: medium, evidence: "Data model may exist; not in UAT golden path" }
+  - { key: S2-HR-002, system: S2, section: "§9", title: Disciplinary / assets / guarantors / offboarding, status: implemented, priority: medium, evidence: "Portal HR hub tabs + offboarding dead-file wizard; scripts/portal-hr-smoke.ps1" }
   - { key: S2-PAY-001, system: S2, section: "§5.1–5.3", title: Payroll run lifecycle + ERCA deductions, status: implemented, priority: critical, evidence: "PayrollFlowTest, UAT-S2-001" }
   - { key: S2-PAY-002, system: S2, section: "§5.4", title: Overtime pay, status: partial, priority: medium, evidence: "Attendance exists; overtime calc not in UAT" }
   - { key: S2-PAY-003, system: S2, section: "§5.5", title: Pension contributions, status: implemented, priority: high, evidence: "Payroll journals to S4 pension accounts" }

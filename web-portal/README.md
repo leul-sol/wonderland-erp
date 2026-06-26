@@ -68,6 +68,12 @@ Hospitality golden path (separate):
 .\scripts\portal-smoke.ps1
 ```
 
+S2 HR & payroll UI (Phases 1–6):
+
+```powershell
+.\scripts\portal-hr-smoke.ps1
+```
+
 ## Reset UAT / E2E data
 
 Before another full automated UAT run:
@@ -92,7 +98,7 @@ Prefer the Docker `web-portal` service for PHP; rebuild assets on the host after
 ## Tests
 
 ```bash
-docker compose exec web-portal php artisan test --filter="ChangePasswordTest|AdminPagesTest|AdminActionsTest"
+docker compose exec web-portal php artisan test --filter="HrPortalNavigationTest|HrSettingsPagesTest|HrOffboardingPagesTest|HrOvertimePagesTest|HrOrganizationPagesTest|HrEmployeeHubPagesTest|HrPayrollPagesTest"
 ```
 
 ## Architecture

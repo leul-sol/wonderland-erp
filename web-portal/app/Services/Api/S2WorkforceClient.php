@@ -136,6 +136,49 @@ class S2WorkforceClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createAssetType(array $payload): array
+    {
+        return $this->json('POST', '/s2/api/v1/asset-types', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateAssetType(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/asset-types/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteAssetType(int $id): array
+    {
+        return $this->json('DELETE', "/s2/api/v1/asset-types/{$id}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function leaveTypes(): array
+    {
+        return $this->json('GET', '/s2/api/v1/leave-types');
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateOvertimeRate(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/overtime-rates/{$id}", $payload);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function leaveBalances(int $employeeId): array

@@ -103,6 +103,7 @@ return [
                 'S2.workforce.positions.read',
                 'S2.workforce.overtime.read',
                 'S2.workforce.offboarding.read',
+                'S2.workforce.leave_types.read',
             ],
             'phase' => 6,
             'children' => [
@@ -111,6 +112,7 @@ return [
                 ['key' => 'positions', 'label' => 'Positions', 'route' => 'hr.positions.index', 'permissions' => ['S2.workforce.positions.read']],
                 ['key' => 'overtime', 'label' => 'Overtime', 'route' => 'hr.overtime.index', 'permissions' => ['S2.workforce.overtime.read']],
                 ['key' => 'offboarding', 'label' => 'Offboarding', 'route' => 'hr.offboarding.index', 'permissions' => ['S2.workforce.offboarding.read']],
+                ['key' => 'settings', 'label' => 'Settings', 'route' => 'hr.settings.index', 'permissions' => ['S2.workforce.leave_types.read', 'S2.workforce.overtime.read', 'S2.hr.assets.read']],
                 ['key' => 'leave', 'label' => 'Leave requests', 'route' => 'hr.leave.index', 'permissions' => ['S2.workforce.leave_requests.read']],
                 ['key' => 'attendance', 'label' => 'Attendance', 'route' => 'hr.attendance.index', 'permissions' => ['S2.workforce.attendance.read']],
             ],
