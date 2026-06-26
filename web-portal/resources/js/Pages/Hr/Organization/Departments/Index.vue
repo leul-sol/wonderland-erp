@@ -4,6 +4,7 @@ import { Plus } from 'lucide-vue-next';
 import DataTable from '../../../../Components/DataTable.vue';
 import PageHeader from '../../../../Components/PageHeader.vue';
 import RowActions from '../../../../Components/RowActions.vue';
+import { confirmAction } from '../../../../composables/useConfirm';
 import AppLayout from '../../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -46,8 +47,15 @@ function submit() {
     });
 }
 
-function removeDepartment(department) {
-    if (!window.confirm(`Delete department "${department.name}"? It must have no assigned employees.`)) {
+async function removeDepartment(department) {
+    const confirmed = await confirmAction({
+        title: 'Delete department',
+        message: `Delete department "${department.name}"? It must have no assigned employees.`,
+        confirmLabel: 'Delete',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

@@ -4,6 +4,7 @@ import { Plus } from 'lucide-vue-next';
 import DataTable from '../../../../Components/DataTable.vue';
 import PageHeader from '../../../../Components/PageHeader.vue';
 import RowActions from '../../../../Components/RowActions.vue';
+import { confirmAction } from '../../../../composables/useConfirm';
 import AppLayout from '../../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -49,8 +50,15 @@ function submit() {
     });
 }
 
-function removePosition(position) {
-    if (!window.confirm(`Delete position "${position.title}"? It must not be assigned to any employee.`)) {
+async function removePosition(position) {
+    const confirmed = await confirmAction({
+        title: 'Delete position',
+        message: `Delete position "${position.title}"? It must not be assigned to any employee.`,
+        confirmLabel: 'Delete',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

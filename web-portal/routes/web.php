@@ -28,6 +28,7 @@ use App\Http\Controllers\Hr\EmployeeController;
 use App\Http\Controllers\Hr\EmployeeDocumentController;
 use App\Http\Controllers\Hr\EmployeeRecordController;
 use App\Http\Controllers\Hr\LeaveRequestController;
+use App\Http\Controllers\Hr\OvertimeController;
 use App\Http\Controllers\Hr\PositionController;
 use App\Http\Controllers\Inventory\ItemController;
 use App\Http\Controllers\Payroll\PayrollRunController;
@@ -349,6 +350,16 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/attendance', [AttendanceController::class, 'store'])
             ->middleware('portal.permission:S2.workforce.attendance.create')
             ->name('attendance.store');
+
+        Route::get('/overtime', [OvertimeController::class, 'index'])
+            ->middleware('portal.permission:S2.workforce.overtime.read')
+            ->name('overtime.index');
+        Route::post('/overtime', [OvertimeController::class, 'store'])
+            ->middleware('portal.permission:S2.workforce.overtime.create')
+            ->name('overtime.store');
+        Route::post('/overtime/{overtimeRecord}/approve', [OvertimeController::class, 'approve'])
+            ->middleware('portal.permission:S2.workforce.overtime.approve')
+            ->name('overtime.approve');
     });
 
     Route::prefix('payroll')->name('payroll.')->group(function () {

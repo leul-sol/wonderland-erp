@@ -148,6 +148,8 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S2.workforce.overtime.read');
     Route::post('/employees/{employee}/overtime-records', [OvertimeRecordController::class, 'store'])
         ->middleware('permission:S2.workforce.overtime.create');
+    Route::get('/overtime-records', [OvertimeRecordController::class, 'list'])
+        ->middleware('permission:S2.workforce.overtime.read');
     Route::post('/overtime-records/{overtimeRecord}/approve', [OvertimeRecordController::class, 'approve'])
         ->middleware('permission:S2.workforce.overtime.approve');
 

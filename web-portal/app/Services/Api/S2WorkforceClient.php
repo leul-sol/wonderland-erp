@@ -206,6 +206,40 @@ class S2WorkforceClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function overtimeRecords(array $query = []): array
+    {
+        return $this->json('GET', '/s2/api/v1/overtime-records', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createOvertimeRecord(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/overtime-records", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function approveOvertimeRecord(int $id): array
+    {
+        return $this->json('POST', "/s2/api/v1/overtime-records/{$id}/approve");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function overtimeRates(): array
+    {
+        return $this->json('GET', '/s2/api/v1/overtime-rates');
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function disciplinaryRecords(int $employeeId): array

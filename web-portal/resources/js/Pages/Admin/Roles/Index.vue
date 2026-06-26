@@ -4,6 +4,7 @@ import DataTable from '../../../Components/DataTable.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 defineProps({
@@ -31,12 +32,19 @@ const columns = [
     { key: 'actions', label: '', class: 'text-right' },
 ];
 
-function deleteRole(role) {
+async function deleteRole(role) {
     if (role.is_system) {
         return;
     }
 
-    if (!window.confirm(`Delete role "${role.display_name}"? Remove users from this role first.`)) {
+    const confirmed = await confirmAction({
+        title: 'Delete role',
+        message: `Delete role "${role.display_name}"? Remove users from this role first.`,
+        confirmLabel: 'Delete',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

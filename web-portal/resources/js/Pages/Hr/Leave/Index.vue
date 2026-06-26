@@ -3,6 +3,7 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -40,15 +41,36 @@ function approve(id) {
     router.post(`/hr/leave-requests/${id}/approve`, {}, { preserveScroll: true });
 }
 
-function reject(id) {
-    const reason = window.prompt('Rejection reason (optional):') ?? '';
-    router.post(`/hr/leave-requests/${id}/reject`, { reason }, { preserveScroll: true });
-}
+async function reject(id) {
+    const reason = await confirmAction({
+        title: 'Reject leave request',
+        message: 'Optionally provide a reason for rejection.',
+        confirmLabel: 'Reject',
+        variant: 'danger',
+        prompt: true,
+        promptLabel: 'Reason (optional)',
+        promptPlaceholder: 'Coverage or policy reason',
+    });
 
-function cancel(id) {
-    if (!window.confirm('Cancel this leave request?')) {
+    if (reason === false) {
         return;
     }
+
+    router.post(`/hr/leave-requests/${id}/reject`, { reason: reason || '' }, { preserveScroll: true });
+}
+
+async function cancel(id) {
+    const confirmed = await confirmAction({
+        title: 'Cancel leave request',
+        message: 'Cancel this leave request?',
+        confirmLabel: 'Cancel request',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     router.post(`/hr/leave-requests/${id}/cancel`, {}, { preserveScroll: true });
 }
 </script>

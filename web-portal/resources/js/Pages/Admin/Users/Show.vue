@@ -5,6 +5,7 @@ import DataTable from '../../../Components/DataTable.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -82,24 +83,45 @@ function submitResetPassword() {
     });
 }
 
-function forceLogout() {
-    if (!window.confirm('Revoke all active sessions for this user?')) {
+async function forceLogout() {
+    const confirmed = await confirmAction({
+        title: 'Force logout',
+        message: 'Revoke all active sessions for this user?',
+        confirmLabel: 'Revoke sessions',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 
     router.post(`/admin/users/${props.user.id}/force-logout`, {}, { preserveScroll: true });
 }
 
-function deleteUser() {
-    if (!window.confirm('Delete this user account? This cannot be undone.')) {
+async function deleteUser() {
+    const confirmed = await confirmAction({
+        title: 'Delete user',
+        message: 'Delete this user account? This cannot be undone.',
+        confirmLabel: 'Delete',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 
     router.delete(`/admin/users/${props.user.id}`);
 }
 
-function deactivateUser() {
-    if (!window.confirm('Deactivate this user? They will not be able to sign in.')) {
+async function deactivateUser() {
+    const confirmed = await confirmAction({
+        title: 'Deactivate user',
+        message: 'Deactivate this user? They will not be able to sign in.',
+        confirmLabel: 'Deactivate',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

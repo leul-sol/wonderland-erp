@@ -231,9 +231,20 @@ trait SerializesWorkforceResources
 
     protected function overtimeRecordPayload(OvertimeRecord $record): array
     {
+        $record->loadMissing('employee.department');
+
         return [
             'id' => $record->id,
             'employee_id' => $record->employee_id,
+            'employee' => $record->employee ? [
+                'id' => $record->employee->id,
+                'employee_number' => $record->employee->employee_number,
+                'full_name' => $record->employee->full_name,
+                'department' => $record->employee->department ? [
+                    'id' => $record->employee->department->id,
+                    'name' => $record->employee->department->name,
+                ] : null,
+            ] : null,
             'work_date' => $record->work_date?->toDateString(),
             'hours' => (string) $record->hours,
             'category' => $record->category,

@@ -2,6 +2,7 @@
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -115,8 +116,15 @@ function submit() {
     });
 }
 
-function deleteRole() {
-    if (!window.confirm(`Delete role "${props.role.display_name}"?`)) {
+async function deleteRole() {
+    const confirmed = await confirmAction({
+        title: 'Delete role',
+        message: `Delete role "${props.role.display_name}"?`,
+        confirmLabel: 'Delete',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

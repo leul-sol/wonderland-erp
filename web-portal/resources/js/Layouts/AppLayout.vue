@@ -1,4 +1,5 @@
 <script setup>
+import ConfirmModal from '../Components/ConfirmModal.vue';
 import SidebarNav from '../Components/SidebarNav.vue';
 import TopBar from '../Components/TopBar.vue';
 import { usePage } from '@inertiajs/vue3';
@@ -46,6 +47,8 @@ function handleSidebarToggle() {
 
 <template>
     <div class="min-h-screen bg-[#f8fafc]">
+        <ConfirmModal />
+
         <div v-if="flashError || flashSuccess" class="fixed right-4 top-4 z-50 max-w-sm">
             <div
                 v-if="flashError"

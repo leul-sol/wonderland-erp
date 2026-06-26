@@ -5,6 +5,7 @@ import ApprovalStepper from '../../../Components/ApprovalStepper.vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -71,24 +72,43 @@ function formatDateTime(value) {
     return new Date(value).toLocaleString();
 }
 
-function submitRun() {
-    if (!window.confirm('Submit this payroll run for approval?')) {
+async function submitRun() {
+    const confirmed = await confirmAction({
+        title: 'Submit for approval',
+        message: 'Submit this payroll run for approval?',
+        confirmLabel: 'Submit',
+    });
+
+    if (!confirmed) {
         return;
     }
 
     submitForm.post(`/payroll/runs/${props.payrollRun.id}/submit`, { preserveScroll: true });
 }
 
-function approveRun() {
-    if (!window.confirm('Approve and post this payroll run to finance? This creates the S4 journal entry.')) {
+async function approveRun() {
+    const confirmed = await confirmAction({
+        title: 'Approve payroll run',
+        message: 'Approve and post this payroll run to finance? This creates the S4 journal entry.',
+        confirmLabel: 'Approve and post',
+    });
+
+    if (!confirmed) {
         return;
     }
 
     approveForm.post(`/payroll/runs/${props.payrollRun.id}/approve`, { preserveScroll: true });
 }
 
-function lockRun() {
-    if (!window.confirm('Lock this payroll run? After locking it cannot be changed and payslips are final.')) {
+async function lockRun() {
+    const confirmed = await confirmAction({
+        title: 'Lock payroll run',
+        message: 'Lock this payroll run? After locking it cannot be changed and payslips are final.',
+        confirmLabel: 'Lock run',
+        variant: 'danger',
+    });
+
+    if (!confirmed) {
         return;
     }
 

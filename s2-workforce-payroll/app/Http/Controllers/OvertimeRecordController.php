@@ -41,6 +41,28 @@ class OvertimeRecordController extends Controller
         ]);
     }
 
+    public function list(Request $request): JsonResponse
+    {
+        $query = OvertimeRecord::query()
+            ->with('employee.department')
+            ->orderByDesc('work_date')
+            ->orderByDesc('id');
+
+        $query = $this->scopeQueryByEmployeeDepartment($query, $request);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', (int) $request->input('employee_id'));
+        }
+
+        return response()->json([
+            'data' => $query->get()->map(fn ($r) => $this->overtimeRecordPayload($r))->values(),
+        ]);
+    }
+
     public function store(StoreOvertimeRecordRequest $request, Employee $employee): JsonResponse
     {
         try {
