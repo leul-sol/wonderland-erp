@@ -175,7 +175,7 @@ class GatewayClient
         } catch (ConnectionException) {
             throw new ApiException(
                 'SERVICE_UNAVAILABLE',
-                'A backend service is unavailable or timed out. Check Docker: docker compose ps',
+                'Connection timed out while contacting a backend service.',
                 503,
             );
         }
@@ -205,7 +205,7 @@ class GatewayClient
         } catch (ConnectionException) {
             throw new ApiException(
                 'SERVICE_UNAVAILABLE',
-                'A backend service is unavailable or timed out. Check Docker: docker compose ps',
+                'Connection timed out while contacting a backend service.',
                 503,
             );
         }

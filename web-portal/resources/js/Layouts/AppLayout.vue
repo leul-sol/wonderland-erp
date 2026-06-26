@@ -1,5 +1,6 @@
 <script setup>
 import ConfirmModal from '../Components/ConfirmModal.vue';
+import FlashToast from '../Components/FlashToast.vue';
 import SidebarNav from '../Components/SidebarNav.vue';
 import TopBar from '../Components/TopBar.vue';
 import { usePage } from '@inertiajs/vue3';
@@ -14,6 +15,7 @@ defineProps({
 
 const page = usePage();
 const flashError = computed(() => page.props.flash?.error ?? null);
+const flashErrorDetail = computed(() => page.props.flash?.error_detail ?? null);
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 
 const mobileNavOpen = ref(false);
@@ -48,21 +50,7 @@ function handleSidebarToggle() {
 <template>
     <div class="min-h-screen bg-[#f8fafc]">
         <ConfirmModal />
-
-        <div v-if="flashError || flashSuccess" class="fixed right-4 top-4 z-50 max-w-sm">
-            <div
-                v-if="flashError"
-                class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-lg"
-            >
-                {{ flashError }}
-            </div>
-            <div
-                v-if="flashSuccess"
-                class="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-lg"
-            >
-                {{ flashSuccess }}
-            </div>
-        </div>
+        <FlashToast :error="flashError" :error-detail="flashErrorDetail" :success="flashSuccess" />
 
         <div
             v-if="mobileNavOpen"

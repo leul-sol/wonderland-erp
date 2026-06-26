@@ -36,6 +36,7 @@ class GroupBookingPagesTest extends TestCase
                     'status' => 'confirmed',
                 ]],
             ]);
+            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/group-bookings');
@@ -52,6 +53,7 @@ class GroupBookingPagesTest extends TestCase
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
             $mock->shouldReceive('groupBookings')->once()->with('checked_in')->andReturn(['data' => []]);
+            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/group-bookings?tab=checked_in');
@@ -60,18 +62,11 @@ class GroupBookingPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page->where('filters.tab', 'checked_in'));
     }
 
-    public function test_group_booking_create_page_renders(): void
+    public function test_group_booking_create_redirects_to_index(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('roomTypes')->once()->andReturn([
-                'data' => [['id' => 1, 'name' => 'Standard']],
-            ]);
-        });
-
         $response = $this->get('/group-bookings/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('GroupBookings/Create'));
+        $response->assertRedirect(route('group-bookings.index'));
     }
 
     public function test_group_booking_show_includes_lifecycle_and_folios(): void

@@ -41,16 +41,11 @@ class InventoryBackOfficePagesTest extends TestCase
         );
     }
 
-    public function test_inventory_item_create_page_renders(): void
+    public function test_inventory_item_create_redirects_to_index(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('itemCategories')->once()->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/inventory/items/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Inventory/Items/Create'));
+        $response->assertRedirect(route('inventory.items.index'));
     }
 
     public function test_create_inventory_item_posts_to_s3(): void
@@ -96,12 +91,11 @@ class InventoryBackOfficePagesTest extends TestCase
         $response->assertRedirect();
     }
 
-    public function test_supplier_create_page_renders(): void
+    public function test_supplier_create_redirects_to_index(): void
     {
         $response = $this->get('/inventory/suppliers/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Inventory/Suppliers/Create'));
+        $response->assertRedirect(route('inventory.suppliers.index'));
     }
 
     public function test_create_supplier_posts_to_s3(): void

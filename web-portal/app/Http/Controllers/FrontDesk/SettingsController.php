@@ -24,12 +24,14 @@ class SettingsController extends Controller
     {
         try {
             $response = $this->s3->roomTypes(false);
+            $rooms = $this->s3->rooms();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
 
         return Inertia::render('FrontDesk/Settings/Index', [
             'roomTypes' => $response['data'] ?? [],
+            'rooms' => $rooms['data'] ?? [],
         ]);
     }
 
@@ -74,19 +76,9 @@ class SettingsController extends Controller
         return back()->with('success', 'Room type updated.');
     }
 
-    public function rooms(): Response|RedirectResponse
+    public function rooms(): RedirectResponse
     {
-        try {
-            $rooms = $this->s3->rooms();
-            $roomTypes = $this->s3->roomTypes(false);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'front-desk.settings.index');
-        }
-
-        return Inertia::render('FrontDesk/Settings/Rooms', [
-            'rooms' => $rooms['data'] ?? [],
-            'roomTypes' => $roomTypes['data'] ?? [],
-        ]);
+        return redirect()->route('front-desk.settings.index');
     }
 
     public function storeRoom(Request $request): RedirectResponse

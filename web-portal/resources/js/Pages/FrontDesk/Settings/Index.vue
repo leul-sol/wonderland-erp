@@ -1,15 +1,21 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     roomTypes: { type: Array, default: () => [] },
+    rooms: { type: Array, default: () => [] },
 });
+
+const showRoomsModal = ref(false);
+const editingRoomId = ref(null);
 
 const createForm = useForm({
     name: '',
@@ -18,12 +24,32 @@ const createForm = useForm({
     max_occupancy: 2,
 });
 
+const roomForm = useForm({
+    room_number: '',
+    room_type_id: props.roomTypes[0]?.id ?? '',
+    floor: '',
+});
+
+const editForm = useForm({
+    room_number: '',
+    room_type_id: '',
+    floor: '',
+});
+
 const columns = [
     { key: 'code', label: 'Code' },
     { key: 'name', label: 'Room type' },
     { key: 'base_rate', label: 'Base rate', class: 'text-right' },
     { key: 'max_occupancy', label: 'Max guests', class: 'text-right' },
     { key: 'is_active', label: 'Status' },
+    { key: 'actions', label: '', class: 'text-right' },
+];
+
+const roomColumns = [
+    { key: 'room_number', label: 'Room' },
+    { key: 'room_type', label: 'Type' },
+    { key: 'floor', label: 'Floor' },
+    { key: 'status', label: 'Status' },
     { key: 'actions', label: '', class: 'text-right' },
 ];
 
@@ -36,6 +62,48 @@ function submitCreate() {
     createForm.post('/front-desk/settings/room-types', {
         preserveScroll: true,
         onSuccess: () => createForm.reset(),
+    });
+}
+
+function openRoomsModal() {
+    roomForm.reset();
+    roomForm.room_type_id = props.roomTypes[0]?.id ?? '';
+    editingRoomId.value = null;
+    showRoomsModal.value = true;
+}
+
+function closeRoomsModal() {
+    showRoomsModal.value = false;
+    editingRoomId.value = null;
+}
+
+function submitRoomCreate() {
+    roomForm.post('/front-desk/settings/rooms', {
+        preserveScroll: true,
+        onSuccess: () => roomForm.reset('room_number', 'floor'),
+    });
+}
+
+function startEdit(room) {
+    editingRoomId.value = room.id;
+    editForm.room_number = room.room_number ?? '';
+    editForm.room_type_id = room.room_type?.id ?? room.room_type_id ?? '';
+    editForm.floor = room.floor ?? '';
+}
+
+function cancelEdit() {
+    editingRoomId.value = null;
+    editForm.reset();
+}
+
+function submitEdit() {
+    if (!editingRoomId.value) {
+        return;
+    }
+
+    editForm.put(`/front-desk/settings/rooms/${editingRoomId.value}`, {
+        preserveScroll: true,
+        onSuccess: () => cancelEdit(),
     });
 }
 
@@ -61,7 +129,7 @@ async function toggleActive(roomType) {
     <AppLayout title="Hotel settings">
         <PageHeader title="Hotel settings" subtitle="Room types, physical rooms, and rack rates">
             <template #actions>
-                <Link href="/front-desk/settings/rooms" class="wh-btn-secondary">Physical rooms</Link>
+                <button type="button" class="wh-btn-secondary" @click="openRoomsModal">Physical rooms</button>
             </template>
         </PageHeader>
 
@@ -89,5 +157,62 @@ async function toggleActive(roomType) {
                 </button>
             </template>
         </DataTable>
+
+        <FormModal
+            :open="showRoomsModal"
+            title="Physical rooms"
+            subtitle="Room numbers linked to types for check-in assignment"
+            size="xl"
+            @close="closeRoomsModal"
+        >
+            <form class="mb-6 rounded-lg border border-slate-200 p-4" @submit.prevent="submitRoomCreate">
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add room</h3>
+                <div class="grid gap-3 sm:grid-cols-4">
+                    <input v-model="roomForm.room_number" type="text" required class="wh-input" placeholder="Room number" />
+                    <select v-model="roomForm.room_type_id" required class="wh-input">
+                        <option v-for="type in roomTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+                    </select>
+                    <input v-model="roomForm.floor" type="text" class="wh-input" placeholder="Floor" />
+                    <button type="submit" class="wh-btn-primary" :disabled="roomForm.processing">Add room</button>
+                </div>
+            </form>
+
+            <form v-if="editingRoomId" class="mb-6 rounded-lg border border-teal-200 p-4" @submit.prevent="submitEdit">
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Edit room #{{ editingRoomId }}</h3>
+                <div class="grid gap-3 sm:grid-cols-4">
+                    <input v-model="editForm.room_number" type="text" required class="wh-input" />
+                    <select v-model="editForm.room_type_id" required class="wh-input">
+                        <option v-for="type in roomTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+                    </select>
+                    <input v-model="editForm.floor" type="text" class="wh-input" placeholder="Floor" />
+                    <div class="flex gap-2">
+                        <button type="submit" class="wh-btn-primary" :disabled="editForm.processing">Save</button>
+                        <button type="button" class="wh-btn-secondary" @click="cancelEdit">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <DataTable list-title="Rooms" :columns="roomColumns" :rows="rooms" empty-message="No rooms configured.">
+                <template #cell-room_type="{ row }">
+                    {{ row.room_type?.name ?? row.room_type?.code ?? '—' }}
+                </template>
+                <template #cell-floor="{ row }">
+                    {{ row.floor ?? '—' }}
+                </template>
+                <template #cell-status="{ row }">
+                    <StatusBadge :status="row.status" />
+                </template>
+                <template #cell-actions="{ row }">
+                    <button type="button" class="wh-btn-secondary text-xs" @click="startEdit(row)">Edit</button>
+                </template>
+            </DataTable>
+
+            <template #footer>
+                <div class="flex justify-end">
+                    <Link href="/front-desk/rooms" class="wh-btn-secondary mr-3">Room status board</Link>
+                    <button type="button" class="wh-btn-primary" @click="closeRoomsModal">Done</button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

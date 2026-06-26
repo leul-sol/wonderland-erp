@@ -25,17 +25,11 @@ class S3BackOfficePagesTest extends TestCase
         ]);
     }
 
-    public function test_reservation_create_page_renders(): void
+    public function test_reservation_create_redirects_to_index(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('guestProfiles')->once()->andReturn(['data' => ['data' => []]]);
-        });
-
         $response = $this->get('/front-desk/reservations/create');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Reservations/Create'));
+        $response->assertRedirect(route('front-desk.reservations.index'));
     }
 
     public function test_store_reservation_without_check_in(): void
@@ -58,17 +52,11 @@ class S3BackOfficePagesTest extends TestCase
         $response->assertRedirect(route('front-desk.reservations.show', 12));
     }
 
-    public function test_physical_rooms_settings_page_renders(): void
+    public function test_physical_rooms_settings_redirects_to_hotel_settings(): void
     {
-        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('rooms')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('roomTypes')->once()->with(false)->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/front-desk/settings/rooms');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Settings/Rooms'));
+        $response->assertRedirect(route('front-desk.settings.index'));
     }
 
     public function test_cancel_order_posts_to_s3(): void

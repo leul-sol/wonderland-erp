@@ -26,37 +26,30 @@ class ReservationController extends Controller
 
         try {
             $response = $this->s3->reservations($status);
+            $roomTypes = $this->s3->roomTypes();
+            $guestsResponse = $this->s3->guestProfiles();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
 
-        return Inertia::render('FrontDesk/Reservations/Index', [
-            'reservations' => $response['data'] ?? [],
-            'filters' => ['status' => $status ?? ''],
-        ]);
-    }
-
-    public function create(): Response|RedirectResponse
-    {
-        try {
-            $roomTypes = $this->s3->roomTypes();
-            $guestsResponse = $this->s3->guestProfiles();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'front-desk.reservations.index');
-        }
-
         $paginator = $guestsResponse['data'] ?? [];
         $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
-
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
 
-        return Inertia::render('FrontDesk/Reservations/Create', [
+        return Inertia::render('FrontDesk/Reservations/Index', [
+            'reservations' => $response['data'] ?? [],
+            'filters' => ['status' => $status ?? ''],
             'roomTypes' => $roomTypes['data'] ?? [],
             'guests' => $guests,
             'defaultCheckIn' => $today,
             'defaultCheckOut' => $tomorrow,
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('front-desk.reservations.index');
     }
 
     public function store(Request $request): RedirectResponse

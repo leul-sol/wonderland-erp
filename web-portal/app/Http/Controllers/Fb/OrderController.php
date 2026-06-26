@@ -31,9 +31,14 @@ class OrderController extends Controller
                 default => null,
             };
             $response = $this->s3->orders($status);
+            $foliosResponse = $this->s3->folios('open');
+            $tablesResponse = $this->s3->diningTables();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
+
+        $paginator = $foliosResponse['data'] ?? [];
+        $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
 
         $orders = collect($response['data'] ?? []);
 
@@ -54,28 +59,15 @@ class OrderController extends Controller
         return Inertia::render('Fb/Orders/Index', [
             'orders' => $orders->values()->all(),
             'filters' => ['tab' => $tab],
+            'folios' => $folios,
+            'diningTables' => $tablesResponse['data'] ?? [],
+            'customerTypes' => $this->customerTypes(),
         ]);
     }
 
-    public function create(Request $request): Response|RedirectResponse
+    public function create(Request $request): RedirectResponse
     {
-        try {
-            $foliosResponse = $this->s3->folios('open');
-            $tablesResponse = $this->s3->diningTables();
-            $paginator = $foliosResponse['data'] ?? [];
-            $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $folioId = $request->integer('folio_id') ?: null;
-
-        return Inertia::render('Fb/Orders/Create', [
-            'folios' => $folios,
-            'diningTables' => $tablesResponse['data'] ?? [],
-            'selectedFolioId' => $folioId,
-            'customerTypes' => $this->customerTypes(),
-        ]);
+        return redirect()->route('fb.orders.index', $request->integer('folio_id') ? ['folio_id' => $request->integer('folio_id')] : []);
     }
 
     public function store(Request $request): RedirectResponse

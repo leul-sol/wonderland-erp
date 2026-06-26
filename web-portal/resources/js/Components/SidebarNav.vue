@@ -44,6 +44,26 @@ const page = usePage();
 const navigation = computed(() => page.props.navigation ?? []);
 const currentPath = computed(() => normalizePath(page.url));
 
+const allNavPaths = computed(() => {
+    const paths = [];
+
+    for (const section of navigation.value ?? []) {
+        for (const item of section.items ?? []) {
+            if (item.href) {
+                paths.push(normalizePath(item.href));
+            }
+
+            for (const child of item.children ?? []) {
+                if (child.href) {
+                    paths.push(normalizePath(child.href));
+                }
+            }
+        }
+    }
+
+    return [...new Set(paths)];
+});
+
 const iconMap = {
     'layout-grid': LayoutGrid,
     'bed-double': BedDouble,
@@ -106,7 +126,18 @@ function isActive(href) {
         return true;
     }
 
-    return target !== '/' && currentPath.value.startsWith(`${target}/`);
+    if (target === '/' || !currentPath.value.startsWith(`${target}/`)) {
+        return false;
+    }
+
+    const hasMoreSpecificNavMatch = allNavPaths.value.some(
+        (path) =>
+            path !== target &&
+            path.startsWith(`${target}/`) &&
+            (currentPath.value === path || currentPath.value.startsWith(`${path}/`)),
+    );
+
+    return !hasMoreSpecificNavMatch;
 }
 
 function itemIsActive(item) {

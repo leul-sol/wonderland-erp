@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Support\PortalUserMessage;
 use Exception;
 use Illuminate\Http\Client\Response;
 
@@ -19,6 +20,14 @@ class ApiException extends Exception
         parent::__construct($message, $statusCode);
     }
 
+    /**
+     * @return array{title: string, message: string, recommendation: string, code: string}
+     */
+    public function userMessage(): array
+    {
+        return PortalUserMessage::fromApiException($this);
+    }
+
     public static function fromResponse(Response $response): self
     {
         $body = $response->json();
@@ -33,9 +42,25 @@ class ApiException extends Exception
             );
         }
 
+        if (is_array($body) && isset($body['message'])) {
+            $message = (string) $body['message'];
+            $code = match (true) {
+                $response->status() === 401 => 'UNAUTHENTICATED',
+                $response->status() === 403 => 'FORBIDDEN',
+                $response->status() === 404 => 'NOT_FOUND',
+                $response->status() === 422 => 'VALIDATION_ERROR',
+                $response->status() >= 500 => 'SERVER_ERROR',
+                default => 'API_ERROR',
+            };
+
+            return new self($code, $message, $response->status());
+        }
+
+        $rawBody = trim((string) $response->body());
+
         return new self(
-            'API_ERROR',
-            trim((string) $response->body()) !== '' ? (string) $response->body() : 'Request failed.',
+            $response->status() >= 500 ? 'SERVER_ERROR' : 'API_ERROR',
+            $rawBody !== '' ? $rawBody : 'Request failed.',
             $response->status(),
         );
     }

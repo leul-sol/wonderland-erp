@@ -82,40 +82,47 @@ class S3PortalNavigationTest extends TestCase
         $pages = [
             ['/front-desk/rooms', 'FrontDesk/Rooms/Index'],
             ['/front-desk/reservations', 'FrontDesk/Reservations/Index'],
-            ['/front-desk/reservations/create', 'FrontDesk/Reservations/Create'],
             ['/front-desk/guests', 'FrontDesk/Guests/Index'],
             ['/front-desk/guests/create', 'FrontDesk/Guests/Edit'],
             ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
             ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
             ['/front-desk/settings', 'FrontDesk/Settings/Index'],
-            ['/front-desk/settings/rooms', 'FrontDesk/Settings/Rooms'],
             ['/fb/menu', 'Fb/Menu/Index'],
             ['/fb/orders', 'Fb/Orders/Index'],
-            ['/fb/orders/create', 'Fb/Orders/Create'],
             ['/fb/settings', 'Fb/Settings/Index'],
             ['/fb/menu-categories', 'Fb/MenuCategories/Index'],
             ['/fb/menu-items', 'Fb/MenuItems/Index'],
             ['/fb/menu-items/create', 'Fb/MenuItems/Create'],
             ['/fb/dining-tables', 'Fb/DiningTables/Index'],
             ['/inventory/items', 'Inventory/Items/Index'],
-            ['/inventory/items/create', 'Inventory/Items/Create'],
             ['/inventory/item-categories', 'Inventory/ItemCategories/Index'],
             ['/inventory/alerts', 'Inventory/Alerts/Index'],
             ['/inventory/valuation', 'Inventory/Valuation/Index'],
             ['/inventory/suppliers', 'Inventory/Suppliers/Index'],
-            ['/inventory/suppliers/create', 'Inventory/Suppliers/Create'],
             ['/inventory/purchase-orders', 'Inventory/PurchaseOrders/Index'],
             ['/inventory/purchase-orders/create', 'Inventory/PurchaseOrders/Create'],
             ['/consumption/periods', 'Consumption/Periods/Index'],
             ['/group-bookings', 'GroupBookings/Index'],
-            ['/group-bookings/create', 'GroupBookings/Create'],
         ];
 
         foreach ($pages as [$path, $component]) {
             $response = $this->get($path);
             $response->assertOk();
             $response->assertInertia(fn ($page) => $page->component($component));
+        }
+
+        $redirects = [
+            '/front-desk/reservations/create' => '/front-desk/reservations',
+            '/front-desk/settings/rooms' => '/front-desk/settings',
+            '/fb/orders/create' => '/fb/orders',
+            '/inventory/items/create' => '/inventory/items',
+            '/inventory/suppliers/create' => '/inventory/suppliers',
+            '/group-bookings/create' => '/group-bookings',
+        ];
+
+        foreach ($redirects as $path => $target) {
+            $this->get($path)->assertRedirect($target);
         }
     }
 }

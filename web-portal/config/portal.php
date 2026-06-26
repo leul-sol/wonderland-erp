@@ -42,13 +42,11 @@ return [
             'children' => [
                 ['key' => 'rooms', 'label' => 'Room status', 'route' => 'front-desk.rooms.index', 'permissions' => ['S3.hotel.rooms.read']],
                 ['key' => 'reservations', 'label' => 'Reservations', 'route' => 'front-desk.reservations.index', 'permissions' => ['S3.hotel.reservations.read']],
-                ['key' => 'reservation_create', 'label' => 'Book reservation', 'route' => 'front-desk.reservations.create', 'permissions' => ['S3.hotel.reservations.write']],
                 ['key' => 'guests', 'label' => 'Guests', 'route' => 'front-desk.guests.index', 'permissions' => ['S3.hotel.guests.read']],
                 ['key' => 'check_in', 'label' => 'Check in guest', 'route' => 'front-desk.check-in.create', 'permissions' => ['S3.hotel.checkinout.write', 'S3.hotel.reservations.write']],
                 ['key' => 'folios', 'label' => 'Folios', 'route' => 'front-desk.folios.index', 'permissions' => ['S3.hotel.folios.read']],
                 ['key' => 'cashier_shifts', 'label' => 'Cashier shifts', 'route' => 'front-desk.cashier-shifts.index', 'permissions' => ['S3.hotel.cashier.read']],
                 ['key' => 'settings', 'label' => 'Hotel settings', 'route' => 'front-desk.settings.index', 'permissions' => ['S3.hotel.rooms.read']],
-                ['key' => 'settings_rooms', 'label' => 'Physical rooms', 'route' => 'front-desk.settings.rooms', 'permissions' => ['S3.hotel.rooms.read']],
             ],
         ],
         [
@@ -61,7 +59,6 @@ return [
             'children' => [
                 ['key' => 'menu', 'label' => 'Menu', 'route' => 'fb.menu.index', 'permissions' => ['S3.restaurant.menu.read']],
                 ['key' => 'orders', 'label' => 'Orders', 'route' => 'fb.orders.index', 'permissions' => ['S3.restaurant.orders.read']],
-                ['key' => 'orders_create', 'label' => 'New order', 'route' => 'fb.orders.create', 'permissions' => ['S3.restaurant.orders.write']],
                 ['key' => 'settings', 'label' => 'Catalog admin', 'route' => 'fb.settings.index', 'permissions' => ['S3.restaurant.menu.write']],
             ],
         ],
@@ -75,11 +72,9 @@ return [
             'children' => [
                 ['key' => 'items', 'label' => 'Items', 'route' => 'inventory.items.index', 'permissions' => ['S3.inventory.items.read']],
                 ['key' => 'item_categories', 'label' => 'Item categories', 'route' => 'inventory.item-categories.index', 'permissions' => ['S3.inventory.items.read']],
-                ['key' => 'items_create', 'label' => 'New item', 'route' => 'inventory.items.create', 'permissions' => ['S3.inventory.items.write']],
                 ['key' => 'alerts', 'label' => 'Stock alerts', 'route' => 'inventory.alerts.index', 'permissions' => ['S3.inventory.items.read']],
                 ['key' => 'valuation', 'label' => 'Valuation', 'route' => 'inventory.valuation.index', 'permissions' => ['S3.inventory.reports.read']],
                 ['key' => 'suppliers', 'label' => 'Suppliers', 'route' => 'inventory.suppliers.index', 'permissions' => ['S3.inventory.suppliers.read']],
-                ['key' => 'suppliers_create', 'label' => 'New supplier', 'route' => 'inventory.suppliers.create', 'permissions' => ['S3.inventory.suppliers.write']],
                 ['key' => 'purchase_orders', 'label' => 'Purchase orders', 'route' => 'inventory.purchase-orders.index', 'permissions' => ['S3.inventory.purchase_orders.read']],
             ],
         ],
@@ -100,7 +95,6 @@ return [
             'phase' => 5,
             'children' => [
                 ['key' => 'list', 'label' => 'All bookings', 'route' => 'group-bookings.index', 'permissions' => ['S3.hotel.group_bookings.read']],
-                ['key' => 'create', 'label' => 'Create booking', 'route' => 'group-bookings.create', 'permissions' => ['S3.hotel.group_bookings.create']],
             ],
         ],
         [

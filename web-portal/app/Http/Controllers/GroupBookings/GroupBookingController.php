@@ -31,32 +31,26 @@ class GroupBookingController extends Controller
 
         try {
             $response = $this->s3->groupBookings($status);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        return Inertia::render('GroupBookings/Index', [
-            'groupBookings' => $response['data'] ?? [],
-            'filters' => ['tab' => $tab],
-        ]);
-    }
-
-    public function create(): Response|RedirectResponse
-    {
-        try {
             $roomTypes = $this->s3->roomTypes();
         } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'group-bookings.index');
+            return $this->redirectApiError($e, 'dashboard');
         }
 
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
 
-        return Inertia::render('GroupBookings/Create', [
+        return Inertia::render('GroupBookings/Index', [
+            'groupBookings' => $response['data'] ?? [],
+            'filters' => ['tab' => $tab],
             'roomTypes' => $roomTypes['data'] ?? [],
             'defaultCheckIn' => $today,
             'defaultCheckOut' => $tomorrow,
         ]);
+    }
+
+    public function create(): RedirectResponse
+    {
+        return redirect()->route('group-bookings.index');
     }
 
     public function store(Request $request): RedirectResponse

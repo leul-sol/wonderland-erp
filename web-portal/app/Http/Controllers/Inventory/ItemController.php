@@ -24,26 +24,20 @@ class ItemController extends Controller
     {
         try {
             $response = $this->s3->inventoryItems(false);
+            $categories = $this->s3->itemCategories();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
 
         return Inertia::render('Inventory/Items/Index', [
             'items' => $response['data'] ?? [],
+            'categories' => $categories['data'] ?? [],
         ]);
     }
 
-    public function create(): Response|RedirectResponse
+    public function create(): RedirectResponse
     {
-        try {
-            $categories = $this->s3->itemCategories();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'inventory.items.index');
-        }
-
-        return Inertia::render('Inventory/Items/Create', [
-            'categories' => $categories['data'] ?? [],
-        ]);
+        return redirect()->route('inventory.items.index');
     }
 
     public function store(Request $request): RedirectResponse

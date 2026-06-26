@@ -79,9 +79,9 @@ class SupplierController extends Controller
             ->with('success', 'Supplier payment recorded.');
     }
 
-    public function create(): Response|RedirectResponse
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Inventory/Suppliers/Create');
+        return redirect()->route('inventory.suppliers.index');
     }
 
     public function store(Request $request): RedirectResponse
