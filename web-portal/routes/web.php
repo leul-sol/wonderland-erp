@@ -28,6 +28,7 @@ use App\Http\Controllers\Hr\EmployeeController;
 use App\Http\Controllers\Hr\EmployeeDocumentController;
 use App\Http\Controllers\Hr\EmployeeRecordController;
 use App\Http\Controllers\Hr\LeaveRequestController;
+use App\Http\Controllers\Hr\OffboardingController;
 use App\Http\Controllers\Hr\OvertimeController;
 use App\Http\Controllers\Hr\PositionController;
 use App\Http\Controllers\Inventory\ItemController;
@@ -360,6 +361,19 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/overtime/{overtimeRecord}/approve', [OvertimeController::class, 'approve'])
             ->middleware('portal.permission:S2.workforce.overtime.approve')
             ->name('overtime.approve');
+
+        Route::get('/offboarding', [OffboardingController::class, 'index'])
+            ->middleware('portal.permission:S2.workforce.offboarding.read')
+            ->name('offboarding.index');
+        Route::post('/offboarding', [OffboardingController::class, 'store'])
+            ->middleware('portal.permission:S2.workforce.offboarding.create')
+            ->name('offboarding.store');
+        Route::get('/offboarding/{offboarding}', [OffboardingController::class, 'show'])
+            ->middleware('portal.permission:S2.workforce.offboarding.read')
+            ->name('offboarding.show');
+        Route::patch('/offboarding/{offboarding}', [OffboardingController::class, 'update'])
+            ->middleware('portal.permission:S2.workforce.offboarding.update')
+            ->name('offboarding.update');
     });
 
     Route::prefix('payroll')->name('payroll.')->group(function () {

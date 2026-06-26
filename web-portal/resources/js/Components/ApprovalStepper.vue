@@ -15,7 +15,7 @@ const props = defineProps({
 const enriched = computed(() => {
     const keys = props.steps.map((s) => s.key);
     const currentIndex = keys.indexOf(props.currentKey);
-    const allComplete = props.currentKey === 'locked';
+    const allComplete = ['locked', 'completed', 'complete'].includes(props.currentKey);
 
     return props.steps.map((step, index) => {
         let state = 'upcoming';

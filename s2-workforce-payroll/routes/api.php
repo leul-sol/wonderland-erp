@@ -95,6 +95,8 @@ Route::middleware('jwt')->group(function () {
 
     Route::get('/offboarding-records', [OffboardingController::class, 'index'])
         ->middleware('permission:S2.workforce.offboarding.read');
+    Route::get('/offboarding-records/{offboardingRecord}', [OffboardingController::class, 'show'])
+        ->middleware('permission:S2.workforce.offboarding.read');
     Route::post('/employees/{employee}/offboarding', [OffboardingController::class, 'store'])
         ->middleware('permission:S2.workforce.offboarding.create');
     Route::patch('/offboarding-records/{offboardingRecord}', [OffboardingController::class, 'update'])

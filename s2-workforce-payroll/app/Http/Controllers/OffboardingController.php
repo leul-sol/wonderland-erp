@@ -30,6 +30,11 @@ class OffboardingController extends Controller
         ]);
     }
 
+    public function show(OffboardingRecord $offboardingRecord): JsonResponse
+    {
+        return response()->json(['data' => $this->offboardingPayload($offboardingRecord)]);
+    }
+
     public function store(StoreOffboardingRequest $request, Employee $employee): JsonResponse
     {
         try {

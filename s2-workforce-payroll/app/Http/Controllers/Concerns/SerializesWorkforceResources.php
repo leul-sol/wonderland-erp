@@ -183,6 +183,12 @@ trait SerializesWorkforceResources
             'id' => $record->id,
             'employee_id' => $record->employee_id,
             'employee_name' => $record->employee?->full_name,
+            'employee' => $record->employee ? [
+                'id' => $record->employee->id,
+                'employee_number' => $record->employee->employee_number,
+                'full_name' => $record->employee->full_name,
+                'status' => $record->employee->status,
+            ] : null,
             'initiated_date' => $record->initiated_date?->toDateString(),
             'reason' => $record->reason,
             'last_working_day' => $record->last_working_day?->toDateString(),

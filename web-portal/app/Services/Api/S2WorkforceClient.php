@@ -242,6 +242,40 @@ class S2WorkforceClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
+    public function offboardingRecords(): array
+    {
+        return $this->json('GET', '/s2/api/v1/offboarding-records');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function offboardingRecord(int $id): array
+    {
+        return $this->json('GET', "/s2/api/v1/offboarding-records/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createOffboarding(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/offboarding", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateOffboarding(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/offboarding-records/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function disciplinaryRecords(int $employeeId): array
     {
         return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/disciplinary-records");
