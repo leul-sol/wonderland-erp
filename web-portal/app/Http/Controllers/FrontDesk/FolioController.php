@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FolioController extends Controller
 {
@@ -91,6 +92,29 @@ class FolioController extends Controller
         }
 
         return back()->with('success', 'Folio payment recorded.');
+    }
+
+    public function invoice(int $folio): StreamedResponse|RedirectResponse
+    {
+        try {
+            $invoice = $this->s3->folioInvoice($folio);
+        } catch (ApiException $e) {
+            return redirect()
+                ->route('front-desk.folios.show', $folio)
+                ->with('error', $e->getMessage());
+        }
+
+        $payload = $invoice['data'] ?? [];
+        $folioNumber = $payload['folio_number'] ?? "folio-{$folio}";
+        $filename = "folio-invoice-{$folioNumber}.json";
+
+        return response()->streamDownload(
+            function () use ($payload): void {
+                echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            },
+            $filename,
+            ['Content-Type' => 'application/json'],
+        );
     }
 
     public function checkOut(int $folio): RedirectResponse

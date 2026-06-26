@@ -38,6 +38,7 @@ trait SerializesHospitalityResources
         return [
             'id' => $reservation->id,
             'confirmation_code' => $reservation->confirmation_code,
+            'guest_id' => $reservation->guest_id,
             'guest_name' => $reservation->guest_name,
             'guest_email' => $reservation->guest_email,
             'guest_phone' => $reservation->guest_phone,
@@ -166,13 +167,21 @@ trait SerializesHospitalityResources
 
     protected function orderPayload(RestaurantOrder $order): array
     {
-        $order->loadMissing(['lines.menuItem', 'folio']);
+        $order->loadMissing(['lines.menuItem', 'folio', 'bill', 'diningTable']);
 
         return [
             'id' => $order->id,
             'order_number' => $order->order_number,
             'folio_id' => $order->folio_id,
             'employee_consumption_period_id' => $order->employee_consumption_period_id,
+            'customer_type' => $order->customer_type,
+            'customer_ref_id' => $order->customer_ref_id,
+            'dining_table_id' => $order->dining_table_id,
+            'dining_table' => $order->diningTable ? [
+                'id' => $order->diningTable->id,
+                'table_number' => $order->diningTable->table_number,
+                'location' => $order->diningTable->location,
+            ] : null,
             'status' => $order->status,
             'payment_context' => $order->payment_context,
             'subtotal' => (string) $order->subtotal,
@@ -183,6 +192,16 @@ trait SerializesHospitalityResources
             'revenue_journal_entry_id' => $order->revenue_journal_entry_id,
             'cogs_journal_entry_id' => $order->cogs_journal_entry_id,
             'finalized_at' => $order->finalized_at?->toIso8601String(),
+            'bill' => $order->bill ? [
+                'id' => $order->bill->id,
+                'status' => $order->bill->status,
+                'subtotal' => (string) $order->bill->subtotal,
+                'service_charge_amount' => (string) $order->bill->service_charge_amount,
+                'vat_amount' => (string) $order->bill->vat_amount,
+                'total_amount' => (string) $order->bill->total_amount,
+                'paid_amount' => (string) $order->bill->paid_amount,
+                'outstanding_balance' => (string) $order->bill->outstanding_balance,
+            ] : null,
             'lines' => $order->lines->map(fn ($line) => [
                 'id' => $line->id,
                 'menu_item_id' => $line->menu_item_id,

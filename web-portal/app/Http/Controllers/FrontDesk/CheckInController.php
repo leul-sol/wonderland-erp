@@ -25,21 +25,31 @@ class CheckInController extends Controller
         try {
             $roomTypes = $this->s3->roomTypes();
             $rooms = $this->s3->rooms('available');
+            $guestsResponse = $this->s3->guestProfiles();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
 
+        $paginator = $guestsResponse['data'] ?? [];
+        $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
+
+        $selectedGuestId = request()->integer('guest_id') ?: null;
+
         return Inertia::render('FrontDesk/CheckIn/Create', [
             'roomTypes' => $roomTypes['data'] ?? [],
             'availableRooms' => $rooms['data'] ?? [],
+            'guests' => $guests,
+            'selectedGuestId' => $selectedGuestId,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'guest_id' => ['nullable', 'integer'],
             'guest_name' => ['required', 'string', 'max:200'],
             'guest_email' => ['nullable', 'email', 'max:200'],
+            'guest_phone' => ['nullable', 'string', 'max:30'],
             'room_type_id' => ['required', 'integer'],
             'room_id' => ['required', 'integer'],
             'check_in_date' => ['required', 'date'],
@@ -47,13 +57,20 @@ class CheckInController extends Controller
         ]);
 
         try {
-            $reservation = $this->s3->createReservation([
+            $payload = [
                 'guest_name' => $data['guest_name'],
                 'guest_email' => $data['guest_email'] ?? null,
+                'guest_phone' => $data['guest_phone'] ?? null,
                 'room_type_id' => (int) $data['room_type_id'],
                 'check_in_date' => $data['check_in_date'],
                 'check_out_date' => $data['check_out_date'],
-            ]);
+            ];
+
+            if (! empty($data['guest_id'])) {
+                $payload['guest_id'] = (int) $data['guest_id'];
+            }
+
+            $reservation = $this->s3->createReservation($payload);
 
             $reservationId = (int) ($reservation['data']['id'] ?? 0);
             $checkedIn = $this->s3->checkIn($reservationId, (int) $data['room_id']);

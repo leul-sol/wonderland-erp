@@ -1,31 +1,56 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     rooms: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({ status: '' }) },
+    canUpdateStatus: { type: Boolean, default: false },
 });
+
+const statusForm = useForm({ status: 'available' });
 
 const columns = [
     { key: 'room_number', label: 'Room' },
     { key: 'floor', label: 'Floor' },
     { key: 'room_type', label: 'Type' },
     { key: 'status', label: 'Status' },
+    { key: 'actions', label: '', class: 'text-right' },
 ];
 
 const statusFilters = [
     { value: '', label: 'All' },
     { value: 'available', label: 'Available' },
     { value: 'occupied', label: 'Occupied' },
+    { value: 'cleaning', label: 'Cleaning' },
     { value: 'maintenance', label: 'Maintenance' },
 ];
 
 function applyFilter(status) {
     router.get('/front-desk/rooms', status ? { status } : {}, { preserveState: true, replace: true });
+}
+
+async function setRoomStatus(roomId, status, label) {
+    const ok = await confirmAction({
+        title: 'Update room status',
+        message: `Set room to ${label}?`,
+        confirmLabel: 'Update status',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    statusForm.status = status;
+    statusForm.put(`/front-desk/rooms/${roomId}/status`, { preserveScroll: true });
+}
+
+function canChangeStatus(row) {
+    return props.canUpdateStatus && row.status !== 'occupied';
 }
 </script>
 
@@ -33,6 +58,7 @@ function applyFilter(status) {
     <AppLayout title="Room status">
         <PageHeader title="Rooms" subtitle="Live room status across the property">
             <template #actions>
+                <Link href="/front-desk/reservations" class="wh-btn-secondary">Reservations</Link>
                 <Link href="/front-desk/check-in" class="wh-btn-primary">Check in guest</Link>
             </template>
         </PageHeader>
@@ -60,6 +86,35 @@ function applyFilter(status) {
             </template>
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
+            </template>
+            <template #cell-actions="{ row }">
+                <div v-if="canChangeStatus(row)" class="flex justify-end gap-2">
+                    <button
+                        v-if="row.status !== 'available'"
+                        type="button"
+                        class="text-xs font-medium text-teal-700 hover:text-teal-900"
+                        @click="setRoomStatus(row.id, 'available', 'available')"
+                    >
+                        Available
+                    </button>
+                    <button
+                        v-if="row.status !== 'cleaning'"
+                        type="button"
+                        class="text-xs font-medium text-slate-600 hover:text-slate-900"
+                        @click="setRoomStatus(row.id, 'cleaning', 'cleaning')"
+                    >
+                        Cleaning
+                    </button>
+                    <button
+                        v-if="row.status !== 'maintenance'"
+                        type="button"
+                        class="text-xs font-medium text-amber-800 hover:text-amber-950"
+                        @click="setRoomStatus(row.id, 'maintenance', 'maintenance')"
+                    >
+                        Maintenance
+                    </button>
+                </div>
+                <span v-else-if="row.status === 'occupied'" class="text-xs text-slate-400">In-house</span>
             </template>
         </DataTable>
     </AppLayout>

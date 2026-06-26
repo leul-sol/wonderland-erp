@@ -5,6 +5,7 @@ import DataTable from '../../../Components/DataTable.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -28,6 +29,24 @@ const checkoutForm = useForm({});
 const balance = computed(() => Number.parseFloat(props.folio.balance ?? 0));
 const canSettle = computed(() => props.folio.status === 'open' && balance.value > 0);
 const canCheckout = computed(() => props.folio.status === 'settled' && props.reservation?.status === 'checked_in');
+const isPartialPayment = computed(() => {
+    const amount = Number.parseFloat(settleForm.amount ?? 0);
+    return amount > 0 && amount < balance.value;
+});
+
+const taxSummary = computed(() => {
+    const lines = (props.folio.lines ?? []).filter((line) => line.line_type === 'charge');
+
+    return lines.reduce(
+        (totals, line) => ({
+            subtotal: totals.subtotal + Number.parseFloat(line.subtotal ?? 0),
+            serviceCharge: totals.serviceCharge + Number.parseFloat(line.service_charge_amount ?? 0),
+            vat: totals.vat + Number.parseFloat(line.vat_amount ?? 0),
+            total: totals.total + Number.parseFloat(line.amount ?? 0),
+        }),
+        { subtotal: 0, serviceCharge: 0, vat: 0, total: 0 },
+    );
+});
 
 const lineColumns = [
     { key: 'description', label: 'Description' },
@@ -54,13 +73,41 @@ function postCharge() {
     });
 }
 
-function settleFolio() {
-    settleForm.amount = props.folio.balance ?? settleForm.amount;
+async function settleFolio() {
+    const amount = Number.parseFloat(settleForm.amount ?? 0);
+    const message = isPartialPayment.value
+        ? `Record a partial payment of ETB ${formatMoney(amount)}? Balance will remain until fully paid.`
+        : `Record payment of ETB ${formatMoney(amount)} and settle this folio?`;
+
+    const ok = await confirmAction({
+        title: isPartialPayment.value ? 'Record partial payment' : 'Settle folio',
+        message,
+        confirmLabel: isPartialPayment.value ? 'Record payment' : 'Settle folio',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     settleForm.post(`/front-desk/folios/${props.folio.id}/settle`, { preserveScroll: true });
 }
 
-function checkOut() {
+async function checkOut() {
+    const ok = await confirmAction({
+        title: 'Check out guest',
+        message: 'Release the room and complete check-out for this guest?',
+        confirmLabel: 'Check out',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     checkoutForm.post(`/front-desk/folios/${props.folio.id}/check-out`);
+}
+
+function payFullBalance() {
+    settleForm.amount = props.folio.balance ?? settleForm.amount;
 }
 </script>
 
@@ -73,6 +120,22 @@ function checkOut() {
             <template #actions>
                 <StatusBadge :status="folio.status" />
                 <Link
+                    v-if="reservation"
+                    :href="`/front-desk/reservations/${reservation.id}`"
+                    class="wh-btn-secondary text-xs"
+                >
+                    Reservation
+                </Link>
+                <a
+                    v-if="folio.status === 'settled' || reservation?.status === 'checked_out'"
+                    :href="`/front-desk/folios/${folio.id}/invoice`"
+                    class="wh-btn-secondary text-xs"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Download invoice
+                </a>
+                <Link
                     v-if="folio.status === 'open'"
                     :href="`/fb/orders/create?folio_id=${folio.id}`"
                     class="wh-btn-secondary text-xs"
@@ -81,6 +144,21 @@ function checkOut() {
                 </Link>
             </template>
         </PageHeader>
+
+        <div class="mb-6 grid gap-4 sm:grid-cols-3">
+            <section class="wh-card p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Subtotal</p>
+                <p class="wh-money mt-1 text-lg font-semibold text-slate-900">ETB {{ formatMoney(taxSummary.subtotal) }}</p>
+            </section>
+            <section class="wh-card p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Service charge</p>
+                <p class="wh-money mt-1 text-lg font-semibold text-slate-900">ETB {{ formatMoney(taxSummary.serviceCharge) }}</p>
+            </section>
+            <section class="wh-card p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">VAT</p>
+                <p class="wh-money mt-1 text-lg font-semibold text-slate-900">ETB {{ formatMoney(taxSummary.vat) }}</p>
+            </section>
+        </div>
 
         <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
             <div class="space-y-6">
@@ -109,13 +187,15 @@ function checkOut() {
                             <label for="description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>
                             <input id="description" v-model="chargeForm.description" type="text" required class="wh-input" />
                         </div>
-                        <MoneyField id="charge_amount" v-model="chargeForm.amount" label="Charge amount" required />
+                        <MoneyField id="charge_amount" v-model="chargeForm.amount" label="Charge amount (subtotal)" required />
                         <div>
                             <label for="charge_category" class="mb-1 block text-sm font-medium text-slate-700">Category</label>
                             <select id="charge_category" v-model="chargeForm.charge_category" class="wh-input">
                                 <option value="room">Room</option>
+                                <option value="fb">F&B</option>
                                 <option value="minibar">Minibar</option>
                                 <option value="laundry">Laundry</option>
+                                <option value="event">Event</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
@@ -145,7 +225,7 @@ function checkOut() {
                 </section>
 
                 <section v-if="canSettle" class="wh-card p-4">
-                    <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Settle folio</h3>
+                    <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Record payment</h3>
                     <form class="space-y-4" @submit.prevent="settleFolio">
                         <MoneyField
                             id="settle_amount"
@@ -153,6 +233,9 @@ function checkOut() {
                             label="Payment amount"
                             required
                         />
+                        <button type="button" class="text-xs font-medium text-teal-700 hover:text-teal-900" @click="payFullBalance">
+                            Pay full balance (ETB {{ formatMoney(folio.balance) }})
+                        </button>
                         <div>
                             <label for="payment_method" class="mb-1 block text-sm font-medium text-slate-700">Payment method</label>
                             <select id="payment_method" v-model="settleForm.payment_method" class="wh-input">
@@ -163,7 +246,7 @@ function checkOut() {
                             </select>
                         </div>
                         <button type="submit" class="wh-btn-primary w-full" :disabled="settleForm.processing">
-                            Settle folio
+                            {{ isPartialPayment ? 'Record partial payment' : 'Settle folio' }}
                         </button>
                     </form>
                 </section>

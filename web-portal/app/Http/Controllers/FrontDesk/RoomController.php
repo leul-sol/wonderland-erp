@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +18,7 @@ class RoomController extends Controller
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
@@ -34,6 +36,22 @@ class RoomController extends Controller
             'filters' => [
                 'status' => $status ?? '',
             ],
+            'canUpdateStatus' => $this->auth->hasAnyPermission(['S3.hotel.rooms.write']),
         ]);
+    }
+
+    public function updateStatus(Request $request, int $room): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:available,maintenance,cleaning'],
+        ]);
+
+        try {
+            $this->s3->updateRoomStatus($room, $data['status']);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Room status updated.');
     }
 }

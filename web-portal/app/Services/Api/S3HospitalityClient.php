@@ -27,9 +27,78 @@ class S3HospitalityClient extends GatewayClient
      */
     public function reservations(?string $status = null): array
     {
-        $query = $status ? ['status' => $status] : [];
+        $query = ['per_page' => 50];
+        if ($status) {
+            $query['status'] = $status;
+        }
 
         return $this->json('GET', '/s3/api/v1/reservations', $query);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function guestProfiles(): array
+    {
+        return $this->json('GET', '/s3/api/v1/guest-profiles', ['per_page' => 50]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function guestProfile(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/guest-profiles/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createGuestProfile(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/guest-profiles', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateGuestProfile(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/guest-profiles/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function cancelReservation(int $id): array
+    {
+        return $this->json('PUT', "/s3/api/v1/reservations/{$id}/cancel");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function noShowReservation(int $id): array
+    {
+        return $this->json('PUT', "/s3/api/v1/reservations/{$id}/no-show");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function updateRoomStatus(int $roomId, string $status): array
+    {
+        return $this->json('PUT', "/s3/api/v1/rooms/{$roomId}/status", ['status' => $status]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function folioInvoice(int $folioId): array
+    {
+        return $this->json('GET', "/s3/api/v1/folios/{$folioId}/invoice");
     }
 
     /**
@@ -177,6 +246,43 @@ class S3HospitalityClient extends GatewayClient
     public function finalizeOrder(int $orderId): array
     {
         return $this->json('POST', "/s3/api/v1/orders/{$orderId}/finalize");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function orders(?string $status = null): array
+    {
+        $query = $status ? ['status' => $status] : [];
+
+        return $this->json('GET', '/s3/api/v1/orders', $query);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function diningTables(): array
+    {
+        return $this->json('GET', '/s3/api/v1/dining-tables');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function bill(int $billId): array
+    {
+        return $this->json('GET', "/s3/api/v1/bills/{$billId}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function payBill(int $billId, array $payload, string $idempotencyKey): array
+    {
+        return $this->json('POST', "/s3/api/v1/bills/{$billId}/payments", $payload, [
+            'Idempotency-Key' => $idempotencyKey,
+        ]);
     }
 
     /**

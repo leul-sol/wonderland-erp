@@ -17,8 +17,11 @@ class FrontDeskPagesTest extends TestCase
         Session::put('portal.user', ['username' => 'receptionist', 'name' => 'Reception']);
         Session::put('portal.permissions', [
             'S3.hotel.rooms.read',
+            'S3.hotel.reservations.read',
             'S3.hotel.reservations.write',
             'S3.hotel.checkinout.write',
+            'S3.hotel.guests.read',
+            'S3.hotel.guests.write',
             'S3.hotel.folios.read',
             'S3.hotel.folios.write',
         ]);
@@ -62,12 +65,108 @@ class FrontDeskPagesTest extends TestCase
                     'room_type' => ['id' => 1, 'name' => 'Standard'],
                 ]],
             ]);
+            $mock->shouldReceive('guestProfiles')->once()->andReturn([
+                'data' => ['data' => []],
+            ]);
         });
 
         $response = $this->get('/front-desk/check-in');
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('FrontDesk/CheckIn/Create'));
+    }
+
+    public function test_reservations_index_renders(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('reservations')->once()->with(null)->andReturn([
+                'data' => [[
+                    'id' => 1,
+                    'confirmation_code' => 'WH-ABC123',
+                    'guest_name' => 'Jane Guest',
+                    'status' => 'confirmed',
+                    'check_in_date' => '2026-06-24',
+                    'check_out_date' => '2026-06-25',
+                ]],
+            ]);
+        });
+
+        $this->get('/front-desk/reservations')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('FrontDesk/Reservations/Index')->has('reservations', 1));
+    }
+
+    public function test_reservation_show_renders(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('reservation')->once()->with(7)->andReturn([
+                'data' => [
+                    'id' => 7,
+                    'confirmation_code' => 'WH-XYZ',
+                    'guest_name' => 'Jane Guest',
+                    'status' => 'confirmed',
+                    'room_type_id' => 1,
+                    'check_in_date' => '2026-06-24',
+                    'check_out_date' => '2026-06-25',
+                ],
+            ]);
+            $mock->shouldReceive('rooms')->once()->with('available')->andReturn([
+                'data' => [[
+                    'id' => 10,
+                    'room_number' => '101',
+                    'floor' => 1,
+                    'status' => 'available',
+                    'room_type' => ['id' => 1, 'name' => 'Standard'],
+                ]],
+            ]);
+        });
+
+        $this->get('/front-desk/reservations/7')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('FrontDesk/Reservations/Show')->where('reservation.id', 7));
+    }
+
+    public function test_guests_index_renders(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('guestProfiles')->once()->andReturn([
+                'data' => ['data' => [['id' => 2, 'full_name' => 'Helen Assefa']]],
+            ]);
+        });
+
+        $this->get('/front-desk/guests')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('FrontDesk/Guests/Index')->has('guests', 1));
+    }
+
+    public function test_folio_invoice_download_returns_json(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('folioInvoice')->once()->with(5)->andReturn([
+                'data' => [
+                    'folio_number' => 'FOL-00001',
+                    'guest_full_name' => 'Jane Guest',
+                    'total_charges' => '3000.00',
+                ],
+            ]);
+        });
+
+        $response = $this->get('/front-desk/folios/5/invoice');
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/json');
+        $this->assertStringContainsString('FOL-00001', $response->streamedContent());
+    }
+
+    public function test_reservation_cancel_posts_to_s3(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('cancelReservation')->once()->with(4)->andReturn(['data' => ['id' => 4, 'status' => 'cancelled']]);
+        });
+
+        $this->put('/front-desk/reservations/4/cancel')->assertRedirect();
     }
 
     public function test_folio_show_renders_one_screen_payload(): void

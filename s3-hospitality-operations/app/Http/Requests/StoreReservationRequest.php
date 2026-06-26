@@ -14,6 +14,7 @@ class StoreReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'guest_id' => ['nullable', 'integer', 'exists:guest_profiles,id'],
             'guest_name' => ['required', 'string', 'max:150'],
             'guest_email' => ['nullable', 'email', 'max:150'],
             'guest_phone' => ['nullable', 'string', 'max:30'],

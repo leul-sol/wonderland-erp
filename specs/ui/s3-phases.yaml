@@ -1,0 +1,203 @@
+# S3 Hospitality — web portal UI delivery phases
+# Source: documents/S3_Hospitality_Operations_SDD.pdf (v1.0)
+# Pattern: same as S2 HR portal Phases 1–6 — polish MVP screens into staff-ready workflows.
+#
+# Baseline (already shipped via specs/ui/phases.yaml portal phases 1–5):
+#   - Thin BFF + Inertia pages for front desk, F&B, inventory/PO, consumption, group bookings
+#   - Golden path smoke: scripts/portal-smoke.ps1 (check-in → charge → settle → check-out)
+#   - S3 API is implemented; portal is presentation only (no business rules in web-portal)
+#
+# Out of scope for all phases (SDD §1.2):
+#   - Employee master (S2), GL/BI (S4), auth/RBAC UI (S1)
+
+meta:
+  pdf: documents/S3_Hospitality_Operations_SDD.pdf
+  app_path: web-portal
+  api_client: App\Services\Api\S3HospitalityClient
+  uat_scenarios: [UAT-S3-001, UAT-S3-002, UAT-S3-003, UAT-S3-004, UAT-S3-005, UAT-S3-006, UAT-S3-007]
+  conventions:
+    - Reuse ConfirmModal + confirmAction (no window.confirm / prompt)
+    - Lifecycle UIs use ApprovalStepper or domain stepper components
+    - Idempotency-Key on PO approve, folio/bill payments, supplier payments
+    - Money ETB 2dp; dates Africa/Addis_Ababa
+
+pdf_modules:
+  inventory:
+    sdd: "§3.1, §4.1, §5.2–5.3, §7.1–7.2, §9.1–9.2"
+    domain: S3.inventory.*
+  restaurant:
+    sdd: "§3.2, §4.2, §5.1, §5.4–5.5, §5.8, §7.3"
+    domain: S3.restaurant.*
+  hotel:
+    sdd: "§3.3, §4.3, §5.6–5.7, §7.4, §9.3–9.4"
+    domain: S3.hotel.*
+
+baseline_gaps:
+  # MVP exists but PDF workflows are incomplete or thin in the portal
+  front_desk:
+    - No reservations list; check-in is a combined shortcut only
+    - No guest_profiles CRUD (§4.3); guest name typed ad hoc
+    - No cancel / no-show actions
+    - Folio settle is single-shot; §5.7 partial payments not exposed
+    - No GET /folios/{id}/invoice PDF proxy (§9.3, 13 mandatory fields)
+    - No room status updates (maintenance / cleaning)
+    - No cashier shift UI (§9.4)
+  fb:
+    - No orders index; only create + show
+    - No bill payment UI / customer_type routing (§5.5, seven types)
+    - No dining_tables on order create
+    - Menu is read-only list; no catalog admin
+  inventory:
+    - Items list only; no stock batches, movements, alerts, valuation
+    - PO receive is one-click; §9.1 expects goods-receipt lines
+    - No supplier detail or POST /suppliers/{id}/payments (§9.2)
+    - Approve/submit/receive lack confirm modals
+  consumption:
+    - Period close without confirm; no push-to-payroll status display (§5.8)
+  group:
+    - Functional show page; no lifecycle stepper or confirm on bulk check-out
+
+phase_1_front_desk:
+  name: Front desk hub
+  duration_estimate: "1–2 weeks"
+  sdd_sections: ["§4.3", "§5.6", "§5.7", "§7.4", "§9.3"]
+  uat_scenarios: [UAT-S3-001, UAT-S3-002, UAT-S3-007]
+  roles: [receptionist, cashier, super_admin]
+  deliverables:
+    - Reservations index (filter confirmed / checked_in / checked_out)
+    - Reservation show with lifecycle actions (cancel, no-show) where permitted
+    - Guest profiles list + create/edit (link from reservation / check-in)
+    - Check-in flow: pick existing guest profile or create inline
+    - Folio show polish: charge category picker, SC/VAT summary cards, partial payment form
+    - Folio invoice download button (proxy GET /folios/{id}/invoice)
+    - Rooms index: set status maintenance/cleaning (not occupied)
+    - Confirm modals on settle, check-out, cancel reservation
+  routes:
+    - GET /front-desk/reservations
+    - GET /front-desk/reservations/{id}
+    - GET /front-desk/guests, /guests/create, /guests/{id}/edit
+    - GET /front-desk/folios/{id}/invoice (download)
+  exit_criteria:
+    - Receptionist completes UAT-S3-001/002/007 in browser without Postman
+    - portal-smoke.ps1 still green
+  tests:
+    - Extend FrontDeskPagesTest (reservations, guests, partial pay, invoice)
+    - HrPortalNavigationTest-style loop for front-desk index routes
+
+phase_2_fb_operations:
+  name: F&B operations floor
+  duration_estimate: "1–2 weeks"
+  sdd_sections: ["§4.2", "§5.1", "§5.4", "§5.5", "§7.3"]
+  uat_scenarios: [UAT-S3-003, UAT-S3-007]
+  roles: [restaurant_manager, cashier, receptionist, super_admin]
+  deliverables:
+    - Orders index (tabs open / finalized / billed / settled)
+    - Order create: customer_type selector + customer_ref (room, employee, event)
+    - Order show: bill breakdown (subtotal, SC, VAT, total) after finalize
+    - Bill payment form (POST /bills/{id}/payments) with payment_method + routing hints
+    - Dining table picker when customer_type allows table service
+    - Link hotel_guest orders to active folio from room picker
+    - Confirm modal on finalize and bill payment
+  routes:
+    - GET /fb/orders
+    - POST /fb/bills/{id}/payments
+  exit_criteria:
+    - Cashier runs walk-in cash order and hotel_guest folio order in UI (UAT-S3-003)
+  tests:
+    - Extend FbPagesTest (orders index, bill pay, customer types)
+
+phase_3_inventory_procurement:
+  name: Inventory and procurement polish
+  duration_estimate: "2 weeks"
+  sdd_sections: ["§4.1", "§5.2", "§5.3", "§7.1", "§9.1", "§9.2"]
+  uat_scenarios: [UAT-S3-006, UAT-S4-009]
+  roles: [inventory_manager, department_head, finance_manager, general_manager, super_admin]
+  deliverables:
+    - Item show: current stock, batch breakdown, movement history
+    - Dashboard widgets: low-stock alerts, expiry alerts (read-only)
+    - Inventory valuation read page (GET /stock/valuation)
+    - PO show: confirm modals on submit / approve / receive
+    - Goods receive form with per-line quantities received (not one-click)
+    - Supplier show: outstanding balance + record payment (idempotent)
+    - PO approval stepper aligned to §5.3 tiers (amount shortcuts <5k / 5k–50k / ≥50k)
+  routes:
+    - GET /inventory/items/{id}
+    - GET /inventory/alerts (low-stock + expiry)
+    - GET /inventory/valuation
+    - GET /inventory/suppliers/{id}
+    - POST /inventory/suppliers/{id}/payments
+    - POST /inventory/purchase-orders/{id}/receive (form body with lines)
+  exit_criteria:
+    - Tiered PO approval + goods receipt + supplier payment recorded in UI
+    - Finance can open payables after receipt (existing finance module)
+  tests:
+    - Extend InventoryPagesTest (item show, receive lines, supplier payment)
+
+phase_4_fb_back_office:
+  name: F&B catalog admin
+  duration_estimate: "1 week"
+  sdd_sections: ["§3.2", "§4.2"]
+  roles: [restaurant_manager, super_admin]
+  deliverables:
+    - Menu categories CRUD
+    - Menu items CRUD (base_price, employee_price, availability)
+    - Recipe editor per menu item (ingredient qty per serving)
+    - Dining tables CRUD
+  routes:
+    - GET /fb/settings (hub)
+    - CRUD under /fb/menu-categories, /fb/menu-items, /fb/dining-tables
+  exit_criteria:
+    - Restaurant manager toggles item availability and edits recipe without API tools
+  tests:
+    - FbCatalogPagesTest
+
+phase_5_staff_meals_and_groups:
+  name: Staff meals and group bookings
+  duration_estimate: "1–2 weeks"
+  sdd_sections: ["§5.8", "§4.3 group", "§7.4"]
+  uat_scenarios: [UAT-S3-004, UAT-S3-005]
+  roles: [restaurant_manager, hr_manager, receptionist, super_admin]
+  deliverables:
+    - Consumption period close with confirm + pushed_to_payroll / deduction status
+    - Meal order show polish (employee name from S2 if available)
+    - Group booking lifecycle stepper (confirmed → checked_in → settled → checked_out)
+    - Confirm modals on bulk check-in and group check-out
+    - Group index filters and clickable booking numbers
+  exit_criteria:
+    - UAT-S3-004 and UAT-S3-005 reproducible entirely in portal
+  tests:
+    - Extend ConsumptionPagesTest, GroupBookingPagesTest
+
+phase_6_cashier_settings_smoke:
+  name: Cashier, hotel settings, smoke and sign-off
+  duration_estimate: "1 week"
+  sdd_sections: ["§9.4", "§4.3 room-types"]
+  roles: [cashier, receptionist, super_admin]
+  deliverables:
+    - Cashier shifts: open shift, close shift (float + counted cash), shift report
+    - Hotel settings: room types CRUD (read/write for super_admin / receptionist)
+    - scripts/portal-hospitality-smoke.ps1 — load all S3 Inertia index pages as super.admin
+    - S3PortalNavigationTest — single test loops hospitality module index routes
+    - README + traceability evidence for S3 portal sign-off
+  routes:
+    - GET /front-desk/cashier-shifts
+    - GET /front-desk/cashier-shifts/{id}
+    - POST open/close shift actions
+    - GET /front-desk/settings (room types)
+  exit_criteria:
+    - portal-hospitality-smoke.ps1 exit 0
+    - All S3 portal feature tests green
+    - matrix.yaml partial S3 UI items → implemented where applicable
+
+pilot_hospitality_ui:
+  phases: [phase_1_front_desk, phase_2_fb_operations]
+  goal: "Reception and cashier run guest stay + F&B without Postman"
+
+full_hospitality_ui:
+  phases:
+    - phase_1_front_desk
+    - phase_2_fb_operations
+    - phase_3_inventory_procurement
+    - phase_4_fb_back_office
+    - phase_5_staff_meals_and_groups
+    - phase_6_cashier_settings_smoke

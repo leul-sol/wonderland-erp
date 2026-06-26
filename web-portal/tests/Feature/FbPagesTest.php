@@ -19,6 +19,7 @@ class FbPagesTest extends TestCase
             'S3.restaurant.menu.read',
             'S3.restaurant.orders.read',
             'S3.restaurant.orders.write',
+            'S3.restaurant.billing.write',
         ]);
     }
 
@@ -45,7 +46,32 @@ class FbPagesTest extends TestCase
         );
     }
 
-    public function test_order_create_page_lists_open_folios(): void
+    public function test_orders_index_lists_open_orders(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('orders')->once()->with('open')->andReturn([
+                'data' => [[
+                    'id' => 2,
+                    'order_number' => 'ORD-0002',
+                    'customer_type' => 'outside_cash',
+                    'status' => 'open',
+                    'total_amount' => '500.00',
+                    'bill' => null,
+                ]],
+            ]);
+        });
+
+        $response = $this->get('/fb/orders?tab=open');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Fb/Orders/Index')
+            ->where('filters.tab', 'open')
+            ->has('orders', 1)
+        );
+    }
+
+    public function test_order_create_page_lists_open_folios_and_tables(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
             $mock->shouldReceive('folios')->once()->with('open')->andReturn([
@@ -58,6 +84,9 @@ class FbPagesTest extends TestCase
                     ]],
                 ],
             ]);
+            $mock->shouldReceive('diningTables')->once()->andReturn([
+                'data' => [['id' => 1, 'table_number' => 'T-01', 'location' => 'Terrace']],
+            ]);
         });
 
         $response = $this->get('/fb/orders/create?folio_id=5');
@@ -66,6 +95,8 @@ class FbPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Fb/Orders/Create')
             ->where('selectedFolioId', 5)
+            ->has('customerTypes', 4)
+            ->has('diningTables', 1)
         );
     }
 
@@ -77,6 +108,7 @@ class FbPagesTest extends TestCase
                     'id' => 3,
                     'order_number' => 'ORD-0003',
                     'folio_id' => 5,
+                    'customer_type' => 'hotel_guest',
                     'status' => 'open',
                     'subtotal' => '900.00',
                     'service_charge_amount' => '90.00',
@@ -89,6 +121,7 @@ class FbPagesTest extends TestCase
                         'unit_price' => '450.00',
                         'line_total' => '900.00',
                     ]],
+                    'bill' => null,
                 ],
             ]);
             $mock->shouldReceive('menuItems')->once()->andReturn(['data' => []]);
@@ -104,6 +137,69 @@ class FbPagesTest extends TestCase
             ->component('Fb/Orders/Show')
             ->where('order.id', 3)
             ->where('folio.id', 5)
+            ->where('canPayBill', false)
         );
+    }
+
+    public function test_order_show_exposes_bill_payment_when_outstanding(): void
+    {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('order')->once()->with(7)->andReturn([
+                'data' => [
+                    'id' => 7,
+                    'order_number' => 'ORD-0007',
+                    'customer_type' => 'outside_credit',
+                    'status' => 'finalized',
+                    'subtotal' => '450.00',
+                    'service_charge_amount' => '45.00',
+                    'vat_amount' => '74.25',
+                    'total_amount' => '569.25',
+                    'lines' => [],
+                    'bill' => [
+                        'id' => 12,
+                        'status' => 'unpaid',
+                        'subtotal' => '450.00',
+                        'service_charge_amount' => '45.00',
+                        'vat_amount' => '74.25',
+                        'total_amount' => '569.25',
+                        'paid_amount' => '0.00',
+                        'outstanding_balance' => '569.25',
+                    ],
+                ],
+            ]);
+            $mock->shouldReceive('menuItems')->once()->andReturn(['data' => []]);
+        });
+
+        $response = $this->get('/fb/orders/7');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Fb/Orders/Show')
+            ->where('canPayBill', true)
+            ->where('order.bill.id', 12)
+        );
+    }
+
+    public function test_bill_payment_posts_to_s3(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('payBill')
+                ->once()
+                ->with(12, \Mockery::on(function (array $payload): bool {
+                    return $payload['payment_method'] === 'cash'
+                        && (float) $payload['amount'] === 569.25;
+                }), \Mockery::type('string'))
+                ->andReturn(['data' => ['id' => 12, 'status' => 'paid']]);
+        });
+
+        $response = $this->post('/fb/bills/12/payments', [
+            'order_id' => 7,
+            'payment_method' => 'cash',
+            'amount' => '569.25',
+        ]);
+
+        $response->assertRedirect(route('fb.orders.show', 7));
     }
 }

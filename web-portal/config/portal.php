@@ -41,6 +41,8 @@ return [
             'phase' => 1,
             'children' => [
                 ['key' => 'rooms', 'label' => 'Room status', 'route' => 'front-desk.rooms.index', 'permissions' => ['S3.hotel.rooms.read']],
+                ['key' => 'reservations', 'label' => 'Reservations', 'route' => 'front-desk.reservations.index', 'permissions' => ['S3.hotel.reservations.read']],
+                ['key' => 'guests', 'label' => 'Guests', 'route' => 'front-desk.guests.index', 'permissions' => ['S3.hotel.guests.read']],
                 ['key' => 'check_in', 'label' => 'Check in guest', 'route' => 'front-desk.check-in.create', 'permissions' => ['S3.hotel.checkinout.write', 'S3.hotel.reservations.write']],
                 ['key' => 'folios', 'label' => 'Folios', 'route' => 'front-desk.folios.index', 'permissions' => ['S3.hotel.folios.read']],
             ],
@@ -54,7 +56,8 @@ return [
             'phase' => 2,
             'children' => [
                 ['key' => 'menu', 'label' => 'Menu', 'route' => 'fb.menu.index', 'permissions' => ['S3.restaurant.menu.read']],
-                ['key' => 'orders', 'label' => 'New order', 'route' => 'fb.orders.create', 'permissions' => ['S3.restaurant.orders.write']],
+                ['key' => 'orders', 'label' => 'Orders', 'route' => 'fb.orders.index', 'permissions' => ['S3.restaurant.orders.read']],
+                ['key' => 'orders_create', 'label' => 'New order', 'route' => 'fb.orders.create', 'permissions' => ['S3.restaurant.orders.write']],
             ],
         ],
         [

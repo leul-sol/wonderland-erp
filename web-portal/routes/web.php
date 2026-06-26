@@ -10,6 +10,7 @@ use App\Http\Controllers\Consumption\MealOrderController;
 use App\Http\Controllers\Consumption\PeriodController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fb\MenuController;
+use App\Http\Controllers\Fb\BillController;
 use App\Http\Controllers\Fb\OrderController as FbOrderController;
 use App\Http\Controllers\Finance\BiDashboardController;
 use App\Http\Controllers\Finance\BudgetController;
@@ -20,6 +21,8 @@ use App\Http\Controllers\Finance\ReceivableController;
 use App\Http\Controllers\Finance\ReportController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
+use App\Http\Controllers\FrontDesk\GuestProfileController;
+use App\Http\Controllers\FrontDesk\ReservationController;
 use App\Http\Controllers\FrontDesk\RoomController;
 use App\Http\Controllers\GroupBookings\GroupBookingController;
 use App\Http\Controllers\Hr\AttendanceController;
@@ -63,6 +66,41 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/rooms', [RoomController::class, 'index'])
             ->middleware('portal.permission:S3.hotel.rooms.read')
             ->name('rooms.index');
+        Route::put('/rooms/{room}/status', [RoomController::class, 'updateStatus'])
+            ->middleware('portal.permission:S3.hotel.rooms.write')
+            ->name('rooms.status');
+
+        Route::get('/reservations', [ReservationController::class, 'index'])
+            ->middleware('portal.permission:S3.hotel.reservations.read')
+            ->name('reservations.index');
+        Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])
+            ->middleware('portal.permission:S3.hotel.reservations.read')
+            ->name('reservations.show');
+        Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])
+            ->middleware('portal.permission:S3.hotel.checkinout.write')
+            ->name('reservations.check-in');
+        Route::put('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])
+            ->middleware('portal.permission:S3.hotel.reservations.write')
+            ->name('reservations.cancel');
+        Route::put('/reservations/{reservation}/no-show', [ReservationController::class, 'noShow'])
+            ->middleware('portal.permission:S3.hotel.reservations.write')
+            ->name('reservations.no-show');
+
+        Route::get('/guests', [GuestProfileController::class, 'index'])
+            ->middleware('portal.permission:S3.hotel.guests.read')
+            ->name('guests.index');
+        Route::get('/guests/create', [GuestProfileController::class, 'create'])
+            ->middleware('portal.permission:S3.hotel.guests.write')
+            ->name('guests.create');
+        Route::post('/guests', [GuestProfileController::class, 'store'])
+            ->middleware('portal.permission:S3.hotel.guests.write')
+            ->name('guests.store');
+        Route::get('/guests/{guest}/edit', [GuestProfileController::class, 'edit'])
+            ->middleware('portal.permission:S3.hotel.guests.read')
+            ->name('guests.edit');
+        Route::put('/guests/{guest}', [GuestProfileController::class, 'update'])
+            ->middleware('portal.permission:S3.hotel.guests.write')
+            ->name('guests.update');
 
         Route::get('/check-in', [CheckInController::class, 'create'])
             ->middleware('portal.permission:S3.hotel.checkinout.write,S3.hotel.reservations.write')
@@ -77,6 +115,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/folios/{folio}', [FolioController::class, 'show'])
             ->middleware('portal.permission:S3.hotel.folios.read')
             ->name('folios.show');
+        Route::get('/folios/{folio}/invoice', [FolioController::class, 'invoice'])
+            ->middleware('portal.permission:S3.hotel.folios.read')
+            ->name('folios.invoice');
         Route::post('/folios/{folio}/charges', [FolioController::class, 'addCharge'])
             ->middleware('portal.permission:S3.hotel.folios.write')
             ->name('folios.charge');
@@ -93,6 +134,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
             ->middleware('portal.permission:S3.restaurant.menu.read')
             ->name('menu.index');
 
+        Route::get('/orders', [FbOrderController::class, 'index'])
+            ->middleware('portal.permission:S3.restaurant.orders.read')
+            ->name('orders.index');
         Route::get('/orders/create', [FbOrderController::class, 'create'])
             ->middleware('portal.permission:S3.restaurant.orders.write')
             ->name('orders.create');
@@ -108,6 +152,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/orders/{order}/finalize', [FbOrderController::class, 'finalize'])
             ->middleware('portal.permission:S3.restaurant.orders.write')
             ->name('orders.finalize');
+        Route::post('/bills/{bill}/payments', [BillController::class, 'pay'])
+            ->middleware('portal.permission:S3.restaurant.billing.write')
+            ->name('bills.pay');
     });
 
     Route::prefix('inventory')->name('inventory.')->group(function () {

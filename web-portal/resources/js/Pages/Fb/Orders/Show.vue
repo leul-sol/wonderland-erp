@@ -2,14 +2,18 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     order: { type: Object, required: true },
     menuItems: { type: Array, default: () => [] },
     folio: { type: Object, default: null },
+    routingHint: { type: String, default: '' },
+    canPayBill: { type: Boolean, default: false },
 });
 
 const lineForm = useForm({
@@ -18,9 +22,48 @@ const lineForm = useForm({
 });
 
 const finalizeForm = useForm({});
+const payForm = useForm({
+    amount: '',
+    payment_method: 'cash',
+    order_id: props.order.id,
+});
 
 const isOpen = computed(() => props.order.status === 'open');
 const canFinalize = computed(() => isOpen.value && (props.order.lines?.length ?? 0) > 0);
+const bill = computed(() => props.order.bill ?? null);
+const outstanding = computed(() => Number.parseFloat(bill.value?.outstanding_balance ?? 0));
+
+const finalizeLabel = computed(() => {
+    const type = props.order.customer_type;
+    if (type === 'hotel_guest') {
+        return 'Finalize and post to folio';
+    }
+    if (type === 'outside_cash') {
+        return 'Finalize and mark paid';
+    }
+
+    return 'Finalize order';
+});
+
+const finalizeMessage = computed(() => {
+    const total = formatMoney(props.order.total_amount);
+    if (props.order.customer_type === 'hotel_guest') {
+        return `Post ETB ${total} (incl. SC/VAT) to the guest folio?`;
+    }
+    if (props.order.customer_type === 'outside_cash') {
+        return `Finalize this order for ETB ${total} and mark the bill as paid?`;
+    }
+
+    return `Finalize order ${props.order.order_number} for ETB ${total}?`;
+});
+
+const customerLabel = computed(() => ({
+    hotel_guest: 'Hotel guest',
+    outside_cash: 'Walk-in cash',
+    outside_credit: 'Walk-in credit',
+    event: 'Event',
+    employee: 'Staff meal',
+})[props.order.customer_type] ?? props.order.customer_type);
 
 const menuColumns = [
     { key: 'code', label: 'Code' },
@@ -51,8 +94,41 @@ function addLine(menuItemId) {
     });
 }
 
-function finalize() {
+async function finalize() {
+    const ok = await confirmAction({
+        title: 'Finalize order',
+        message: finalizeMessage.value,
+        confirmLabel: 'Finalize',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     finalizeForm.post(`/fb/orders/${props.order.id}/finalize`);
+}
+
+async function payBill() {
+    const amount = payForm.amount ? Number.parseFloat(payForm.amount) : outstanding.value;
+    const message = payForm.amount && amount < outstanding.value
+        ? `Record a partial payment of ETB ${formatMoney(amount)} on this bill?`
+        : `Record payment of ETB ${formatMoney(amount)} for bill #${bill.value?.id}?`;
+
+    const ok = await confirmAction({
+        title: 'Record bill payment',
+        message,
+        confirmLabel: 'Record payment',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    payForm.post(`/fb/bills/${bill.value.id}/payments`, { preserveScroll: true });
+}
+
+function payFullOutstanding() {
+    payForm.amount = bill.value?.outstanding_balance ?? '';
 }
 </script>
 
@@ -60,10 +136,15 @@ function finalize() {
     <AppLayout :title="`Order ${order.order_number}`">
         <PageHeader
             :title="`F&B order ${order.order_number}`"
-            :subtitle="folio ? `Folio #${folio.id} · balance ETB ${formatMoney(folio.balance)}` : 'Guest folio order'"
+            :subtitle="
+                folio
+                    ? `${customerLabel} · Folio #${folio.id} · balance ETB ${formatMoney(folio.balance)}`
+                    : `${customerLabel}${order.dining_table ? ` · Table ${order.dining_table.table_number}` : ''}`
+            "
         >
             <template #actions>
                 <StatusBadge :status="order.status === 'open' ? 'draft' : order.status" />
+                <Link href="/fb/orders" class="wh-btn-secondary text-xs">Order queue</Link>
                 <Link
                     v-if="folio"
                     :href="`/front-desk/folios/${folio.id}`"
@@ -73,6 +154,8 @@ function finalize() {
                 </Link>
             </template>
         </PageHeader>
+
+        <p v-if="routingHint" class="mb-4 text-sm text-slate-600">{{ routingHint }}</p>
 
         <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
             <section class="wh-card p-4">
@@ -114,27 +197,50 @@ function finalize() {
                 </section>
 
                 <section class="wh-card p-4">
+                    <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                        {{ bill ? 'Bill' : 'Order totals' }}
+                    </h3>
                     <dl class="space-y-2 text-sm">
                         <div class="flex justify-between">
                             <dt class="text-slate-500">Subtotal</dt>
-                            <dd class="wh-money">ETB {{ formatMoney(order.subtotal) }}</dd>
+                            <dd class="wh-money">
+                                ETB {{ formatMoney(bill?.subtotal ?? order.subtotal) }}
+                            </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-slate-500">Service charge</dt>
-                            <dd class="wh-money">ETB {{ formatMoney(order.service_charge_amount) }}</dd>
+                            <dd class="wh-money">
+                                ETB {{ formatMoney(bill?.service_charge_amount ?? order.service_charge_amount) }}
+                            </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-slate-500">VAT</dt>
-                            <dd class="wh-money">ETB {{ formatMoney(order.vat_amount) }}</dd>
+                            <dd class="wh-money">
+                                ETB {{ formatMoney(bill?.vat_amount ?? order.vat_amount) }}
+                            </dd>
                         </div>
                         <div class="flex justify-between border-t border-slate-200 pt-2 font-semibold">
-                            <dt>Order total</dt>
-                            <dd class="wh-money text-teal-800">ETB {{ formatMoney(order.total_amount) }}</dd>
+                            <dt>Total</dt>
+                            <dd class="wh-money text-teal-800">
+                                ETB {{ formatMoney(bill?.total_amount ?? order.total_amount) }}
+                            </dd>
                         </div>
+                        <template v-if="bill">
+                            <div class="flex justify-between">
+                                <dt class="text-slate-500">Paid</dt>
+                                <dd class="wh-money">ETB {{ formatMoney(bill.paid_amount) }}</dd>
+                            </div>
+                            <div class="flex justify-between font-medium">
+                                <dt class="text-slate-700">Outstanding</dt>
+                                <dd class="wh-money text-amber-800">ETB {{ formatMoney(bill.outstanding_balance) }}</dd>
+                            </div>
+                            <div class="flex justify-between pt-1">
+                                <dt class="text-slate-500">Bill status</dt>
+                                <dd><StatusBadge :status="bill.status" /></dd>
+                            </div>
+                        </template>
                     </dl>
-                    <p v-if="isOpen" class="mt-3 text-xs text-slate-500">
-                        Finalize posts SC/VAT charges to the guest folio.
-                    </p>
+
                     <button
                         v-if="isOpen"
                         type="button"
@@ -142,9 +248,36 @@ function finalize() {
                         :disabled="!canFinalize || finalizeForm.processing"
                         @click="finalize"
                     >
-                        Finalize and post to folio
+                        {{ finalizeLabel }}
                     </button>
-                    <p v-else class="mt-3 text-sm text-emerald-800">Order finalized.</p>
+                    <p v-else-if="!canPayBill" class="mt-3 text-sm text-emerald-800">Order finalized.</p>
+                </section>
+
+                <section v-if="canPayBill" class="wh-card p-4">
+                    <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Record payment</h3>
+                    <form class="space-y-3" @submit.prevent="payBill">
+                        <div>
+                            <label for="payment_method" class="mb-1 block text-xs font-medium text-slate-600">Payment method</label>
+                            <select id="payment_method" v-model="payForm.payment_method" required class="wh-input">
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="bank_transfer">Bank transfer</option>
+                                <option value="mobile_money">Mobile money</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="mb-1 flex items-center justify-between">
+                                <label for="pay_amount" class="text-xs font-medium text-slate-600">Amount (optional)</label>
+                                <button type="button" class="text-xs text-teal-700 hover:underline" @click="payFullOutstanding">
+                                    Pay full balance
+                                </button>
+                            </div>
+                            <MoneyField id="pay_amount" v-model="payForm.amount" placeholder="Full outstanding if blank" />
+                        </div>
+                        <button type="submit" class="wh-btn-primary w-full" :disabled="payForm.processing">
+                            Record payment
+                        </button>
+                    </form>
                 </section>
             </aside>
         </div>

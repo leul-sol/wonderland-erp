@@ -95,7 +95,17 @@ Screen-level detail: [`modules.yaml`](modules.yaml).
 
 ## 4. Delivery phases
 
-See [`phases.yaml`](phases.yaml). Order is by **hotel operational value**, not system number.
+See [`phases.yaml`](phases.yaml) for the **original portal build** (Phases 0–8 across all systems).
+
+**S3 hospitality UI polish** (second wave, same pattern as S2 HR Phases 1–6): see [`s3-phases.yaml`](s3-phases.yaml).
+
+| Track | Phases | Focus |
+|-------|--------|--------|
+| Portal MVP | 0–5 in `phases.yaml` | Thin screens per module; golden path smoke |
+| S2 HR polish | 6 sub-phases (done) | Employee hub → settings + `portal-hr-smoke.ps1` |
+| **S3 hospitality polish** | 6 sub-phases in `s3-phases.yaml` | Front desk hub → cashier + hospitality smoke |
+
+Order is by **hotel operational value**, not system number.
 
 | Phase | Focus | Exit criteria |
 |-------|--------|---------------|
@@ -195,6 +205,7 @@ Phase 1 checklist: see [`phases.yaml`](phases.yaml) → `phase_1_front_desk`.
 |-----|-----|
 | [`modules.yaml`](modules.yaml) | Screens, routes, permissions, API endpoints |
 | [`phases.yaml`](phases.yaml) | Sprint deliverables and UAT mapping |
+| [`s3-phases.yaml`](s3-phases.yaml) | S3 hospitality portal polish (PDF → 6 phases) |
 | [`security.yaml`](security.yaml) | Token and session rules |
 | [`../platform/roles.yaml`](../platform/roles.yaml) | Role → module access |
 | [`../../postman/`](../../postman/) | Request shapes for BFF clients |
