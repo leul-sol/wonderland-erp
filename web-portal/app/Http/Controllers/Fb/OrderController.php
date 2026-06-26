@@ -173,6 +173,30 @@ class OrderController extends Controller
             ->with('success', 'Order finalized. Record bill payment if required.');
     }
 
+    public function cancel(int $order): RedirectResponse
+    {
+        try {
+            $this->s3->cancelOrder($order);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return redirect()
+            ->route('fb.orders.index')
+            ->with('success', 'Order cancelled.');
+    }
+
+    public function removeLine(int $order, int $line): RedirectResponse
+    {
+        try {
+            $this->s3->removeOrderLine($order, $line);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Line removed from order.');
+    }
+
     /**
      * @return list<array{value: string, label: string, description: string}>
      */

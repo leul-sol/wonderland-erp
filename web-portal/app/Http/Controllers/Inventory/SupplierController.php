@@ -78,4 +78,69 @@ class SupplierController extends Controller
             ->route('inventory.suppliers.show', $supplier)
             ->with('success', 'Supplier payment recorded.');
     }
+
+    public function create(): Response|RedirectResponse
+    {
+        return Inertia::render('Inventory/Suppliers/Create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'contact_name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:120'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'payment_terms' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        try {
+            $response = $this->s3->createSupplier($data);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        $supplierId = (int) ($response['data']['id'] ?? 0);
+
+        return redirect()
+            ->route('inventory.suppliers.show', $supplierId > 0 ? $supplierId : 0)
+            ->with('success', 'Supplier created.');
+    }
+
+    public function edit(int $supplier): Response|RedirectResponse
+    {
+        try {
+            $response = $this->s3->supplier($supplier);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e, 'inventory.suppliers.index');
+        }
+
+        return Inertia::render('Inventory/Suppliers/Edit', [
+            'supplier' => $response['data'] ?? [],
+        ]);
+    }
+
+    public function update(Request $request, int $supplier): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['sometimes', 'string', 'max:150'],
+            'contact_name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:120'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'payment_terms' => ['nullable', 'string', 'max:60'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $this->s3->updateSupplier($supplier, $data);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return redirect()
+            ->route('inventory.suppliers.show', $supplier)
+            ->with('success', 'Supplier updated.');
+    }
 }

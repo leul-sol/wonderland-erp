@@ -59,7 +59,11 @@ async function toggleActive(roomType) {
 
 <template>
     <AppLayout title="Hotel settings">
-        <PageHeader title="Hotel settings" subtitle="Room types and rack rates for reservations and check-in" />
+        <PageHeader title="Hotel settings" subtitle="Room types, physical rooms, and rack rates">
+            <template #actions>
+                <Link href="/front-desk/settings/rooms" class="wh-btn-secondary">Physical rooms</Link>
+            </template>
+        </PageHeader>
 
         <form class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add room type</h3>

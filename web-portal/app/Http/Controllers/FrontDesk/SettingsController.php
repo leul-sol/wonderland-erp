@@ -73,4 +73,57 @@ class SettingsController extends Controller
 
         return back()->with('success', 'Room type updated.');
     }
+
+    public function rooms(): Response|RedirectResponse
+    {
+        try {
+            $rooms = $this->s3->rooms();
+            $roomTypes = $this->s3->roomTypes(false);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e, 'front-desk.settings.index');
+        }
+
+        return Inertia::render('FrontDesk/Settings/Rooms', [
+            'rooms' => $rooms['data'] ?? [],
+            'roomTypes' => $roomTypes['data'] ?? [],
+        ]);
+    }
+
+    public function storeRoom(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'room_number' => ['required', 'string', 'max:10'],
+            'room_type_id' => ['required', 'integer'],
+            'floor' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        try {
+            $this->s3->createRoom([
+                'room_number' => $data['room_number'],
+                'room_type_id' => (int) $data['room_type_id'],
+                'floor' => $data['floor'] ?? null,
+            ]);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Room added.');
+    }
+
+    public function updateRoom(Request $request, int $room): RedirectResponse
+    {
+        $data = $request->validate([
+            'room_number' => ['sometimes', 'string', 'max:10'],
+            'room_type_id' => ['sometimes', 'integer'],
+            'floor' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        try {
+            $this->s3->updateRoom($room, $data);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Room updated.');
+    }
 }

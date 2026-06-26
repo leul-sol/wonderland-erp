@@ -95,12 +95,14 @@ try {
     $frontDeskPages = @(
         @{ Label = "Rooms"; Path = "/front-desk/rooms"; Component = "FrontDesk/Rooms/Index" },
         @{ Label = "Reservations"; Path = "/front-desk/reservations"; Component = "FrontDesk/Reservations/Index" },
+        @{ Label = "Book reservation"; Path = "/front-desk/reservations/create"; Component = "FrontDesk/Reservations/Create" },
         @{ Label = "Guests"; Path = "/front-desk/guests"; Component = "FrontDesk/Guests/Index" },
         @{ Label = "Guest create"; Path = "/front-desk/guests/create"; Component = "FrontDesk/Guests/Edit" },
         @{ Label = "Check in"; Path = "/front-desk/check-in"; Component = "FrontDesk/CheckIn/Create" },
         @{ Label = "Folios"; Path = "/front-desk/folios"; Component = "FrontDesk/Folios/Index" },
         @{ Label = "Cashier shifts"; Path = "/front-desk/cashier-shifts"; Component = "FrontDesk/CashierShifts/Index" },
-        @{ Label = "Hotel settings"; Path = "/front-desk/settings"; Component = "FrontDesk/Settings/Index" }
+        @{ Label = "Hotel settings"; Path = "/front-desk/settings"; Component = "FrontDesk/Settings/Index" },
+        @{ Label = "Physical rooms"; Path = "/front-desk/settings/rooms"; Component = "FrontDesk/Settings/Rooms" }
     )
 
     foreach ($page in $frontDeskPages) {
@@ -128,9 +130,12 @@ try {
     Write-Step "Inventory and procurement"
     $inventoryPages = @(
         @{ Label = "Items"; Path = "/inventory/items"; Component = "Inventory/Items/Index" },
+        @{ Label = "New item"; Path = "/inventory/items/create"; Component = "Inventory/Items/Create" },
+        @{ Label = "Item categories"; Path = "/inventory/item-categories"; Component = "Inventory/ItemCategories/Index" },
         @{ Label = "Stock alerts"; Path = "/inventory/alerts"; Component = "Inventory/Alerts/Index" },
         @{ Label = "Valuation"; Path = "/inventory/valuation"; Component = "Inventory/Valuation/Index" },
         @{ Label = "Suppliers"; Path = "/inventory/suppliers"; Component = "Inventory/Suppliers/Index" },
+        @{ Label = "New supplier"; Path = "/inventory/suppliers/create"; Component = "Inventory/Suppliers/Create" },
         @{ Label = "Purchase orders"; Path = "/inventory/purchase-orders"; Component = "Inventory/PurchaseOrders/Index" },
         @{ Label = "Create PO"; Path = "/inventory/purchase-orders/create"; Component = "Inventory/PurchaseOrders/Create" }
     )

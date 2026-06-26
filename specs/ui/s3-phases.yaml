@@ -189,6 +189,35 @@ phase_6_cashier_settings_smoke:
     - All S3 portal feature tests green
     - matrix.yaml partial S3 UI items → implemented where applicable
 
+phase_7_back_office_master_data:
+  name: S3 back-office master data and floor corrections
+  duration_estimate: "1–2 weeks"
+  sdd_sections: ["§4.1", "§4.3", "§9.1", "§4.2"]
+  roles: [inventory_manager, receptionist, restaurant_manager, super_admin]
+  deliverables:
+    - Inventory item categories CRUD
+    - Inventory items create/edit, stock adjustment and write-off on item show
+    - Suppliers create/edit
+    - Goods receipt detail page
+    - Reservation create (book without immediate check-in)
+    - Physical rooms admin (create/edit)
+    - F&B order cancel and remove line
+  routes:
+    - /inventory/item-categories, /inventory/items/create, /inventory/items/{id}/edit
+    - POST /inventory/items/{id}/adjust, /inventory/items/{id}/write-off
+    - /inventory/suppliers/create, /inventory/suppliers/{id}/edit
+    - GET /inventory/goods-receipts/{id}
+    - GET /front-desk/reservations/create
+    - GET /front-desk/settings/rooms
+    - PUT /fb/orders/{id}/cancel, DELETE /fb/orders/{id}/lines/{line}
+  exit_criteria:
+    - Inventory manager can onboard items/suppliers without API tools
+    - Receptionist can book future reservation in browser
+    - Cashier can cancel mistaken open order lines
+  tests:
+    - InventoryBackOfficePagesTest
+    - Extend FrontDeskPagesTest, FbPagesTest, S3PortalNavigationTest
+
 pilot_hospitality_ui:
   phases: [phase_1_front_desk, phase_2_fb_operations]
   goal: "Reception and cashier run guest stay + F&B without Postman"
@@ -201,3 +230,4 @@ full_hospitality_ui:
     - phase_4_fb_back_office
     - phase_5_staff_meals_and_groups
     - phase_6_cashier_settings_smoke
+    - phase_7_back_office_master_data

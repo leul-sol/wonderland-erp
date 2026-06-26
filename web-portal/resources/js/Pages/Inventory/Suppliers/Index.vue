@@ -19,7 +19,11 @@ const columns = [
 
 <template>
     <AppLayout title="Suppliers">
-        <PageHeader title="Suppliers" subtitle="Vendor master for procurement" />
+        <PageHeader title="Suppliers" subtitle="Vendor master for procurement">
+            <template #actions>
+                <Link href="/inventory/suppliers/create" class="wh-btn-primary">New supplier</Link>
+            </template>
+        </PageHeader>
 
         <DataTable list-title="Supplier list" selectable :columns="columns" :rows="suppliers" empty-message="No suppliers found.">
             <template #cell-name="{ row }">

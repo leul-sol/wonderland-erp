@@ -36,6 +36,77 @@ class ReservationController extends Controller
         ]);
     }
 
+    public function create(): Response|RedirectResponse
+    {
+        try {
+            $roomTypes = $this->s3->roomTypes();
+            $guestsResponse = $this->s3->guestProfiles();
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e, 'front-desk.reservations.index');
+        }
+
+        $paginator = $guestsResponse['data'] ?? [];
+        $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
+
+        $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+
+        return Inertia::render('FrontDesk/Reservations/Create', [
+            'roomTypes' => $roomTypes['data'] ?? [],
+            'guests' => $guests,
+            'defaultCheckIn' => $today,
+            'defaultCheckOut' => $tomorrow,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'guest_id' => ['nullable', 'integer'],
+            'guest_name' => ['required', 'string', 'max:150'],
+            'guest_email' => ['nullable', 'email', 'max:150'],
+            'guest_phone' => ['nullable', 'string', 'max:30'],
+            'room_type_id' => ['required', 'integer'],
+            'check_in_date' => ['required', 'date'],
+            'check_out_date' => ['required', 'date', 'after:check_in_date'],
+            'adults' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $payload = [
+            'guest_name' => $data['guest_name'],
+            'guest_email' => $data['guest_email'] ?? null,
+            'guest_phone' => $data['guest_phone'] ?? null,
+            'room_type_id' => (int) $data['room_type_id'],
+            'check_in_date' => $data['check_in_date'],
+            'check_out_date' => $data['check_out_date'],
+        ];
+
+        if (! empty($data['guest_id'])) {
+            $payload['guest_id'] = (int) $data['guest_id'];
+        }
+
+        if (! empty($data['adults'])) {
+            $payload['adults'] = (int) $data['adults'];
+        }
+
+        if (! empty($data['notes'])) {
+            $payload['notes'] = $data['notes'];
+        }
+
+        try {
+            $response = $this->s3->createReservation($payload);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        $reservationId = (int) ($response['data']['id'] ?? 0);
+
+        return redirect()
+            ->route('front-desk.reservations.show', $reservationId)
+            ->with('success', 'Reservation created. Check in when the guest arrives.');
+    }
+
     public function show(int $reservation): Response|RedirectResponse
     {
         try {

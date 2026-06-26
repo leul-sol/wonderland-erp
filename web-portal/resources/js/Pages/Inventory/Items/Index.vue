@@ -22,6 +22,8 @@ const columns = [
     <AppLayout title="Inventory items">
         <PageHeader title="Inventory items" subtitle="Stock on hand and reorder levels">
             <template #actions>
+                <Link href="/inventory/item-categories" class="wh-btn-secondary">Categories</Link>
+                <Link href="/inventory/items/create" class="wh-btn-primary">New item</Link>
                 <Link href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
                 <Link href="/inventory/purchase-orders" class="wh-btn-secondary">Purchase orders</Link>
                 <Link href="/inventory/purchase-orders/create" class="wh-btn-primary">Create PO</Link>

@@ -42,6 +42,8 @@ use App\Http\Controllers\Hr\OvertimeController;
 use App\Http\Controllers\Hr\PositionController;
 use App\Http\Controllers\Hr\SettingsController;
 use App\Http\Controllers\Inventory\AlertController;
+use App\Http\Controllers\Inventory\GoodsReceiptController;
+use App\Http\Controllers\Inventory\ItemCategoryController;
 use App\Http\Controllers\Inventory\ItemController;
 use App\Http\Controllers\Inventory\PurchaseOrderController;
 use App\Http\Controllers\Inventory\SupplierController;
@@ -81,6 +83,12 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/reservations', [ReservationController::class, 'index'])
             ->middleware('portal.permission:S3.hotel.reservations.read')
             ->name('reservations.index');
+        Route::get('/reservations/create', [ReservationController::class, 'create'])
+            ->middleware('portal.permission:S3.hotel.reservations.write')
+            ->name('reservations.create');
+        Route::post('/reservations', [ReservationController::class, 'store'])
+            ->middleware('portal.permission:S3.hotel.reservations.write')
+            ->name('reservations.store');
         Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])
             ->middleware('portal.permission:S3.hotel.reservations.read')
             ->name('reservations.show');
@@ -158,6 +166,16 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::put('/settings/room-types/{roomType}', [FrontDeskSettingsController::class, 'updateRoomType'])
             ->middleware('portal.permission:S3.hotel.rooms.write')
             ->name('settings.room-types.update');
+
+        Route::get('/settings/rooms', [FrontDeskSettingsController::class, 'rooms'])
+            ->middleware('portal.permission:S3.hotel.rooms.read')
+            ->name('settings.rooms');
+        Route::post('/settings/rooms', [FrontDeskSettingsController::class, 'storeRoom'])
+            ->middleware('portal.permission:S3.hotel.rooms.write')
+            ->name('settings.rooms.store');
+        Route::put('/settings/rooms/{room}', [FrontDeskSettingsController::class, 'updateRoom'])
+            ->middleware('portal.permission:S3.hotel.rooms.write')
+            ->name('settings.rooms.update');
     });
 
     Route::prefix('fb')->name('fb.')->group(function () {
@@ -183,6 +201,12 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/orders/{order}/finalize', [FbOrderController::class, 'finalize'])
             ->middleware('portal.permission:S3.restaurant.orders.write')
             ->name('orders.finalize');
+        Route::put('/orders/{order}/cancel', [FbOrderController::class, 'cancel'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.cancel');
+        Route::delete('/orders/{order}/lines/{line}', [FbOrderController::class, 'removeLine'])
+            ->middleware('portal.permission:S3.restaurant.orders.write')
+            ->name('orders.line.remove');
         Route::post('/bills/{bill}/payments', [BillController::class, 'pay'])
             ->middleware('portal.permission:S3.restaurant.billing.write')
             ->name('bills.pay');
@@ -232,12 +256,43 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
     });
 
     Route::prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('/item-categories', [ItemCategoryController::class, 'index'])
+            ->middleware('portal.permission:S3.inventory.items.read')
+            ->name('item-categories.index');
+        Route::post('/item-categories', [ItemCategoryController::class, 'store'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('item-categories.store');
+        Route::put('/item-categories/{itemCategory}', [ItemCategoryController::class, 'update'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('item-categories.update');
+        Route::delete('/item-categories/{itemCategory}', [ItemCategoryController::class, 'destroy'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('item-categories.destroy');
+
         Route::get('/items', [ItemController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.items.read')
             ->name('items.index');
+        Route::get('/items/create', [ItemController::class, 'create'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('items.create');
+        Route::post('/items', [ItemController::class, 'store'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('items.store');
         Route::get('/items/{item}', [ItemController::class, 'show'])
             ->middleware('portal.permission:S3.inventory.items.read')
             ->name('items.show');
+        Route::get('/items/{item}/edit', [ItemController::class, 'edit'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('items.edit');
+        Route::put('/items/{item}', [ItemController::class, 'update'])
+            ->middleware('portal.permission:S3.inventory.items.write')
+            ->name('items.update');
+        Route::post('/items/{item}/adjust', [ItemController::class, 'adjust'])
+            ->middleware('portal.permission:S3.inventory.stock.write')
+            ->name('items.adjust');
+        Route::post('/items/{item}/write-off', [ItemController::class, 'writeOff'])
+            ->middleware('portal.permission:S3.inventory.stock.write')
+            ->name('items.write-off');
         Route::get('/alerts', [AlertController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.items.read')
             ->name('alerts.index');
@@ -247,9 +302,21 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/suppliers', [SupplierController::class, 'index'])
             ->middleware('portal.permission:S3.inventory.suppliers.read')
             ->name('suppliers.index');
+        Route::get('/suppliers/create', [SupplierController::class, 'create'])
+            ->middleware('portal.permission:S3.inventory.suppliers.write')
+            ->name('suppliers.create');
+        Route::post('/suppliers', [SupplierController::class, 'store'])
+            ->middleware('portal.permission:S3.inventory.suppliers.write')
+            ->name('suppliers.store');
         Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])
             ->middleware('portal.permission:S3.inventory.suppliers.read')
             ->name('suppliers.show');
+        Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])
+            ->middleware('portal.permission:S3.inventory.suppliers.write')
+            ->name('suppliers.edit');
+        Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])
+            ->middleware('portal.permission:S3.inventory.suppliers.write')
+            ->name('suppliers.update');
         Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'pay'])
             ->middleware('portal.permission:S3.inventory.suppliers.write')
             ->name('suppliers.pay');
@@ -275,6 +342,10 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])
             ->middleware('portal.permission:S3.inventory.stock.write')
             ->name('purchase-orders.receive');
+
+        Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])
+            ->middleware('portal.permission:S3.inventory.stock.read')
+            ->name('goods-receipts.show');
     });
 
     Route::prefix('finance')->name('finance.')->group(function () {

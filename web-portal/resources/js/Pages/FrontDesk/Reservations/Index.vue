@@ -37,6 +37,7 @@ function applyFilter(status) {
     <AppLayout title="Reservations">
         <PageHeader title="Reservations" subtitle="Arrivals, in-house guests, and history">
             <template #actions>
+                <Link href="/front-desk/reservations/create" class="wh-btn-secondary">Book reservation</Link>
                 <Link href="/front-desk/check-in" class="wh-btn-primary">Check in guest</Link>
             </template>
         </PageHeader>

@@ -20,6 +20,7 @@ class S3PortalNavigationTest extends TestCase
             'S3.hotel.rooms.write',
             'S3.hotel.reservations.read',
             'S3.hotel.reservations.write',
+            'S3.hotel.reservations.write',
             'S3.hotel.checkinout.write',
             'S3.hotel.guests.read',
             'S3.hotel.guests.write',
@@ -36,6 +37,8 @@ class S3PortalNavigationTest extends TestCase
             'S3.restaurant.consumption.read',
             'S3.restaurant.consumption.write',
             'S3.inventory.items.read',
+            'S3.inventory.items.write',
+            'S3.inventory.suppliers.write',
             'S3.inventory.reports.read',
             'S3.inventory.suppliers.read',
             'S3.inventory.purchase_orders.read',
@@ -62,6 +65,7 @@ class S3PortalNavigationTest extends TestCase
             $mock->shouldReceive('menuCategories')->andReturn($empty);
             $mock->shouldReceive('menuItemsCatalog')->andReturn($empty);
             $mock->shouldReceive('inventoryItems')->andReturn($empty);
+            $mock->shouldReceive('itemCategories')->andReturn($empty);
             $mock->shouldReceive('lowStockAlerts')->andReturn($empty);
             $mock->shouldReceive('expiryAlerts')->andReturn($empty);
             $mock->shouldReceive('stockValuation')->andReturn(['data' => ['total_value' => 0, 'lines' => []]]);
@@ -78,12 +82,14 @@ class S3PortalNavigationTest extends TestCase
         $pages = [
             ['/front-desk/rooms', 'FrontDesk/Rooms/Index'],
             ['/front-desk/reservations', 'FrontDesk/Reservations/Index'],
+            ['/front-desk/reservations/create', 'FrontDesk/Reservations/Create'],
             ['/front-desk/guests', 'FrontDesk/Guests/Index'],
             ['/front-desk/guests/create', 'FrontDesk/Guests/Edit'],
             ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
             ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
             ['/front-desk/settings', 'FrontDesk/Settings/Index'],
+            ['/front-desk/settings/rooms', 'FrontDesk/Settings/Rooms'],
             ['/fb/menu', 'Fb/Menu/Index'],
             ['/fb/orders', 'Fb/Orders/Index'],
             ['/fb/orders/create', 'Fb/Orders/Create'],
@@ -93,9 +99,12 @@ class S3PortalNavigationTest extends TestCase
             ['/fb/menu-items/create', 'Fb/MenuItems/Create'],
             ['/fb/dining-tables', 'Fb/DiningTables/Index'],
             ['/inventory/items', 'Inventory/Items/Index'],
+            ['/inventory/items/create', 'Inventory/Items/Create'],
+            ['/inventory/item-categories', 'Inventory/ItemCategories/Index'],
             ['/inventory/alerts', 'Inventory/Alerts/Index'],
             ['/inventory/valuation', 'Inventory/Valuation/Index'],
             ['/inventory/suppliers', 'Inventory/Suppliers/Index'],
+            ['/inventory/suppliers/create', 'Inventory/Suppliers/Create'],
             ['/inventory/purchase-orders', 'Inventory/PurchaseOrders/Index'],
             ['/inventory/purchase-orders/create', 'Inventory/PurchaseOrders/Create'],
             ['/consumption/periods', 'Consumption/Periods/Index'],

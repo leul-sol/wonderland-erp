@@ -1,14 +1,24 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     item: { type: Object, required: true },
     stock: { type: Object, default: () => ({}) },
     movements: { type: Array, default: () => [] },
+});
+
+const adjustForm = useForm({
+    quantity: '',
+    reason: '',
+});
+
+const writeOffForm = useForm({
+    quantity: '',
 });
 
 const batchColumns = [
@@ -37,6 +47,42 @@ function isLowStock(item) {
     const reorder = Number.parseFloat(item.reorder_level ?? 0);
     return Number.isFinite(onHand) && Number.isFinite(reorder) && onHand <= reorder;
 }
+
+async function submitAdjust() {
+    const qty = Number.parseFloat(adjustForm.quantity ?? 0);
+    const ok = await confirmAction({
+        title: 'Stock adjustment',
+        message: `Record adjustment of ${qty} ${props.item.unit ?? 'units'}? Use negative qty to reduce stock.`,
+        confirmLabel: 'Record adjustment',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    adjustForm.post(`/inventory/items/${props.item.id}/adjust`, {
+        preserveScroll: true,
+        onSuccess: () => adjustForm.reset(),
+    });
+}
+
+async function submitWriteOff() {
+    const qty = Number.parseFloat(writeOffForm.quantity ?? 0);
+    const ok = await confirmAction({
+        title: 'Write off stock',
+        message: `Write off ${qty} ${props.item.unit ?? 'units'} as spoilage or damage?`,
+        confirmLabel: 'Write off',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    writeOffForm.post(`/inventory/items/${props.item.id}/write-off`, {
+        preserveScroll: true,
+        onSuccess: () => writeOffForm.reset(),
+    });
+}
 </script>
 
 <template>
@@ -44,6 +90,7 @@ function isLowStock(item) {
         <PageHeader :title="item.name" :subtitle="`${item.sku} · ${item.unit ?? 'unit'}`">
             <template #actions>
                 <StatusBadge v-if="isLowStock(item)" status="open" />
+                <Link :href="`/inventory/items/${item.id}/edit`" class="wh-btn-secondary text-xs">Edit</Link>
                 <Link href="/inventory/items" class="wh-btn-secondary text-xs">All items</Link>
                 <Link href="/inventory/alerts" class="wh-btn-secondary text-xs">Alerts</Link>
             </template>
@@ -75,6 +122,25 @@ function isLowStock(item) {
                 </template>
             </DataTable>
         </section>
+
+        <div class="mb-6 grid gap-4 lg:grid-cols-2">
+            <form class="wh-card p-4" @submit.prevent="submitAdjust">
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Stock adjustment</h3>
+                <p class="mb-3 text-xs text-slate-500">Positive adds stock; negative reduces (cycle count correction).</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <input v-model="adjustForm.quantity" type="number" step="0.001" required class="wh-input" placeholder="Quantity (+/−)" />
+                    <input v-model="adjustForm.reason" type="text" class="wh-input" placeholder="Reason" />
+                </div>
+                <button type="submit" class="wh-btn-secondary mt-3" :disabled="adjustForm.processing">Record adjustment</button>
+            </form>
+
+            <form class="wh-card p-4" @submit.prevent="submitWriteOff">
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Write off</h3>
+                <p class="mb-3 text-xs text-slate-500">Spoilage, expiry, or damage (positive quantity only).</p>
+                <input v-model="writeOffForm.quantity" type="number" min="0.001" step="0.001" required class="wh-input" placeholder="Quantity" />
+                <button type="submit" class="wh-btn-secondary mt-3" :disabled="writeOffForm.processing">Write off stock</button>
+            </form>
+        </div>
 
         <section class="wh-card p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Recent movements</h3>

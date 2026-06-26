@@ -52,6 +52,7 @@ async function recordPayment() {
         <PageHeader :title="supplier.name" :subtitle="supplier.payment_terms ?? 'Supplier account'">
             <template #actions>
                 <StatusBadge :status="supplier.is_active === false ? 'inactive' : 'active'" />
+                <Link :href="`/inventory/suppliers/${supplier.id}/edit`" class="wh-btn-secondary text-xs">Edit</Link>
                 <Link href="/inventory/suppliers" class="wh-btn-secondary text-xs">All suppliers</Link>
             </template>
         </PageHeader>

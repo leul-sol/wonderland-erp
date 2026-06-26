@@ -1,5 +1,5 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
@@ -77,6 +77,7 @@ const lineColumns = [
     { key: 'quantity', label: 'Qty' },
     { key: 'unit_price', label: 'Unit', class: 'text-right' },
     { key: 'line_total', label: 'Total', class: 'text-right' },
+    { key: 'actions', label: '', class: 'text-right' },
 ];
 
 function formatMoney(value) {
@@ -130,6 +131,34 @@ async function payBill() {
 function payFullOutstanding() {
     payForm.amount = bill.value?.outstanding_balance ?? '';
 }
+
+async function cancelOrder() {
+    const ok = await confirmAction({
+        title: 'Cancel order',
+        message: `Cancel order ${props.order.order_number}? This cannot be undone.`,
+        confirmLabel: 'Cancel order',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    router.put(`/fb/orders/${props.order.id}/cancel`);
+}
+
+async function removeLine(line) {
+    const ok = await confirmAction({
+        title: 'Remove line',
+        message: `Remove ${line.menu_item_name ?? 'this item'} from the order?`,
+        confirmLabel: 'Remove',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    router.delete(`/fb/orders/${props.order.id}/lines/${line.id}`, { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -145,6 +174,14 @@ function payFullOutstanding() {
             <template #actions>
                 <StatusBadge :status="order.status === 'open' ? 'draft' : order.status" />
                 <Link href="/fb/orders" class="wh-btn-secondary text-xs">Order queue</Link>
+                <button
+                    v-if="isOpen"
+                    type="button"
+                    class="wh-btn-secondary text-xs text-red-800"
+                    @click="cancelOrder"
+                >
+                    Cancel order
+                </button>
                 <Link
                     v-if="folio"
                     :href="`/front-desk/folios/${folio.id}`"
@@ -192,6 +229,16 @@ function payFullOutstanding() {
                         </template>
                         <template #cell-line_total="{ row }">
                             <span class="wh-money font-medium">{{ formatMoney(row.line_total) }}</span>
+                        </template>
+                        <template #cell-actions="{ row }">
+                            <button
+                                v-if="isOpen"
+                                type="button"
+                                class="text-xs text-red-700 hover:underline"
+                                @click="removeLine(row)"
+                            >
+                                Remove
+                            </button>
                         </template>
                     </DataTable>
                 </section>

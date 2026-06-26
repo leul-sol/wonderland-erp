@@ -17,6 +17,32 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
+    public function room(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/rooms/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createRoom(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/rooms', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateRoom(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/rooms/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function roomTypes(bool $activeOnly = true): array
     {
         return $this->json('GET', '/s3/api/v1/room-types', ['active_only' => $activeOnly]);
@@ -406,6 +432,22 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
+    public function cancelOrder(int $orderId): array
+    {
+        return $this->json('PUT', "/s3/api/v1/orders/{$orderId}/cancel");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function removeOrderLine(int $orderId, int $lineId): array
+    {
+        return $this->json('DELETE', "/s3/api/v1/orders/{$orderId}/lines/{$lineId}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function orders(?string $status = null): array
     {
         $query = $status ? ['status' => $status] : [];
@@ -435,9 +477,79 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
-    public function inventoryItems(): array
+    public function inventoryItems(bool $activeOnly = true): array
     {
-        return $this->json('GET', '/s3/api/v1/items');
+        return $this->json('GET', '/s3/api/v1/items', ['active_only' => $activeOnly]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function itemCategories(): array
+    {
+        return $this->json('GET', '/s3/api/v1/item-categories');
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createItemCategory(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/item-categories', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateItemCategory(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/item-categories/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteItemCategory(int $id): array
+    {
+        return $this->json('DELETE', "/s3/api/v1/item-categories/{$id}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createInventoryItem(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/items', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateInventoryItem(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/items/{$id}", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function adjustStock(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/stock/adjustments', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function writeOffStock(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/stock/write-offs', $payload);
     }
 
     /**
@@ -513,6 +625,32 @@ class S3HospitalityClient extends GatewayClient
         return $this->json('POST', "/s3/api/v1/suppliers/{$supplierId}/payments", $payload, [
             'Idempotency-Key' => $idempotencyKey,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createSupplier(array $payload): array
+    {
+        return $this->json('POST', '/s3/api/v1/suppliers', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateSupplier(int $id, array $payload): array
+    {
+        return $this->json('PUT', "/s3/api/v1/suppliers/{$id}", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function goodsReceipt(int $id): array
+    {
+        return $this->json('GET', "/s3/api/v1/goods-receipts/{$id}");
     }
 
     /**
