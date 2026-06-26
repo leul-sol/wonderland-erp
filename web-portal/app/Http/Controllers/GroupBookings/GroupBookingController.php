@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Support\GroupBookingLifecycleSteps;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,16 +21,23 @@ class GroupBookingController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(Request $request): Response|RedirectResponse
     {
+        $tab = $request->string('tab')->toString() ?: 'all';
+        $status = match ($tab) {
+            'confirmed', 'checked_in', 'checked_out' => $tab,
+            default => null,
+        };
+
         try {
-            $response = $this->s3->groupBookings();
+            $response = $this->s3->groupBookings($status);
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'dashboard');
         }
 
         return Inertia::render('GroupBookings/Index', [
             'groupBookings' => $response['data'] ?? [],
+            'filters' => ['tab' => $tab],
         ]);
     }
 
@@ -122,6 +130,9 @@ class GroupBookingController extends Controller
             'groupBooking' => $group,
             'availableRooms' => $rooms['data'] ?? [],
             'folios' => $folios,
+            'lifecycleSteps' => GroupBookingLifecycleSteps::forGroup(),
+            'lifecycleCurrentStep' => GroupBookingLifecycleSteps::currentStepKey($group, $folios),
+            'allFoliosSettled' => GroupBookingLifecycleSteps::allFoliosSettled($group, $folios),
         ]);
     }
 

@@ -32,8 +32,9 @@ class ConsumptionPagesTest extends TestCase
                     'employee_id' => 5,
                     'period_start' => '2026-06-01',
                     'period_end' => '2026-06-30',
-                    'total_amount' => '0.00',
+                    'total_amount' => '487.03',
                     'status' => 'open',
+                    'deduction_status' => 'accruing',
                 ]],
             ]);
         });
@@ -56,10 +57,30 @@ class ConsumptionPagesTest extends TestCase
             ->where('canWrite', true)
             ->has('periods', 1)
             ->has('employees', 1)
+            ->where('employeeMap.5', 'Kitchen Staff')
         );
     }
 
-    public function test_meal_order_show_renders_without_folio(): void
+    public function test_period_close_posts_to_s3(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('closeConsumptionPeriod')->once()->with(1)->andReturn([
+                'data' => [
+                    'id' => 1,
+                    'status' => 'closed',
+                    'deduction_status' => 'posted_to_payroll',
+                ],
+            ]);
+        });
+
+        $response = $this->post('/consumption/periods/1/close');
+
+        $response->assertRedirect(route('consumption.periods.index'));
+    }
+
+    public function test_meal_order_show_renders_employee_name(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
             $mock->shouldReceive('order')->once()->with(4)->andReturn([
@@ -81,9 +102,21 @@ class ConsumptionPagesTest extends TestCase
                 'data' => [[
                     'id' => 1,
                     'employee_id' => 5,
+                    'period_start' => '2026-06-01',
+                    'period_end' => '2026-06-30',
                     'status' => 'open',
                     'total_amount' => '0.00',
                 ]],
+            ]);
+        });
+
+        $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('employee')->once()->with(5)->andReturn([
+                'data' => [
+                    'id' => 5,
+                    'full_name' => 'Kitchen Staff',
+                    'employee_number' => 'EMP-005',
+                ],
             ]);
         });
 
@@ -93,7 +126,7 @@ class ConsumptionPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Consumption/MealOrders/Show')
             ->where('order.id', 4)
-            ->where('period.id', 1)
+            ->where('employee.full_name', 'Kitchen Staff')
         );
     }
 }

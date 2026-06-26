@@ -38,6 +38,8 @@ const classes = computed(() => {
         leave: 'bg-purple-50 text-purple-800 ring-purple-200',
         half_day: 'bg-amber-50 text-amber-800 ring-amber-200',
         partial: 'bg-amber-50 text-amber-800 ring-amber-200',
+        accruing: 'bg-blue-50 text-blue-700 ring-blue-200',
+        posted_to_payroll: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         closing: 'bg-orange-50 text-orange-800 ring-orange-200',
         locked: 'bg-slate-100 text-slate-600 ring-slate-200',
         inactive: 'bg-red-50 text-red-700 ring-red-200',

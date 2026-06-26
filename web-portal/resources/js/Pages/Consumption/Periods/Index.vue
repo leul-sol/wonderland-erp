@@ -3,11 +3,13 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     periods: { type: Array, default: () => [] },
     employees: { type: Array, default: () => [] },
+    employeeMap: { type: Object, default: () => ({}) },
     canWrite: { type: Boolean, default: false },
     defaultPeriodStart: { type: String, required: true },
     defaultPeriodEnd: { type: String, required: true },
@@ -26,6 +28,7 @@ const columns = [
     { key: 'period_end', label: 'To' },
     { key: 'total_amount', label: 'Total', class: 'text-right' },
     { key: 'status', label: 'Status' },
+    { key: 'deduction_status', label: 'Payroll' },
     { key: 'actions', label: '', class: 'text-right' },
 ];
 
@@ -34,12 +37,35 @@ function formatMoney(value) {
     return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
+function employeeLabel(employeeId) {
+    return props.employeeMap[employeeId] ?? `Employee #${employeeId}`;
+}
+
+function deductionLabel(status) {
+    return ({
+        none: 'No deduction',
+        accruing: 'Accruing',
+        posted_to_payroll: 'Posted to payroll',
+    })[status] ?? status;
+}
+
 function openPeriod() {
     openForm.post('/consumption/periods');
 }
 
-function closePeriod(periodId) {
-    router.post(`/consumption/periods/${periodId}/close`, {}, { preserveScroll: true });
+async function closePeriod(period) {
+    const total = formatMoney(period.total_amount);
+    const ok = await confirmAction({
+        title: 'Close consumption period',
+        message: `Close period #${period.id} for ${employeeLabel(period.employee_id)}? ETB ${total} will post to payroll as a staff meal deduction.`,
+        confirmLabel: 'Close period',
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    router.post(`/consumption/periods/${period.id}/close`, {}, { preserveScroll: true });
 }
 
 function startMealOrder(periodId) {
@@ -97,21 +123,31 @@ function startMealOrder(periodId) {
         </section>
 
         <DataTable list-title="Consumption period list" selectable :columns="columns" :rows="periods" empty-message="No consumption periods yet.">
+            <template #cell-employee_id="{ row }">
+                {{ employeeLabel(row.employee_id) }}
+            </template>
             <template #cell-total_amount="{ row }">
                 <span class="wh-money">ETB {{ formatMoney(row.total_amount) }}</span>
             </template>
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
             </template>
+            <template #cell-deduction_status="{ row }">
+                <StatusBadge :status="row.deduction_status ?? 'none'" />
+                <span class="ml-1 text-xs text-slate-500">{{ deductionLabel(row.deduction_status) }}</span>
+            </template>
             <template #cell-actions="{ row }">
                 <div v-if="row.status === 'open' && canWrite" class="flex justify-end gap-2">
                     <button type="button" class="wh-btn-secondary text-xs" @click="startMealOrder(row.id)">
                         Add meal
                     </button>
-                    <button type="button" class="wh-btn-primary text-xs" @click="closePeriod(row.id)">
+                    <button type="button" class="wh-btn-primary text-xs" @click="closePeriod(row)">
                         Close period
                     </button>
                 </div>
+                <p v-else-if="row.status === 'closed' && row.closed_at" class="text-right text-xs text-slate-500">
+                    Closed {{ new Date(row.closed_at).toLocaleDateString() }}
+                </p>
             </template>
         </DataTable>
     </AppLayout>

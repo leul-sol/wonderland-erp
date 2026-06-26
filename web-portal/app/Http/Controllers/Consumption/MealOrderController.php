@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Consumption;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
+use App\Services\Api\S2WorkforceClient;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +19,8 @@ class MealOrderController extends Controller
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly S2WorkforceClient $s2,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
@@ -29,6 +33,16 @@ class MealOrderController extends Controller
             $periodId = (int) ($orderData['employee_consumption_period_id'] ?? 0);
             $periods = $periodId > 0 ? $this->s3->consumptionPeriods() : ['data' => []];
             $period = collect($periods['data'] ?? [])->firstWhere('id', $periodId);
+            $employee = null;
+
+            if ($period && $this->auth->hasAnyPermission(['S2.workforce.employees.read'])) {
+                try {
+                    $employeeResponse = $this->s2->employee((int) $period['employee_id']);
+                    $employee = $employeeResponse['data'] ?? null;
+                } catch (ApiException) {
+                    // Employee name is optional when S2 is unavailable.
+                }
+            }
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'consumption.periods.index');
         }
@@ -36,6 +50,7 @@ class MealOrderController extends Controller
         return Inertia::render('Consumption/MealOrders/Show', [
             'order' => $orderData,
             'period' => $period,
+            'employee' => $employee,
             'menuItems' => $menuResponse['data'] ?? [],
         ]);
     }

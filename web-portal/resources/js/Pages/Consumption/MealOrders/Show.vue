@@ -4,11 +4,13 @@ import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     order: { type: Object, required: true },
     period: { type: Object, default: null },
+    employee: { type: Object, default: null },
     menuItems: { type: Array, default: () => [] },
 });
 
@@ -17,6 +19,18 @@ const finalizeForm = useForm({});
 
 const isOpen = computed(() => props.order.status === 'open');
 const canFinalize = computed(() => isOpen.value && (props.order.lines?.length ?? 0) > 0);
+
+const employeeLabel = computed(() => {
+    if (props.employee?.full_name) {
+        return props.employee.full_name;
+    }
+
+    if (props.period?.employee_id) {
+        return `Employee #${props.period.employee_id}`;
+    }
+
+    return 'Staff member';
+});
 
 const menuColumns = [
     { key: 'code', label: 'Code' },
@@ -45,7 +59,17 @@ function addLine(menuItemId) {
     lineForm.post(`/consumption/orders/${props.order.id}/lines`, { preserveScroll: true });
 }
 
-function finalize() {
+async function finalize() {
+    const ok = await confirmAction({
+        title: 'Finalize meal order',
+        message: `Post ETB ${formatMoney(props.order.total_amount)} to ${employeeLabel.value}'s consumption period?`,
+        confirmLabel: 'Finalize',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     finalizeForm.post(`/consumption/orders/${props.order.id}/finalize`);
 }
 </script>
@@ -54,7 +78,11 @@ function finalize() {
     <AppLayout :title="`Meal ${order.order_number}`">
         <PageHeader
             :title="`Staff meal ${order.order_number}`"
-            :subtitle="period ? `Period #${period.id} · employee ${period.employee_id}` : 'Employee consumption order'"
+            :subtitle="
+                period
+                    ? `${employeeLabel} · Period #${period.id} · ${period.period_start} – ${period.period_end}`
+                    : `${employeeLabel} · consumption order`
+            "
         >
             <template #actions>
                 <StatusBadge :status="order.status === 'open' ? 'draft' : order.status" />

@@ -60,6 +60,15 @@ class EmployeeConsumptionController extends Controller
      */
     private function payload(EmployeeConsumptionPeriod $period): array
     {
+        $amount = round((float) $period->total_amount, 2);
+
+        $deductionStatus = match (true) {
+            $period->status === 'open' && $amount > 0 => 'accruing',
+            $period->status === 'open' => 'none',
+            $period->status === 'closed' && $amount > 0 => 'posted_to_payroll',
+            default => 'none',
+        };
+
         return [
             'id' => $period->id,
             'employee_id' => $period->employee_id,
@@ -68,6 +77,7 @@ class EmployeeConsumptionController extends Controller
             'total_amount' => (string) $period->total_amount,
             'status' => $period->status,
             'closed_at' => $period->closed_at?->toIso8601String(),
+            'deduction_status' => $deductionStatus,
         ];
     }
 }

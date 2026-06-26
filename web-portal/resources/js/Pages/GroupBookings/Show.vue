@@ -1,15 +1,20 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
+import ApprovalStepper from '../../Components/ApprovalStepper.vue';
 import DataTable from '../../Components/DataTable.vue';
 import PageHeader from '../../Components/PageHeader.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
+import { confirmAction } from '../../composables/useConfirm';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     groupBooking: { type: Object, required: true },
     availableRooms: { type: Array, default: () => [] },
     folios: { type: Object, default: () => ({}) },
+    lifecycleSteps: { type: Array, default: () => [] },
+    lifecycleCurrentStep: { type: String, default: '' },
+    allFoliosSettled: { type: Boolean, default: false },
 });
 
 const checkInForm = useForm({ assignments: [] });
@@ -36,24 +41,6 @@ const reservationColumns = [
     { key: 'folio', label: 'Folio' },
 ];
 
-const allFoliosSettled = computed(() => {
-    const reservations = props.groupBooking.reservations ?? [];
-
-    if (reservations.length === 0) {
-        return false;
-    }
-
-    return reservations.every((reservation) => {
-        const folioId = reservation.folio_id;
-
-        if (!folioId) {
-            return false;
-        }
-
-        return props.folios[folioId]?.status === 'settled';
-    });
-});
-
 function roomsForType(roomTypeId) {
     return props.availableRooms.filter((room) => String(room.room_type?.id) === String(roomTypeId));
 }
@@ -63,7 +50,19 @@ function formatMoney(value) {
     return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
-function submitCheckIn() {
+async function submitCheckIn() {
+    const assignmentCount = Object.values(assignments).filter((row) => row.room_id).length;
+
+    const ok = await confirmAction({
+        title: 'Check in group',
+        message: `Assign ${assignmentCount} room(s) and check in ${props.groupBooking.group_name}?`,
+        confirmLabel: 'Check in group',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     checkInForm.assignments = Object.values(assignments).filter((row) => row.room_id);
     checkInForm.post(`/group-bookings/${props.groupBooking.id}/check-in`, { preserveScroll: true });
 }
@@ -74,7 +73,17 @@ function settleFolio(folioId) {
     settleForm.post(`/group-bookings/${props.groupBooking.id}/folios/${folioId}/settle`, { preserveScroll: true });
 }
 
-function checkOutGroup() {
+async function checkOutGroup() {
+    const ok = await confirmAction({
+        title: 'Check out group',
+        message: `Release all rooms and complete check-out for ${props.groupBooking.group_name}?`,
+        confirmLabel: 'Check out group',
+    });
+
+    if (!ok) {
+        return;
+    }
+
     checkoutForm.post(`/group-bookings/${props.groupBooking.id}/check-out`);
 }
 </script>
@@ -87,8 +96,14 @@ function checkOutGroup() {
         >
             <template #actions>
                 <StatusBadge :status="groupBooking.status" />
+                <Link href="/group-bookings" class="wh-btn-secondary text-xs">All groups</Link>
             </template>
         </PageHeader>
+
+        <section class="wh-card mb-6 p-4">
+            <h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">Group lifecycle</h3>
+            <ApprovalStepper :steps="lifecycleSteps" :current-key="lifecycleCurrentStep" />
+        </section>
 
         <section v-if="isConfirmed" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Bulk check-in</h3>

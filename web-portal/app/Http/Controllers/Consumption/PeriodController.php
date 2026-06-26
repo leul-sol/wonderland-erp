@@ -46,9 +46,16 @@ class PeriodController extends Controller
         $monthStart = now()->startOfMonth()->toDateString();
         $monthEnd = now()->toDateString();
 
+        $employeeMap = collect(is_array($employees) ? $employees : [])
+            ->mapWithKeys(fn (array $employee): array => [
+                (int) $employee['id'] => $employee['full_name'] ?? $employee['employee_number'] ?? ('#'.$employee['id']),
+            ])
+            ->all();
+
         return Inertia::render('Consumption/Periods/Index', [
             'periods' => $response['data'] ?? [],
             'employees' => is_array($employees) ? $employees : [],
+            'employeeMap' => $employeeMap,
             'canWrite' => $this->auth->hasAnyPermission(['S3.restaurant.consumption.write']),
             'defaultPeriodStart' => $monthStart,
             'defaultPeriodEnd' => $monthEnd,
