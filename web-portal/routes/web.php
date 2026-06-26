@@ -24,6 +24,8 @@ use App\Http\Controllers\FrontDesk\RoomController;
 use App\Http\Controllers\GroupBookings\GroupBookingController;
 use App\Http\Controllers\Hr\AttendanceController;
 use App\Http\Controllers\Hr\EmployeeController;
+use App\Http\Controllers\Hr\EmployeeDocumentController;
+use App\Http\Controllers\Hr\EmployeeRecordController;
 use App\Http\Controllers\Hr\LeaveRequestController;
 use App\Http\Controllers\Inventory\ItemController;
 use App\Http\Controllers\Payroll\PayrollRunController;
@@ -262,6 +264,34 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])
             ->middleware('portal.permission:S2.workforce.employees.read')
             ->name('employees.show');
+        Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])
+            ->middleware('portal.permission:S2.workforce.employees.update')
+            ->name('employees.edit');
+        Route::patch('/employees/{employee}', [EmployeeController::class, 'update'])
+            ->middleware('portal.permission:S2.workforce.employees.update')
+            ->name('employees.update');
+
+        Route::post('/employees/{employee}/disciplinary-records', [EmployeeRecordController::class, 'storeDisciplinary'])
+            ->middleware('portal.permission:S2.hr.disciplinary.write')
+            ->name('employees.disciplinary.store');
+        Route::post('/employees/{employee}/assets', [EmployeeRecordController::class, 'storeAsset'])
+            ->middleware('portal.permission:S2.hr.assets.write')
+            ->name('employees.assets.store');
+        Route::put('/employees/{employee}/assets/{asset}/return', [EmployeeRecordController::class, 'returnAsset'])
+            ->middleware('portal.permission:S2.hr.assets.write')
+            ->name('employees.assets.return');
+        Route::post('/employees/{employee}/guarantors', [EmployeeRecordController::class, 'storeGuarantor'])
+            ->middleware('portal.permission:S2.hr.guarantors.write')
+            ->name('employees.guarantors.store');
+        Route::post('/employees/{employee}/loans', [EmployeeRecordController::class, 'storeLoan'])
+            ->middleware('portal.permission:S2.workforce.loans.create')
+            ->name('employees.loans.store');
+        Route::get('/employees/{employee}/payslip/{payrollRun}', [EmployeeDocumentController::class, 'payslip'])
+            ->middleware('portal.permission:S2.payroll.payslips.read')
+            ->name('employees.payslip');
+        Route::get('/employees/{employee}/guarantors/{guarantor}/letter', [EmployeeDocumentController::class, 'guarantorLetter'])
+            ->middleware('portal.permission:S2.hr.guarantors.read')
+            ->name('employees.guarantors.letter');
 
         Route::get('/leave-requests', [LeaveRequestController::class, 'index'])
             ->middleware('portal.permission:S2.workforce.leave_requests.read')
@@ -272,6 +302,12 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/leave-requests/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])
             ->middleware('portal.permission:S2.workforce.leave_requests.approve')
             ->name('leave.approve');
+        Route::post('/leave-requests/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])
+            ->middleware('portal.permission:S2.workforce.leave_requests.reject')
+            ->name('leave.reject');
+        Route::post('/leave-requests/{leaveRequest}/cancel', [LeaveRequestController::class, 'cancel'])
+            ->middleware('portal.permission:S2.workforce.leave_requests.create')
+            ->name('leave.cancel');
 
         Route::get('/attendance', [AttendanceController::class, 'index'])
             ->middleware('portal.permission:S2.workforce.attendance.read')

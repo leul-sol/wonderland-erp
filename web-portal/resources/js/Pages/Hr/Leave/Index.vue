@@ -10,6 +10,8 @@ const props = defineProps({
     employees: { type: Array, default: () => [] },
     canCreate: { type: Boolean, default: false },
     canApprove: { type: Boolean, default: false },
+    canReject: { type: Boolean, default: false },
+    canCancel: { type: Boolean, default: false },
 });
 
 const form = useForm({
@@ -36,6 +38,18 @@ function submit() {
 
 function approve(id) {
     router.post(`/hr/leave-requests/${id}/approve`, {}, { preserveScroll: true });
+}
+
+function reject(id) {
+    const reason = window.prompt('Rejection reason (optional):') ?? '';
+    router.post(`/hr/leave-requests/${id}/reject`, { reason }, { preserveScroll: true });
+}
+
+function cancel(id) {
+    if (!window.confirm('Cancel this leave request?')) {
+        return;
+    }
+    router.post(`/hr/leave-requests/${id}/cancel`, {}, { preserveScroll: true });
 }
 </script>
 
@@ -97,14 +111,32 @@ function approve(id) {
                 <StatusBadge :status="row.status" />
             </template>
             <template #cell-actions="{ row }">
-                <button
-                    v-if="canApprove && row.status === 'pending'"
-                    type="button"
-                    class="wh-btn-primary text-xs"
-                    @click="approve(row.id)"
-                >
-                    Approve
-                </button>
+                <div v-if="row.status === 'pending'" class="flex justify-end gap-2">
+                    <button
+                        v-if="canApprove"
+                        type="button"
+                        class="wh-btn-primary text-xs"
+                        @click="approve(row.id)"
+                    >
+                        Approve
+                    </button>
+                    <button
+                        v-if="canReject"
+                        type="button"
+                        class="wh-btn-outline text-xs"
+                        @click="reject(row.id)"
+                    >
+                        Reject
+                    </button>
+                    <button
+                        v-if="canCancel"
+                        type="button"
+                        class="wh-btn-outline text-xs text-red-700"
+                        @click="cancel(row.id)"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </template>
         </DataTable>
     </AppLayout>

@@ -4,6 +4,7 @@ namespace App\Services\Api;
 
 use App\Exceptions\ApiException;
 use App\Services\Auth\PortalAuthService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -27,6 +28,38 @@ class GatewayClient
         $response = $this->send($method, $path, $payload, $headers);
 
         return $response->json() ?? [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     *
+     * @throws ApiException
+     */
+    public function download(string $method, string $path, array $payload = [], array $headers = []): Response
+    {
+        $this->auth->ensureFreshToken();
+
+        $token = $this->auth->accessToken();
+
+        if ($token === null) {
+            throw new ApiException('UNAUTHENTICATED', 'Not authenticated.', 401);
+        }
+
+        $response = $this->binaryRequest($method, $path, $token, $payload, $headers);
+
+        if ($response->status() === 401 && $this->auth->attemptRefresh()) {
+            $token = $this->auth->accessToken();
+
+            if ($token !== null) {
+                $response = $this->binaryRequest($method, $path, $token, $payload, $headers);
+            }
+        }
+
+        if (! $response->successful()) {
+            throw ApiException::fromResponse($response);
+        }
+
+        return $response;
     }
 
     /**
@@ -130,13 +163,51 @@ class GatewayClient
 
         $path = '/'.ltrim($path, '/');
 
-        return match (strtoupper($method)) {
-            'GET' => $client->get($path, $payload),
-            'POST' => $client->post($path, $payload),
-            'PUT' => $client->put($path, $payload),
-            'PATCH' => $client->patch($path, $payload),
-            'DELETE' => $client->delete($path, $payload),
-            default => throw new ApiException('INVALID_METHOD', "Unsupported HTTP method: {$method}", 500),
-        };
+        try {
+            return match (strtoupper($method)) {
+                'GET' => $client->get($path, $payload),
+                'POST' => $client->post($path, $payload),
+                'PUT' => $client->put($path, $payload),
+                'PATCH' => $client->patch($path, $payload),
+                'DELETE' => $client->delete($path, $payload),
+                default => throw new ApiException('INVALID_METHOD', "Unsupported HTTP method: {$method}", 500),
+            };
+        } catch (ConnectionException) {
+            throw new ApiException(
+                'SERVICE_UNAVAILABLE',
+                'A backend service is unavailable or timed out. Check Docker: docker compose ps',
+                503,
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     */
+    private function binaryRequest(string $method, string $path, string $token, array $payload, array $headers): Response
+    {
+        $client = Http::baseUrl(config('portal.gateway_url'))
+            ->timeout(30)
+            ->withToken($token)
+            ->withHeaders(array_merge([
+                'X-Request-Id' => (string) Str::uuid(),
+            ], $headers));
+
+        $path = '/'.ltrim($path, '/');
+
+        try {
+            return match (strtoupper($method)) {
+                'GET' => $client->get($path, $payload),
+                'POST' => $client->post($path, $payload),
+                default => throw new ApiException('INVALID_METHOD', "Unsupported binary HTTP method: {$method}", 500),
+            };
+        } catch (ConnectionException) {
+            throw new ApiException(
+                'SERVICE_UNAVAILABLE',
+                'A backend service is unavailable or timed out. Check Docker: docker compose ps',
+                503,
+            );
+        }
     }
 }

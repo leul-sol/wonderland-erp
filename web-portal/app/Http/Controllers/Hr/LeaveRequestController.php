@@ -36,6 +36,8 @@ class LeaveRequestController extends Controller
             'employees' => $employees['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.create']),
             'canApprove' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.approve']),
+            'canReject' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.reject']),
+            'canCancel' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.create']),
         ]);
     }
 
@@ -73,5 +75,31 @@ class LeaveRequestController extends Controller
         }
 
         return back()->with('success', 'Leave request approved.');
+    }
+
+    public function reject(Request $request, int $leaveRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $this->s2->rejectLeaveRequest($leaveRequest, $data['reason'] ?? null);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Leave request rejected.');
+    }
+
+    public function cancel(int $leaveRequest): RedirectResponse
+    {
+        try {
+            $this->s2->cancelLeaveRequest($leaveRequest);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', 'Leave request cancelled.');
     }
 }

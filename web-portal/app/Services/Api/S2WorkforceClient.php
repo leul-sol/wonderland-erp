@@ -2,6 +2,9 @@
 
 namespace App\Services\Api;
 
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Str;
+
 class S2WorkforceClient extends GatewayClient
 {
     /**
@@ -32,6 +35,15 @@ class S2WorkforceClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateEmployee(int $id, array $payload): array
+    {
+        return $this->json('PATCH', "/s2/api/v1/employees/{$id}", $payload);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function departments(): array
@@ -45,6 +57,22 @@ class S2WorkforceClient extends GatewayClient
     public function positions(): array
     {
         return $this->json('GET', '/s2/api/v1/positions');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function assetTypes(): array
+    {
+        return $this->json('GET', '/s2/api/v1/asset-types');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function leaveBalances(int $employeeId): array
+    {
+        return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/leave-balances");
     }
 
     /**
@@ -74,6 +102,24 @@ class S2WorkforceClient extends GatewayClient
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function rejectLeaveRequest(int $id, ?string $reason = null): array
+    {
+        return $this->json('POST', "/s2/api/v1/leave-requests/{$id}/reject", array_filter([
+            'reason' => $reason,
+        ], fn ($value) => $value !== null && $value !== ''));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function cancelLeaveRequest(int $id): array
+    {
+        return $this->json('POST', "/s2/api/v1/leave-requests/{$id}/cancel");
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */
@@ -89,6 +135,85 @@ class S2WorkforceClient extends GatewayClient
     public function createAttendanceRecord(array $payload): array
     {
         return $this->json('POST', '/s2/api/v1/attendance-records', $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function disciplinaryRecords(int $employeeId): array
+    {
+        return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/disciplinary-records");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createDisciplinaryRecord(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/disciplinary-records", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function employeeAssets(int $employeeId): array
+    {
+        return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/assets");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function assignEmployeeAsset(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/assets", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function returnEmployeeAsset(int $assetId, array $payload = []): array
+    {
+        return $this->json('PUT', "/s2/api/v1/assets/{$assetId}/return", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function guarantors(int $employeeId): array
+    {
+        return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/guarantors");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createGuarantor(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/guarantors", $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function loans(int $employeeId): array
+    {
+        return $this->json('GET', "/s2/api/v1/employees/{$employeeId}/loans");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createLoan(int $employeeId, array $payload): array
+    {
+        return $this->json('POST', "/s2/api/v1/employees/{$employeeId}/loans", $payload, [
+            'Idempotency-Key' => (string) Str::uuid(),
+        ]);
     }
 
     /**
@@ -134,6 +259,16 @@ class S2WorkforceClient extends GatewayClient
         return $this->json('POST', "/s2/api/v1/payroll-runs/{$id}/approve", [], [
             'Idempotency-Key' => $idempotencyKey,
         ]);
+    }
+
+    public function downloadPayslip(int $employeeId, int $payrollRunId): Response
+    {
+        return $this->download('GET', "/s2/api/v1/employees/{$employeeId}/payslip/{$payrollRunId}");
+    }
+
+    public function downloadGuarantorLetter(int $employeeId, int $guarantorId): Response
+    {
+        return $this->download('GET', "/s2/api/v1/employees/{$employeeId}/guarantors/{$guarantorId}/letter");
     }
 
     /**
