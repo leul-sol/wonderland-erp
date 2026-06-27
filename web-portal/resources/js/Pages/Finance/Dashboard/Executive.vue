@@ -21,6 +21,9 @@ const kpiLabels = {
     <AppLayout title="Executive dashboard">
         <PageHeader title="Executive dashboard" subtitle="Finance KPIs embedded from S4">
             <template #actions>
+                <Link href="/finance/dashboard/hotel" class="wh-btn-secondary">Hotel</Link>
+                <Link href="/finance/dashboard/restaurant" class="wh-btn-secondary">Restaurant</Link>
+                <Link href="/finance/dashboard/finance" class="wh-btn-secondary">Finance</Link>
                 <Link href="/finance/dashboard/operations" class="wh-btn-secondary">Operations</Link>
                 <Link href="/finance/reports" class="wh-btn-secondary">Reports</Link>
             </template>

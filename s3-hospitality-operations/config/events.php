@@ -21,5 +21,6 @@ return [
         'employee_consumption_period_closed' => 'wh.events.s3.employee_consumption_period.closed',
         'stock_expiry_alert' => 'wh.events.s3.stock.expiry_alert',
         'employee_consumption_pushed' => 'wh.events.s3.employee_consumption.pushed',
+        'fb_daily_summary_posted' => 'wh.events.s3.fb.daily_summary_posted',
     ],
 ];

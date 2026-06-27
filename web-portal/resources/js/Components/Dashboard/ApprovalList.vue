@@ -1,17 +1,23 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import EmptyState from '../EmptyState.vue';
 
 defineProps({
     items: { type: Array, default: () => [] },
-    emptyMessage: { type: String, default: 'No pending approvals.' },
+    emptyTitle: { type: String, default: 'All caught up' },
+    emptyMessage: { type: String, default: 'No pending approvals right now.' },
 });
 </script>
 
 <template>
     <div class="divide-y divide-slate-100">
-        <div v-if="items.length === 0" class="py-8 text-center text-sm text-slate-500">
-            {{ emptyMessage }}
-        </div>
+        <EmptyState
+            v-if="items.length === 0"
+            :title="emptyTitle"
+            :description="emptyMessage"
+            variant="inbox"
+            compact
+        />
 
         <div v-for="(item, index) in items" :key="`${item.type}-${index}`" class="flex items-center justify-between gap-3 py-3">
             <div class="min-w-0">

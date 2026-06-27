@@ -4,6 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Runtime requirements traceability row.
+ *
+ * SDD §3.2 maps this to `rtm_requirements` (fr_code → requirement_key,
+ * implementation_status → status, developer_notes → notes).
+ */
 class RtmEntry extends Model
 {
     protected $fillable = [

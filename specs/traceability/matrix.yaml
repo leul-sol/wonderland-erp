@@ -57,15 +57,15 @@ requirements:
   - { key: S3-INV-002, system: S3, section: "§5.2", title: FIFO/FEFO stock rotation, status: implemented, priority: high, evidence: "FifoFefoService, stock movements" }
   - { key: S3-PO-001, system: S3, section: "§5.3", title: PO tiered approval, status: implemented, priority: critical, evidence: "PurchaseOrderApprovalFlowTest, UAT-S3-006" }
   - { key: S3-PO-002, system: S3, section: "§9.1", title: Goods receipt workflow, status: implemented, priority: critical, evidence: "GoodsReceiptService" }
-  - { key: S3-PO-003, system: S3, section: "§9.2", title: Supplier payment + GL, status: partial, priority: high, evidence: "supplier payments route; full GL modes not UAT-covered" }
+  - { key: S3-PO-003, system: S3, section: "§9.2", title: Supplier payment + GL, status: partial, priority: high, evidence: "supplier payments POST + GET /supplier-payments history; GL UAT partial" }
   - { key: S3-FB-001, system: S3, section: "§4.2", title: Menu, orders, bills, finalize, status: implemented, priority: critical, evidence: "FbInventoryFlowTest, UAT-S3-003" }
   - { key: S3-FB-002, system: S3, section: "§5.4", title: Service charge + VAT, status: implemented, priority: high, evidence: "TaxBreakdownFlowTest, UAT-S3-007" }
-  - { key: S3-FB-003, system: S3, section: "§5.5", title: Customer types & billing routing, status: partial, priority: medium, evidence: "Guest folio path covered; event F&B billing not UAT-covered" }
+  - { key: S3-FB-003, system: S3, section: "§5.5", title: Customer types & billing routing, status: partial, priority: medium, evidence: "Guest folio + S4 event_fb_billing report from event orders" }
   - { key: S3-CON-001, system: S3, section: "§5.8", title: Employee consumption → S2 deduction, status: implemented, priority: high, evidence: "ConsumptionFlowTest, UAT-S3-004" }
   - { key: S3-HTL-001, system: S3, section: "§4.3", title: Reservations check-in/out, status: implemented, priority: critical, evidence: "HospitalityFlowTest, UAT-S3-001/002" }
   - { key: S3-FOL-001, system: S3, section: "§5.6–5.7", title: Folio charges, settle, partial pay, status: implemented, priority: critical, evidence: "Folio routes; UAT hotel golden path" }
   - { key: S3-GRP-001, system: S3, section: "§4.3", title: Group bookings bulk in/out, status: implemented, priority: high, evidence: "GroupBookingFlowTest, UAT-S3-005" }
-  - { key: S3-HTL-002, system: S3, section: "§9.3", title: Mandatory folio invoice fields, status: partial, priority: medium, evidence: "GET folio invoice; 13-field PDF spec not verified" }
+  - { key: S3-HTL-002, system: S3, section: "§9.3", title: Mandatory folio invoice fields, status: implemented, priority: medium, evidence: "S3 folio invoice API + S4 guest_folio_invoice report (13 fields)" }
   - { key: S3-CSH-001, system: S3, section: "§9.4", title: Cashier shift reconciliation, status: implemented, priority: medium, evidence: "CashierShiftController API; portal front-desk/cashier-shifts UI" }
   - { key: S3-JOB-001, system: S3, section: "§8", title: Scheduled jobs (expiry, consumption push), status: implemented, priority: medium, evidence: "routes/console.php, s3-workers" }
   - { key: S3-NFR-001, system: S3, section: "§11", title: NFR testing, status: ops_pending, priority: medium, evidence: "30 feature tests; no load test" }
@@ -80,11 +80,11 @@ requirements:
   - { key: S4-RPT-001, system: S4, section: "§9.3", title: Trial balance, P&L, balance sheet, status: implemented, priority: critical, evidence: "Phase3Test, UAT-S4-001" }
   - { key: S4-RPT-002, system: S4, section: "§4.1", title: Departmental revenue report, status: implemented, priority: medium, evidence: "Phase8Test" }
   - { key: S4-BI-001, system: S4, section: "§4.2", title: Five PDF dashboards, status: implemented, priority: high, evidence: "/dashboard/* routes, Phase8Test" }
-  - { key: S4-BI-002, system: S4, section: "§9.2", title: 24+ operational reports catalog, status: partial, priority: high, evidence: "24 slugs runnable; not every PDF column spec verified" }
+  - { key: S4-BI-002, system: S4, section: "§9.2", title: 24+ operational reports catalog, status: implemented, priority: high, evidence: "43 catalog slugs; CatalogSmokeTest + Phase3ReportsTest" }
   - { key: S4-BI-003, system: S4, section: "§5.9", title: PDF + Excel export, status: implemented, priority: medium, evidence: "Phase4/6/8 export tests" }
   - { key: S4-EVT-001, system: S4, section: "§8.1", title: S4 outbox journal.posted + period.closed, status: implemented, priority: high, evidence: "OutboxService, Phase7Test" }
-  - { key: S4-COA-001, system: S4, section: "§9.1", title: Chart of accounts seed, status: partial, priority: medium, evidence: "AccountSeeder matches coa.yaml; not YAML-loaded at runtime" }
-  - { key: S4-NFR-001, system: S4, section: "§11", title: NFR performance/observability, status: ops_pending, priority: medium, evidence: "Health endpoint only; no APM" }
+  - { key: S4-COA-001, system: S4, section: "§9.1", title: Chart of accounts seed, status: implemented, priority: medium, evidence: "AccountSeeder + portal CoA UI (P6-08)" }
+  - { key: S4-NFR-001, system: S4, section: "§11", title: NFR performance/observability, status: partial, priority: medium, evidence: "Health DB/Redis + report_cache_log observability; load tests ops_pending" }
 
   # --- UI (explicitly deferred) ---
   - { key: UI-ALL-001, system: UI, section: "—", title: Staff web/mobile UI, status: implemented, priority: high, evidence: "web-portal Phases 0–8; scripts/portal-smoke.ps1; scripts/portal-hospitality-smoke.ps1; S1 admin scripts/portal-admin-smoke.ps1" }

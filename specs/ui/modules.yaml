@@ -219,7 +219,39 @@ modules:
     min_permissions_any:
       - S4.finance.reports.read
       - S4.finance.journal_entries.read
+      - S4.bi.dashboards.read
+      - S4.bi.reports.read
     screens:
+      - key: finance.dash_executive
+        route: GET /finance/dashboard/executive
+        inertia: Finance/Dashboard/Executive
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboards/executive
+      - key: finance.dash_hotel
+        route: GET /finance/dashboard/hotel
+        inertia: Finance/Dashboard/Hotel
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboard/hotel
+      - key: finance.dash_restaurant
+        route: GET /finance/dashboard/restaurant
+        inertia: Finance/Dashboard/Restaurant
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboard/restaurant
+      - key: finance.dash_finance
+        route: GET /finance/dashboard/finance
+        inertia: Finance/Dashboard/Finance
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboard/finance
+      - key: finance.dash_operations
+        route: GET /finance/dashboard/operations
+        inertia: Finance/Dashboard/Operations
+        permission: S4.bi.dashboards.read
+        api:
+          - GET /s4/api/v1/dashboards/operations
       - key: finance.reports
         route: GET /finance/reports
         inertia: Finance/Reports/Index
@@ -228,29 +260,57 @@ modules:
           - GET /s4/api/v1/reports/trial-balance
           - GET /s4/api/v1/reports/income-statement
           - GET /s4/api/v1/reports/balance-sheet
-          - GET /s4/api/v1/reports/catalog
+          - GET /s4/api/v1/reports/cash-flow
+          - GET /s4/api/v1/reports/departmental
         uat: [UAT-S4-001, UAT-S4-004]
+      - key: finance.bi_reports
+        route: GET /finance/bi-reports
+        inertia: Finance/BiReports/Index
+        permission: S4.bi.reports.read
+        api:
+          - GET /s4/api/v1/bi/reports
+          - GET /s4/api/v1/bi/reports/{slug}
+          - POST /s4/api/v1/bi/exports
+        uat: [UAT-S4-014]
+      - key: finance.accounts
+        route: GET /finance/accounts
+        inertia: Finance/Accounts/Index
+        permission: S4.finance.accounts.read
+        api:
+          - GET /s4/api/v1/accounts
+          - POST /s4/api/v1/accounts
+          - PUT /s4/api/v1/accounts/{id}
       - key: finance.journals
         route: GET /finance/journals
         inertia: Finance/Journals/Index
         permission: S4.finance.journal_entries.read
         api:
+          - GET /s4/api/v1/journal-entries
           - POST /s4/api/v1/journal-entries
           - POST /s4/api/v1/journal-entries/{id}/approve
-          - POST /s4/api/v1/journal-entries/{id}/post
+          - POST /s4/api/v1/journal-entries/{id}/reverse
           - DELETE /s4/api/v1/journal-entries/{id}
-        notes: "Under threshold auto-posts on approve; large needs second GM approve"
-        uat: [UAT-S4-002]
+        notes: "Source module tabs; under threshold auto-posts on approve; large needs GM approve"
+        uat: [UAT-S4-002, UAT-S4-012]
       - key: finance.fiscal_periods
         route: GET /finance/fiscal-periods
         inertia: Finance/FiscalPeriods/Index
         permission: S4.finance.fiscal_periods.read
         api:
           - GET /s4/api/v1/fiscal-periods
+          - POST /s4/api/v1/fiscal-periods
           - POST /s4/api/v1/fiscal-periods/{id}/close
           - POST /s4/api/v1/fiscal-periods/{id}/lock
-        notes: "Close twice open→closing→closed"
+        notes: "Open next period; close twice open→closing→closed"
         uat: [UAT-S4-006]
+      - key: finance.budget
+        route: GET /finance/budget
+        inertia: Finance/Budget/Index
+        permission: S4.finance.budgets.read
+        api:
+          - GET /s4/api/v1/bi/reports/budget_variance
+          - GET /s4/api/v1/finance/budgets
+          - POST /s4/api/v1/finance/budgets
       - key: finance.receivables
         route: GET /finance/receivables
         inertia: Finance/Receivables/Index
@@ -268,6 +328,20 @@ modules:
           - GET /s4/api/v1/payables
           - POST /s4/api/v1/payables/{id}/settle
         uat: [UAT-S4-009]
+      - key: finance.rtm
+        route: GET /finance/rtm
+        inertia: Finance/Rtm/Index
+        permission: S4.bi.rtm.read
+        api:
+          - GET /s4/api/v1/rtm
+          - PUT /s4/api/v1/rtm/{id}
+      - key: finance.uat
+        route: GET /finance/uat
+        inertia: Finance/Uat/Index
+        permission: S4.bi.uat.read
+        api:
+          - GET /s4/api/v1/bi/uat
+          - POST /s4/api/v1/bi/uat/{id}/results
 
   admin:
     label: Administration

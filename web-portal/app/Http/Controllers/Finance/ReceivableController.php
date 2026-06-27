@@ -24,12 +24,25 @@ class ReceivableController extends Controller
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $status = (string) $request->input('status', 'open');
+        $agingBucket = $request->string('aging_bucket')->toString() ?: null;
+
+        if (! in_array($status, ['open', 'partial', 'settled', 'written_off'], true)) {
+            $status = 'open';
+        }
+
         return Inertia::render('Finance/Receivables/Index', [
+            'status' => $status,
+            'agingBucket' => $agingBucket,
             'canSettle' => $this->auth->hasAnyPermission(['S4.finance.receivables.settle']),
-            'receivables' => $this->deferApi(function () {
-                $response = $this->s4->receivables('open');
+            'receivables' => $this->deferApi(function () use ($status, $agingBucket) {
+                $query = array_filter([
+                    'aging_bucket' => $agingBucket,
+                ], fn ($value) => $value !== null && $value !== '');
+
+                $response = $this->s4->receivables($status === 'all' ? null : $status, $query);
                 $receivables = $response['data'] ?? [];
 
                 return is_array($receivables) ? $receivables : [];

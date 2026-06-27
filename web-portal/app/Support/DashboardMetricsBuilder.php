@@ -46,6 +46,7 @@ class DashboardMetricsBuilder
         private readonly S3HospitalityClient $s3,
         private readonly S2WorkforceClient $s2,
         private readonly S1AdminClient $s1,
+        private readonly NotificationFeedBuilder $notificationFeed,
     ) {
     }
 
@@ -536,51 +537,7 @@ class DashboardMetricsBuilder
      */
     private function buildApprovals(): array
     {
-        $items = [];
-
-        if ($this->auth->hasAnyPermission(['S2.workforce.leave_requests.read'])) {
-            foreach ($this->snapshotList('s2_leave') as $leave) {
-                $items[] = [
-                    'type' => 'Leave request',
-                    'title' => (string) ($leave['employee']['full_name'] ?? $leave['employee_name'] ?? 'Employee'),
-                    'meta' => (string) ($leave['leave_type'] ?? 'Leave'),
-                    'href' => route('hr.leave.index'),
-                    'status' => 'pending',
-                ];
-            }
-        }
-
-        if ($this->auth->hasAnyPermission(['S3.inventory.purchase_orders.read'])) {
-            foreach ($this->snapshotList('s3_purchase_orders') as $po) {
-                $status = (string) ($po['status'] ?? '');
-
-                if (! in_array($status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true)) {
-                    continue;
-                }
-
-                $items[] = [
-                    'type' => 'Purchase order',
-                    'title' => (string) ($po['po_number'] ?? 'PO #'.($po['id'] ?? '')),
-                    'meta' => str_replace('_', ' ', $status),
-                    'href' => route('inventory.purchase-orders.index'),
-                    'status' => 'pending',
-                ];
-            }
-        }
-
-        if ($this->auth->hasAnyPermission(['S2.workforce.payroll_runs.read'])) {
-            foreach ($this->snapshotList('s2_payroll') as $run) {
-                $items[] = [
-                    'type' => 'Payroll run',
-                    'title' => (string) ($run['run_number'] ?? 'Run #'.($run['id'] ?? '')),
-                    'meta' => (string) ($run['pay_period_label'] ?? 'Pending approval'),
-                    'href' => route('payroll.runs.index'),
-                    'status' => 'pending',
-                ];
-            }
-        }
-
-        return array_slice($items, 0, 6);
+        return $this->notificationFeed->forDashboardApprovals();
     }
 
     /**

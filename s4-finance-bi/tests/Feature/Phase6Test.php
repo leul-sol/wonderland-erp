@@ -90,13 +90,13 @@ class Phase6Test extends TestCase
             ->assertJsonPath('data.status', 'open');
     }
 
-    public function test_report_catalog_lists_twenty_four_reports(): void
+    public function test_report_catalog_lists_all_configured_reports(): void
     {
         $response = $this->getJson('/api/v1/bi/reports', $this->authHeaders());
 
         $response->assertOk()
-            ->assertJsonPath('data.total', 24)
-            ->assertJsonCount(24, 'data.reports');
+            ->assertJsonPath('data.total', 43)
+            ->assertJsonCount(43, 'data.reports');
     }
 
     public function test_report_catalog_run_by_slug(): void

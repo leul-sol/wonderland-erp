@@ -46,8 +46,9 @@ monitoring:
     evidence: "ops/monitor/check-stack.sh, ALERT_WEBHOOK_URL, scripts/monitor-stack.ps1"
   - id: MON-005
     item: Disk / DB connection / latency SLOs
-    status: missing
+    status: done
     owner: ops
+    evidence: "ops/monitor/check-stack.sh check_disk + check_db_latency"
 
 support:
   - id: SUP-001

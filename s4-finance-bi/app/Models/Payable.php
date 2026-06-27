@@ -9,11 +9,13 @@ class Payable extends Model
 {
     protected $fillable = [
         'account_id',
+        'supplier_id',
         'vendor_name',
         'source_reference',
         'source_module',
         'original_amount',
         'balance',
+        'due_date',
         'status',
         'journal_entry_id',
         'settled_at',
@@ -24,6 +26,7 @@ class Payable extends Model
         return [
             'original_amount' => 'decimal:2',
             'balance' => 'decimal:2',
+            'due_date' => 'date',
             'settled_at' => 'datetime',
         ];
     }

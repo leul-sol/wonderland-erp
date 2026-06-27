@@ -21,7 +21,7 @@ class PortalNavigationCache
      */
     public function navigation(): array
     {
-        return $this->remember('navigation', fn () => $this->navigation->build());
+        return $this->navigation->build();
     }
 
     /**
@@ -29,7 +29,7 @@ class PortalNavigationCache
      */
     public function tasks(): array
     {
-        return $this->remember('tasks', fn () => $this->tasks->build());
+        return $this->tasks->build();
     }
 
     /**
@@ -37,48 +37,27 @@ class PortalNavigationCache
      */
     public function menu(): array
     {
-        return $this->remember('menu', fn () => $this->menu->build());
+        return $this->menu->build();
     }
 
     public static function forget(): void
     {
         session()->forget(self::SESSION_KEY);
+        session()->forget('portal.nav_revision_seen');
     }
 
-    /**
-     * @param  callable(): array<int, array<string, mixed>>  $builder
-     * @return list<array<string, mixed>>
-     */
-    private function remember(string $section, callable $builder): array
+    public function syncRevision(): void
     {
         if (! $this->auth->isAuthenticated()) {
-            return $builder();
+            return;
         }
 
-        $fingerprint = $this->fingerprint();
-        $cached = session(self::SESSION_KEY);
+        $revision = (string) config('portal.nav_revision', '1');
+        $seen = session('portal.nav_revision_seen');
 
-        if (
-            is_array($cached)
-            && ($cached['fingerprint'] ?? null) === $fingerprint
-            && is_array($cached[$section] ?? null)
-        ) {
-            return $cached[$section];
+        if ($seen !== $revision) {
+            self::forget();
+            session(['portal.nav_revision_seen' => $revision]);
         }
-
-        $payload = is_array($cached) ? $cached : ['fingerprint' => $fingerprint];
-        $payload['fingerprint'] = $fingerprint;
-        $payload[$section] = $builder();
-        session([self::SESSION_KEY => $payload]);
-
-        return $payload[$section];
-    }
-
-    private function fingerprint(): string
-    {
-        $permissions = $this->auth->permissions();
-        sort($permissions);
-
-        return hash('xxh128', implode('|', $permissions));
     }
 }

@@ -10,6 +10,7 @@ defineProps({
     fiscalPeriods: { type: Array, default: () => [] },
     canClose: { type: Boolean, default: false },
     canLock: { type: Boolean, default: false },
+    canCreate: { type: Boolean, default: false },
 });
 
 const columns = [
@@ -28,12 +29,17 @@ function closePeriod(id) {
 function lockPeriod(id) {
     router.post(`/finance/fiscal-periods/${id}/lock`, {}, { preserveScroll: true });
 }
+
+function openNextPeriod() {
+    router.post('/finance/fiscal-periods/open-next', {}, { preserveScroll: true });
+}
 </script>
 
 <template>
     <AppLayout title="Fiscal periods">
         <PageHeader title="Fiscal periods" subtitle="Two-step close (open → closing → closed) then lock">
             <template #actions>
+                <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openNextPeriod">Open next period</button>
                 <Link href="/finance/reports" class="wh-btn-secondary">Reports</Link>
             </template>
         </PageHeader>

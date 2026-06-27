@@ -15,6 +15,8 @@ const reportTabs = [
     { key: 'trial_balance', label: 'Trial balance' },
     { key: 'income_statement', label: 'Income statement' },
     { key: 'balance_sheet', label: 'Balance sheet' },
+    { key: 'cash_flow', label: 'Cash flow' },
+    { key: 'departmental', label: 'Departmental' },
 ];
 
 function switchReport(type) {
@@ -41,12 +43,11 @@ function formatMoney(value) {
 
 <template>
     <AppLayout title="Financial reports">
-        <PageHeader title="Financial reports" subtitle="Trial balance, income statement, and balance sheet">
+        <PageHeader title="Financial reports" subtitle="Trial balance, income statement, balance sheet, cash flow, and departmental">
             <template #actions>
                 <Link href="/finance/journals" class="wh-btn-secondary">Journals</Link>
                 <Link href="/finance/payables" class="wh-btn-secondary">Payables</Link>
-                <Link href="/finance/dashboard/executive" class="wh-btn-secondary">Executive KPIs</Link>
-                <Link href="/finance/dashboard/operations" class="wh-btn-secondary">Operations KPIs</Link>
+                <Link href="/finance/dashboard/executive" class="wh-btn-secondary">Dashboards</Link>
             </template>
         </PageHeader>
 
@@ -105,22 +106,77 @@ function formatMoney(value) {
                 <p class="mt-3 text-right wh-money font-semibold">Total {{ report.revenue?.total ?? '0.00' }}</p>
             </div>
             <div class="wh-card p-4">
-                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Expenses</h3>
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Cost of goods sold</h3>
                 <DataTable
                     :columns="[
                         { key: 'account_code', label: 'Code' },
                         { key: 'account_name', label: 'Account' },
                         { key: 'amount', label: 'Amount', class: 'text-right' },
                     ]"
-                    :rows="report.expenses?.lines ?? []"
-                    empty-message="No expense lines."
+                    :rows="report.cogs?.lines ?? []"
+                    empty-message="No COGS lines."
                 />
-                <p class="mt-3 text-right wh-money font-semibold">Total {{ report.expenses?.total ?? '0.00' }}</p>
+                <p class="mt-3 text-right wh-money font-semibold">Total {{ report.cogs?.total ?? '0.00' }}</p>
+            </div>
+            <p class="text-right text-base font-semibold text-slate-800">Gross profit: ETB {{ report.gross_profit ?? '0.00' }}</p>
+            <div class="wh-card p-4">
+                <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Operating expenses</h3>
+                <DataTable
+                    :columns="[
+                        { key: 'account_code', label: 'Code' },
+                        { key: 'account_name', label: 'Account' },
+                        { key: 'amount', label: 'Amount', class: 'text-right' },
+                    ]"
+                    :rows="report.operating_expenses?.lines ?? []"
+                    empty-message="No operating expense lines."
+                />
+                <p class="mt-3 text-right wh-money font-semibold">Total {{ report.operating_expenses?.total ?? '0.00' }}</p>
             </div>
             <p class="text-right text-lg font-semibold text-teal-800">Net income: ETB {{ report.net_income ?? '0.00' }}</p>
         </section>
 
-        <section v-else class="space-y-6">
+        <section v-else-if="reportType === 'cash_flow'" class="wh-card p-4">
+            <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Net income</dt>
+                    <dd class="wh-money font-semibold">{{ report.operating?.net_income ?? '0.00' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Net cash from operations</dt>
+                    <dd class="wh-money font-semibold">{{ report.operating?.net_cash_from_operations ?? '0.00' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Net change in cash</dt>
+                    <dd class="wh-money font-semibold">{{ report.net_change_in_cash ?? '0.00' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Opening cash</dt>
+                    <dd class="wh-money font-semibold">{{ report.opening_cash ?? '0.00' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4 sm:col-span-2">
+                    <dt class="text-slate-500">Closing cash</dt>
+                    <dd class="wh-money font-semibold">{{ report.closing_cash ?? '0.00' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section v-else-if="reportType === 'departmental'" class="wh-card p-4">
+            <DataTable
+                :columns="[
+                    { key: 'source_module', label: 'Source' },
+                    { key: 'account_code', label: 'Code' },
+                    { key: 'account_name', label: 'Account' },
+                    { key: 'revenue', label: 'Revenue', class: 'text-right' },
+                ]"
+                :rows="report.lines ?? []"
+                empty-message="No departmental revenue for this period."
+            />
+            <p class="mt-4 text-right text-sm font-semibold text-slate-900">
+                Total revenue: ETB {{ report.total_revenue ?? '0.00' }}
+            </p>
+        </section>
+
+        <section v-else-if="reportType === 'balance_sheet'" class="space-y-6">
             <div class="wh-card p-4">
                 <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Assets</h3>
                 <DataTable

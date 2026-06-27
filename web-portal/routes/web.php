@@ -16,13 +16,17 @@ use App\Http\Controllers\Fb\MenuCategoryController;
 use App\Http\Controllers\Fb\MenuItemController as FbMenuItemController;
 use App\Http\Controllers\Fb\OrderController as FbOrderController;
 use App\Http\Controllers\Fb\SettingsController as FbSettingsController;
+use App\Http\Controllers\Finance\AccountController;
 use App\Http\Controllers\Finance\BiDashboardController;
+use App\Http\Controllers\Finance\BiReportController;
 use App\Http\Controllers\Finance\BudgetController;
 use App\Http\Controllers\Finance\FiscalPeriodController;
 use App\Http\Controllers\Finance\JournalController;
 use App\Http\Controllers\Finance\PayableController;
 use App\Http\Controllers\Finance\ReceivableController;
 use App\Http\Controllers\Finance\ReportController;
+use App\Http\Controllers\Finance\RtmController;
+use App\Http\Controllers\Finance\UatController;
 use App\Http\Controllers\FrontDesk\CashierShiftController;
 use App\Http\Controllers\FrontDesk\CheckInController;
 use App\Http\Controllers\FrontDesk\FolioController;
@@ -53,6 +57,7 @@ use App\Http\Controllers\Payroll\SeveranceController;
 use App\Http\Controllers\ModulePlaceholderController;
 use App\Http\Middleware\EnsurePortalAuthenticated;
 use App\Http\Middleware\RedirectIfPortalAuthenticated;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/favicon.ico', function () {
@@ -78,9 +83,16 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
 
     Route::middleware('portal.must_change_password')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
     Route::get('/modules/{module}', ModulePlaceholderController::class)->name('modules.placeholder');
 
     Route::prefix('front-desk')->name('front-desk.')->group(function () {
+        Route::redirect('/overview', '/finance/dashboard/hotel');
+
         Route::get('/rooms', [RoomController::class, 'index'])
             ->middleware('portal.permission:S3.hotel.rooms.read')
             ->name('rooms.index');
@@ -187,6 +199,8 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
     });
 
     Route::prefix('fb')->name('fb.')->group(function () {
+        Route::redirect('/overview', '/finance/dashboard/restaurant');
+
         Route::get('/menu', [MenuController::class, 'index'])
             ->middleware('portal.permission:S3.restaurant.menu.read')
             ->name('menu.index');
@@ -379,6 +393,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::post('/journals/{journalEntry}/approve', [JournalController::class, 'approve'])
             ->middleware('portal.permission:S4.finance.journal_entries.approve')
             ->name('journals.approve');
+        Route::post('/journals/{journalEntry}/reverse', [JournalController::class, 'reverse'])
+            ->middleware('portal.permission:S4.finance.journal_entries.reverse')
+            ->name('journals.reverse');
         Route::delete('/journals/{journalEntry}', [JournalController::class, 'destroy'])
             ->middleware('portal.permission:S4.finance.journal_entries.create')
             ->name('journals.destroy');
@@ -386,6 +403,9 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/fiscal-periods', [FiscalPeriodController::class, 'index'])
             ->middleware('portal.permission:S4.finance.fiscal_periods.read')
             ->name('fiscal-periods.index');
+        Route::post('/fiscal-periods/open-next', [FiscalPeriodController::class, 'openNext'])
+            ->middleware('portal.permission:S4.finance.fiscal_periods.create')
+            ->name('fiscal-periods.open-next');
         Route::post('/fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])
             ->middleware('portal.permission:S4.finance.fiscal_periods.close')
             ->name('fiscal-periods.close');
@@ -406,13 +426,59 @@ Route::middleware(EnsurePortalAuthenticated::class)->group(function () {
         Route::get('/budget', [BudgetController::class, 'index'])
             ->middleware('portal.permission:S4.finance.budgets.read,S4.bi.reports.read')
             ->name('budget.index');
+        Route::post('/budget/lines', [BudgetController::class, 'store'])
+            ->middleware('portal.permission:S4.finance.budgets.create')
+            ->name('budget.store');
+
+        Route::get('/accounts', [AccountController::class, 'index'])
+            ->middleware('portal.permission:S4.finance.accounts.read')
+            ->name('accounts.index');
+        Route::post('/accounts', [AccountController::class, 'store'])
+            ->middleware('portal.permission:S4.finance.accounts.create')
+            ->name('accounts.store');
+        Route::put('/accounts/{account}', [AccountController::class, 'update'])
+            ->middleware('portal.permission:S4.finance.accounts.update')
+            ->name('accounts.update');
 
         Route::get('/dashboard/executive', [BiDashboardController::class, 'executive'])
             ->middleware('portal.permission:S4.bi.dashboards.read')
             ->name('dashboard.executive');
+        Route::get('/dashboard/hotel', [BiDashboardController::class, 'hotel'])
+            ->middleware('portal.permission:S4.bi.dashboards.read')
+            ->name('dashboard.hotel');
+        Route::get('/dashboard/restaurant', [BiDashboardController::class, 'restaurant'])
+            ->middleware('portal.permission:S4.bi.dashboards.read')
+            ->name('dashboard.restaurant');
+        Route::get('/dashboard/finance', [BiDashboardController::class, 'finance'])
+            ->middleware('portal.permission:S4.bi.dashboards.read')
+            ->name('dashboard.finance');
         Route::get('/dashboard/operations', [BiDashboardController::class, 'operations'])
             ->middleware('portal.permission:S4.bi.dashboards.read')
             ->name('dashboard.operations');
+
+        Route::get('/bi-reports', [BiReportController::class, 'index'])
+            ->middleware('portal.permission:S4.bi.reports.read')
+            ->name('bi-reports.index');
+        Route::get('/bi-reports/{slug}', [BiReportController::class, 'show'])
+            ->middleware('portal.permission:S4.bi.reports.read')
+            ->name('bi-reports.show');
+        Route::get('/bi-reports/{slug}/export', [BiReportController::class, 'export'])
+            ->middleware('portal.permission:S4.bi.reports.read,S4.bi.export.create')
+            ->name('bi-reports.export');
+
+        Route::get('/rtm', [RtmController::class, 'index'])
+            ->middleware('portal.permission:S4.bi.rtm.read')
+            ->name('rtm.index');
+        Route::put('/rtm/{rtmEntry}', [RtmController::class, 'update'])
+            ->middleware('portal.permission:S4.bi.rtm.update')
+            ->name('rtm.update');
+
+        Route::get('/uat', [UatController::class, 'index'])
+            ->middleware('portal.permission:S4.bi.uat.read')
+            ->name('uat.index');
+        Route::post('/uat/{uatScenario}/results', [UatController::class, 'recordResult'])
+            ->middleware('portal.permission:S4.bi.uat.update')
+            ->name('uat.record-result');
 
         Route::get('/payables', [PayableController::class, 'index'])
             ->middleware('portal.permission:S4.finance.payables.read')

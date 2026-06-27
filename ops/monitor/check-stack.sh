@@ -93,6 +93,58 @@ for db in wh_s1_db wh_s2_db wh_s3_db wh_s4_db; do
     check_failed_jobs "$db"
 done
 
+check_disk() {
+    mount="${DISK_CHECK_PATH:-/}"
+    threshold="${DISK_USAGE_THRESHOLD_PERCENT:-90}"
+    usage="$(df -P "$mount" 2>/dev/null | awk 'NR==2 {gsub(/%/,"",$5); print $5}' || echo "ERR")"
+
+    if [ "$usage" = "ERR" ]; then
+        log "WARN disk usage check failed for ${mount}"
+        return
+    fi
+
+    if [ "$usage" -ge "$threshold" ]; then
+        log "FAIL disk usage ${usage}% on ${mount} (threshold ${threshold}%)"
+        issues="${issues}disk usage ${usage}% on ${mount}\n"
+    else
+        log "OK  disk usage ${usage}% on ${mount}"
+    fi
+}
+
+check_db_latency() {
+    threshold_ms="${DB_LATENCY_THRESHOLD_MS:-500}"
+    start_ms="$(date +%s%3N 2>/dev/null || echo "")"
+
+    if [ -z "$start_ms" ]; then
+        if mysqladmin -h "$MYSQL_HOST" -uroot -p"$MYSQL_ROOT_PASSWORD" ping >/dev/null 2>&1; then
+            log "OK  mysql ping (latency check skipped — no ms clock)"
+        else
+            log "FAIL mysql ping"
+            issues="${issues}mysql ping failed\n"
+        fi
+        return
+    fi
+
+    if ! mysql -h "$MYSQL_HOST" -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; then
+        log "FAIL mysql SELECT 1"
+        issues="${issues}mysql connection failed\n"
+        return
+    fi
+
+    end_ms="$(date +%s%3N)"
+    elapsed=$((end_ms - start_ms))
+
+    if [ "$elapsed" -ge "$threshold_ms" ]; then
+        log "FAIL mysql latency ${elapsed}ms (threshold ${threshold_ms}ms)"
+        issues="${issues}mysql latency ${elapsed}ms\n"
+    else
+        log "OK  mysql latency ${elapsed}ms"
+    fi
+}
+
+check_disk
+check_db_latency
+
 if [ -n "$issues" ]; then
     log "RESULT: ALERT"
     send_alert "$issues"

@@ -30,7 +30,7 @@ function submit() {
             v-if="required"
             class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
         >
-            You must set a new password before continuing to Wonderland ERP.
+            You must set a new password before continuing.
         </div>
 
         <p v-if="username" class="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">

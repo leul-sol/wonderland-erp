@@ -1,6 +1,7 @@
 <script setup>
 import { ArrowUpDown, CalendarRange, ChevronDown, Filter, Search } from 'lucide-vue-next';
 import { computed, ref, useSlots } from 'vue';
+import EmptyState from './EmptyState.vue';
 import Pagination from './Pagination.vue';
 
 const props = defineProps({
@@ -15,6 +16,18 @@ const props = defineProps({
     emptyMessage: {
         type: String,
         default: 'No records found.',
+    },
+    emptyTitle: {
+        type: String,
+        default: '',
+    },
+    emptyDescription: {
+        type: String,
+        default: 'Records will appear here once they are created.',
+    },
+    emptyVariant: {
+        type: String,
+        default: 'table',
     },
     listTitle: {
         type: String,
@@ -95,6 +108,16 @@ const showHeaderRow = computed(() => Boolean(
 const showControlsRow = computed(() => isListLayout.value || props.searchable || props.meta);
 
 const activePerPage = computed(() => String(props.meta?.per_page ?? props.perPage));
+
+const resolvedEmptyTitle = computed(() => props.emptyTitle || props.emptyMessage);
+
+const resolvedEmptyDescription = computed(() => {
+    if (props.emptyTitle) {
+        return props.emptyMessage;
+    }
+
+    return props.emptyDescription;
+});
 
 function resolveRowKey(row, index) {
     return row?.[props.rowKey] ?? index;
@@ -258,9 +281,14 @@ function onRowClick(row) {
                 </thead>
                 <tbody>
                     <tr v-if="rows.length === 0">
-                        <td :colspan="columns.length + (selectable ? 1 : 0)" class="py-12 text-center text-slate-500">
+                        <td :colspan="columns.length + (selectable ? 1 : 0)" class="p-0">
                             <slot name="empty">
-                                {{ emptyMessage }}
+                                <EmptyState
+                                    :title="resolvedEmptyTitle"
+                                    :description="resolvedEmptyDescription"
+                                    :variant="emptyVariant"
+                                    compact
+                                />
                             </slot>
                         </td>
                     </tr>

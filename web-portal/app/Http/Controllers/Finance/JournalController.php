@@ -28,14 +28,26 @@ class JournalController extends Controller
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $sourceModule = (string) $request->input('source_module', 'all');
+        $allowedSources = ['all', 'manual', 's2', 's3', 's4'];
+        if (! in_array($sourceModule, $allowedSources, true)) {
+            $sourceModule = 'all';
+        }
+
         return Inertia::render('Finance/Journals/Index', [
+            'sourceModule' => $sourceModule,
             'canCreate' => $this->auth->hasAnyPermission(['S4.finance.journal_entries.create']),
             'defaultEntryDate' => now()->toDateString(),
-            'pageLoad' => $this->deferPageLoad(function () {
+            'pageLoad' => $this->deferPageLoad(function () use ($sourceModule) {
+                $journalQuery = ['per_page' => 50];
+                if ($sourceModule !== 'all') {
+                    $journalQuery['source_module'] = $sourceModule;
+                }
+
                 $results = $this->fetchGatewayInParallel($this->s4, [
-                    'journalEntries' => ['path' => '/s4/api/v1/journal-entries', 'query' => ['source_module' => 'manual', 'per_page' => 50]],
+                    'journalEntries' => ['path' => '/s4/api/v1/journal-entries', 'query' => $journalQuery],
                     'accounts' => ['path' => '/s4/api/v1/accounts', 'query' => []],
                 ]);
                 $response = $this->requireParallelResult($results, 'journalEntries');
@@ -125,7 +137,25 @@ class JournalController extends Controller
                 && empty($entry['second_approved_by'])
                 && $this->auth->hasAnyPermission(['S4.finance.journal_entries.approve']),
             'canDelete' => $status === 'draft' && $this->auth->hasAnyPermission(['S4.finance.journal_entries.create']),
+            'canReverse' => $status === 'posted' && $this->auth->hasAnyPermission(['S4.finance.journal_entries.reverse']),
         ]);
+    }
+
+    public function reverse(Request $request, int $journalEntry): RedirectResponse
+    {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $this->s4->reverseJournalEntry($journalEntry, array_filter($data));
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return redirect()
+            ->route('finance.journals.show', $journalEntry)
+            ->with('success', 'Journal entry reversed.');
     }
 
     public function approve(int $journalEntry): RedirectResponse

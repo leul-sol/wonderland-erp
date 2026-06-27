@@ -1,4 +1,6 @@
 <script setup>
+import EmptyState from '../EmptyState.vue';
+
 defineProps({
     chart: { type: Object, default: null },
 });
@@ -6,9 +8,13 @@ defineProps({
 
 <template>
     <div v-if="chart" class="space-y-4 p-5">
-        <div v-if="!chart.bars?.length" class="py-10 text-center text-sm text-slate-500">
-            No revenue posted for this date range.
-        </div>
+        <EmptyState
+            v-if="!chart.bars?.length"
+            title="No revenue for this period"
+            description="No revenue posted for this date range."
+            variant="chart"
+            compact
+        />
 
         <template v-else>
             <div class="flex items-end justify-between gap-3 border-b border-slate-100 pb-4">

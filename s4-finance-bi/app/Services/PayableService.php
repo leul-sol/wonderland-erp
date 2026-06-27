@@ -10,6 +10,10 @@ use InvalidArgumentException;
 
 class PayableService
 {
+    public function __construct(private readonly FinanceAuditLogger $audit)
+    {
+    }
+
     public function applyPostedEntry(JournalEntry $entry): void
     {
         if ($entry->status !== 'posted') {
@@ -40,8 +44,8 @@ class PayableService
 
     public function settle(Payable $payable, float $amount, string $paymentMethod, int $userId): Payable
     {
-        if ($payable->status !== 'open') {
-            throw new InvalidArgumentException('Payable is already settled.');
+        if (! in_array($payable->status, ['open', 'partial'], true)) {
+            throw new InvalidArgumentException('Payable cannot be settled in its current status.');
         }
 
         if ($amount <= 0 || round($amount, 2) > round((float) $payable->balance, 2)) {
@@ -53,7 +57,7 @@ class PayableService
             default => '1001',
         };
 
-        return DB::transaction(function () use ($payable, $amount, $userId, $cashAccount) {
+        return DB::transaction(function () use ($payable, $amount, $userId, $cashAccount, $paymentMethod) {
             app(JournalService::class)->postImmediate([
                 'description' => 'AP settlement '.$payable->source_reference,
                 'source_module' => 'manual',
@@ -64,7 +68,13 @@ class PayableService
                 ],
             ], 'ap-settle-'.$payable->id.'-'.now()->timestamp, $userId);
 
-            return $payable->fresh('account');
+            $updated = $payable->fresh('account');
+            $this->audit->log('payable.settle', 'payable', $payable->id, $userId, [
+                'amount' => $amount,
+                'payment_method' => $paymentMethod,
+            ]);
+
+            return $updated;
         });
     }
 
@@ -77,6 +87,7 @@ class PayableService
 
         if (! $payable->exists) {
             $payable->fill([
+                'supplier_id' => $this->parseSupplierId($reference),
                 'vendor_name' => $reference,
                 'source_module' => $module,
                 'original_amount' => $amount,
@@ -105,10 +116,21 @@ class PayableService
         }
 
         $newBalance = round((float) $payable->balance - $amount, 2);
+        $status = $newBalance <= 0 ? 'settled' : 'partial';
+
         $payable->update([
             'balance' => max(0, $newBalance),
-            'status' => $newBalance <= 0 ? 'settled' : 'open',
+            'status' => $status,
             'settled_at' => $newBalance <= 0 ? now() : null,
         ]);
+    }
+
+    private function parseSupplierId(string $reference): ?int
+    {
+        if (preg_match('/supplier_id:(\d+)/', $reference, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 }

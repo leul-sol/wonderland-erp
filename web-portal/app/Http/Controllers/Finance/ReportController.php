@@ -33,7 +33,7 @@ class ReportController extends Controller
         ], fn ($value) => $value !== null && $value !== '');
 
         return Inertia::render('Finance/Reports/Index', [
-            'reportType' => in_array($type, ['trial_balance', 'income_statement', 'balance_sheet'], true)
+            'reportType' => in_array($type, ['trial_balance', 'income_statement', 'balance_sheet', 'cash_flow', 'departmental'], true)
                 ? $type
                 : 'trial_balance',
             'filters' => [
@@ -45,6 +45,8 @@ class ReportController extends Controller
                 $response = match ($type) {
                     'income_statement' => $this->s4->incomeStatement($query),
                     'balance_sheet' => $this->s4->balanceSheet($query),
+                    'cash_flow' => $this->s4->cashFlow($query),
+                    'departmental' => $this->s4->departmental($query),
                     default => $this->s4->trialBalance($query),
                 };
 
@@ -56,7 +58,7 @@ class ReportController extends Controller
     public function export(Request $request): StreamedResponse|RedirectResponse
     {
         $data = $request->validate([
-            'report' => ['required', 'in::trial_balance,income_statement,balance_sheet,budget_variance'],
+            'report' => ['required', 'in:trial_balance,income_statement,balance_sheet,cash_flow,departmental,budget_variance'],
             'format' => ['required', 'in:csv,pdf,excel'],
             'fiscal_period_id' => ['nullable', 'integer'],
             'from' => ['nullable', 'date'],
@@ -70,7 +72,7 @@ class ReportController extends Controller
         ], fn ($value) => $value !== null && $value !== '');
 
         try {
-            if (in_array($data['report'], ['trial_balance', 'income_statement', 'balance_sheet'], true)) {
+            if (in_array($data['report'], ['trial_balance', 'income_statement', 'balance_sheet', 'cash_flow', 'departmental'], true)) {
                 $response = $this->s4->downloadFinancialReport($data['report'], $data['format'], $query);
             } else {
                 $response = $this->s4->exportReport([

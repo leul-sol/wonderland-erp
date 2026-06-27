@@ -7,15 +7,13 @@ use App\Models\BillPayment;
 use App\Models\RestaurantOrder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use RuntimeException;
 
 class BillingService
 {
     public function __construct(
         private readonly FolioService $folio,
         private readonly EmployeeConsumptionService $employeeConsumption,
-        private readonly S4FinanceClient $s4,
-        private readonly TaxBreakdownService $tax,
+        private readonly DailyFbSummaryService $dailyFbSummary,
     ) {
     }
 
@@ -44,7 +42,7 @@ class BillingService
         $bill->loadMissing('restaurantOrder');
 
         return DB::transaction(function () use ($bill, $amount, $paymentMethod, $cashierId, $shiftId, $idempotencyKey) {
-            $this->routeByCustomerType($bill, $amount, $paymentMethod, $idempotencyKey);
+            $this->routeByCustomerType($bill, $paymentMethod);
 
             $payment = BillPayment::query()->create([
                 'bill_id' => $bill->id,
@@ -101,7 +99,7 @@ class BillingService
         ]);
     }
 
-    private function routeByCustomerType(Bill $bill, float $amount, string $paymentMethod, string $idempotencyKey): void
+    private function routeByCustomerType(Bill $bill, string $paymentMethod): void
     {
         $order = $bill->restaurantOrder;
         $customerType = $order->customer_type ?? 'outside_cash';
@@ -114,51 +112,10 @@ class BillingService
                 (int) ($order->customer_ref_id ?? 0),
                 (float) $bill->subtotal,
             ),
-            'outside_credit' => null,
-            'event' => $this->postEventJournal($bill, $amount, $idempotencyKey),
-            'outside_cash' => $this->postOutsideCashJournal($bill, $amount, $paymentMethod, $idempotencyKey),
+            'outside_credit', 'outside_cash', 'event' => $this->dailyFbSummary->shouldDeferRevenueJournal($order)
+                ? null
+                : throw new InvalidArgumentException('Unexpected billing path for '.$customerType),
             default => throw new InvalidArgumentException('Unsupported customer type: '.$customerType),
         };
-    }
-
-    private function postEventJournal(Bill $bill, float $amount, string $idempotencyKey): void
-    {
-        $accounts = config('hospitality.accounts');
-        $breakdown = $this->tax->compute($amount);
-
-        try {
-            $this->s4->postJournal([
-                'description' => 'Event F&B bill '.$bill->id,
-                'source_module' => 's3',
-                'source_reference' => 'BILL-'.$bill->id,
-                'lines' => $this->tax->revenueJournalLines($accounts['ar_guest'], $accounts['fb_revenue'], $breakdown),
-            ], $idempotencyKey.'-event');
-        } catch (RuntimeException $e) {
-            throw $e;
-        }
-    }
-
-    private function postOutsideCashJournal(Bill $bill, float $amount, string $paymentMethod, string $idempotencyKey): void
-    {
-        $accounts = config('hospitality.accounts');
-        $breakdown = $this->tax->compute($amount);
-
-        $cashAccount = match ($paymentMethod) {
-            'bank' => '1002',
-            'pos' => '1004',
-            'visa' => '1005',
-            default => $accounts['cash'],
-        };
-
-        try {
-            $this->s4->postJournal([
-                'description' => 'Cash F&B bill '.$bill->id,
-                'source_module' => 's3',
-                'source_reference' => 'BILL-'.$bill->id,
-                'lines' => $this->tax->revenueJournalLines($cashAccount, $accounts['fb_revenue'], $breakdown),
-            ], $idempotencyKey.'-cash');
-        } catch (RuntimeException $e) {
-            throw $e;
-        }
     }
 }

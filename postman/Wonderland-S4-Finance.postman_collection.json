@@ -1,116 +1,697 @@
 {
-  "info": {
-    "_postman_id": "wonderland-s4-finance-v1",
-    "name": "Wonderland ERP — S4 Finance & BI",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    { "key": "baseUrl", "value": "http://localhost/s4/api/v1" },
-    { "key": "serviceKey", "value": "dev-internal-key-change-in-prod" },
-    { "key": "accessToken", "value": "" },
-    { "key": "fiscalPeriodId", "value": "12" },
-    { "key": "uatFiscalPeriodId", "value": "1" }
-  ],
-  "item": [
-    {
-      "name": "Health",
-      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    "info": {
+        "_postman_id": "wonderland-s4-finance-v1",
+        "name": "Wonderland ERP \u2014 S4 Finance & BI",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Auto-generated: one GET /bi/reports/{slug} per catalog entry (43 reports)."
     },
-    {
-      "name": "Reports",
-      "item": [
+    "variable": [
         {
-          "name": "Report Catalog",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/bi/reports"
-          }
+            "key": "baseUrl",
+            "value": "http://localhost/s4/api/v1"
         },
         {
-          "name": "Trial Balance",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/reports/trial-balance?fiscal_period_id={{fiscalPeriodId}}"
-          }
+            "key": "serviceKey",
+            "value": "dev-internal-key-change-in-prod"
         },
         {
-          "name": "Budget Variance",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/bi/reports/budget_variance?fiscal_period_id={{fiscalPeriodId}}"
-          }
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "fiscalPeriodId",
+            "value": "12"
+        },
+        {
+            "key": "uatFiscalPeriodId",
+            "value": "1"
         }
-      ]
-    },
-    {
-      "name": "Export PDF",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"report\": \"trial_balance\",\n  \"format\": \"pdf\",\n  \"fiscal_period_id\": {{fiscalPeriodId}}\n}"
-        },
-        "url": "{{baseUrl}}/bi/exports"
-      }
-    },
-    {
-      "name": "Operational Events",
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-        "url": "{{baseUrl}}/bi/operational-events"
-      }
-    },
-    {
-      "name": "Budgets",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"fiscal_period_id\": {{fiscalPeriodId}},\n  \"account_code\": \"4001\",\n  \"budget_amount\": 50000\n}"
-        },
-        "url": "{{baseUrl}}/finance/budgets"
-      }
-    },
-    {
-      "name": "Fiscal Periods",
-      "item": [
+    ],
+    "item": [
         {
-          "name": "List Fiscal Periods",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/fiscal-periods"
-          }
+            "name": "Health",
+            "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/health"
+            }
         },
         {
-          "name": "Close Fiscal Period",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/fiscal-periods/{{uatFiscalPeriodId}}/close"
-          }
+            "name": "Reports",
+            "item": [
+                {
+                    "name": "Report Catalog",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports"
+                    }
+                },
+                {
+                    "name": "Trial Balance (finance route)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reports/trial-balance?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Trial Balance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/trial_balance?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Income Statement",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/income_statement?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Balance Sheet",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/balance_sheet?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Cash Flow Statement",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/cash_flow?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "General Ledger Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/gl_detail?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "AR Aging",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/ar_aging?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "AP Aging",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/ap_aging?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Revenue by Source Module",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/revenue_by_source?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Hospitality Snapshot",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/hospitality_snapshot?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Room Occupancy",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/occupancy?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Reservation Pipeline",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/reservation_pipeline?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "F&B Sales",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/fb_sales?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "F&B Sales by Customer Type",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/fb_sales_by_customer_type?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Employee Directory",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/hr_employee_directory?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Payroll Summary Sheet",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_summary?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Inventory Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/inventory_status?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Inventory Expiry Alert",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/inventory_expiry_alert?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Inventory Valuation (FIFO)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/inventory_valuation?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Cashier Shift Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/cashier_shift?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Purchase Order Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/purchase_order_status?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Outstanding Folios",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/folio_outstanding?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Room Revenue Mix",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/room_revenue_mix?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Payroll Snapshot",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_snapshot?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Headcount by Department",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/headcount_by_department?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Leave Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/leave_summary?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Leave Balance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/leave_balance?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Leave Utilisation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/leave_utilisation?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Pension Contribution",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_pension?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Overtime Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_overtime?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Disciplinary History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/hr_disciplinary_history?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Asset Clearance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/hr_asset_clearance?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Stock Movement",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/inventory_stock_movement?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Employee Consumption",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/employee_consumption?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Guest Folio Invoice",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/guest_folio_invoice?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Individual Payslip",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_payslip?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Guarantor Letter",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/hr_guarantor_letter?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Supplier Payment History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/supplier_payment_history?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Event F&B Billing",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/event_fb_billing?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Payroll Cost Trend",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/payroll_cost_trend?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Executive Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/executive_dashboard?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Operations Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/operations_dashboard?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "Budget Variance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/budget_variance?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                },
+                {
+                    "name": "KPI Scorecard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/bi/reports/kpi_scorecard?fiscal_period_id={{fiscalPeriodId}}"
+                    }
+                }
+            ]
         },
         {
-          "name": "Lock Fiscal Period",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
-            "url": "{{baseUrl}}/fiscal-periods/{{uatFiscalPeriodId}}/lock"
-          }
+            "name": "Export PDF",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"report\": \"trial_balance\",\n  \"format\": \"pdf\",\n  \"fiscal_period_id\": {{fiscalPeriodId}}\n}"
+                },
+                "url": "{{baseUrl}}/bi/exports"
+            }
+        },
+        {
+            "name": "RTM nested UAT",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": "{{baseUrl}}/rtm/1/uat"
+            }
+        },
+        {
+            "name": "Operational Events",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": "{{baseUrl}}/bi/operational-events"
+            }
+        },
+        {
+            "name": "Budgets",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"fiscal_period_id\": {{fiscalPeriodId}},\n  \"account_code\": \"4001\",\n  \"amount\": 100000\n}"
+                },
+                "url": "{{baseUrl}}/finance/budgets"
+            }
         }
-      ]
-    }
-  ]
+    ]
 }

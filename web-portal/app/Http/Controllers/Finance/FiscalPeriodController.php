@@ -28,8 +28,46 @@ class FiscalPeriodController extends Controller
         return Inertia::render('Finance/FiscalPeriods/Index', [
             'canClose' => $this->auth->hasAnyPermission(['S4.finance.fiscal_periods.close']),
             'canLock' => $this->auth->hasAnyPermission(['S4.finance.fiscal_periods.lock']),
+            'canCreate' => $this->auth->hasAnyPermission(['S4.finance.fiscal_periods.create']),
             'fiscalPeriods' => $this->deferApi(fn () => ($this->s4->fiscalPeriods())['data'] ?? []),
         ]);
+    }
+
+    public function openNext(): RedirectResponse
+    {
+        try {
+            $periods = ($this->s4->fiscalPeriods())['data'] ?? [];
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        $latest = collect($periods)->sortByDesc('end_date')->first();
+
+        if (! is_array($latest)) {
+            return back()->with('error', 'No fiscal periods exist to extend.');
+        }
+
+        $nextStart = \Carbon\Carbon::parse((string) $latest['end_date'])->addDay();
+        $periodNumber = (int) ($latest['period_number'] ?? 0) + 1;
+        $year = (int) ($latest['year'] ?? $nextStart->year);
+
+        if ($periodNumber > 12) {
+            $year++;
+            $periodNumber = 1;
+        }
+
+        try {
+            $this->s4->createFiscalPeriod([
+                'year' => $year,
+                'period_number' => $periodNumber,
+                'start_date' => $nextStart->toDateString(),
+                'end_date' => $nextStart->copy()->endOfMonth()->toDateString(),
+            ]);
+        } catch (ApiException $e) {
+            return $this->redirectApiError($e);
+        }
+
+        return back()->with('success', "Opened fiscal period {$year}-P{$periodNumber}.");
     }
 
     public function close(int $fiscalPeriod): RedirectResponse

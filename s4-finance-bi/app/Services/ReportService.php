@@ -7,6 +7,7 @@ use App\Models\FiscalPeriod;
 use App\Models\JournalLine;
 use App\Models\Payable;
 use App\Models\Receivable;
+use App\Support\SubledgerAging;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -124,10 +125,13 @@ class ReportService
         $activity = $this->aggregateActivity($range['from'], $range['to']);
         $accounts = Account::query()->whereIn('type', ['income', 'expense'])->orderBy('code')->get();
 
+        $cogsCodes = config('finance.cogs_account_codes', ['5003']);
         $revenueLines = [];
-        $expenseLines = [];
+        $cogsLines = [];
+        $operatingExpenseLines = [];
         $totalRevenue = 0.0;
-        $totalExpenses = 0.0;
+        $totalCogs = 0.0;
+        $totalOperatingExpenses = 0.0;
 
         foreach ($accounts as $account) {
             $totals = $activity->get($account->id, ['debit' => 0.0, 'credit' => 0.0]);
@@ -146,13 +150,18 @@ class ReportService
             if ($account->type === 'income') {
                 $revenueLines[] = $line;
                 $totalRevenue += abs($amount);
+            } elseif (in_array($account->code, $cogsCodes, true)) {
+                $cogsLines[] = $line;
+                $totalCogs += abs($amount);
             } else {
-                $expenseLines[] = $line;
-                $totalExpenses += abs($amount);
+                $operatingExpenseLines[] = $line;
+                $totalOperatingExpenses += abs($amount);
             }
         }
 
-        $netIncome = round($totalRevenue - $totalExpenses, 2);
+        $grossProfit = round($totalRevenue - $totalCogs, 2);
+        $netIncome = round($grossProfit - $totalOperatingExpenses, 2);
+        $totalExpenses = round($totalCogs + $totalOperatingExpenses, 2);
 
         return [
             'report' => 'income_statement',
@@ -163,8 +172,17 @@ class ReportService
                 'lines' => $revenueLines,
                 'total' => $this->formatMoney($totalRevenue),
             ],
+            'cogs' => [
+                'lines' => $cogsLines,
+                'total' => $this->formatMoney($totalCogs),
+            ],
+            'gross_profit' => $this->formatMoney($grossProfit),
+            'operating_expenses' => [
+                'lines' => $operatingExpenseLines,
+                'total' => $this->formatMoney($totalOperatingExpenses),
+            ],
             'expenses' => [
-                'lines' => $expenseLines,
+                'lines' => array_merge($cogsLines, $operatingExpenseLines),
                 'total' => $this->formatMoney($totalExpenses),
             ],
             'net_income' => $this->formatMoney($netIncome),
@@ -429,46 +447,103 @@ class ReportService
     /**
      * @return array<string, mixed>
      */
-    public function arAging(): array
+    public function arAging(?string $customerType = null): array
     {
-        $receivables = Receivable::query()
+        $asOf = now();
+        $query = Receivable::query()
             ->with('account')
             ->whereIn('status', ['open', 'partial'])
-            ->orderByDesc('balance')
-            ->get();
+            ->orderByDesc('balance');
+
+        if ($customerType !== null && $customerType !== '') {
+            $query->where('customer_type', $customerType);
+        }
+
+        $receivables = $query->get();
 
         return [
             'report' => 'ar_aging',
-            'as_of' => now()->toDateString(),
+            'as_of' => $asOf->toDateString(),
             'total_outstanding' => $this->formatMoney((float) $receivables->sum('balance')),
-            'lines' => $receivables->map(fn ($r) => [
-                'id' => $r->id,
-                'party_name' => $r->party_name,
-                'source_reference' => $r->source_reference,
-                'account_code' => $r->account?->code,
-                'balance' => $this->formatMoney((float) $r->balance),
-            ])->values()->all(),
+            'bucket_totals' => SubledgerAging::bucketTotals(
+                $receivables,
+                fn ($receivable) => (float) $receivable->balance,
+                fn ($receivable) => $receivable->due_date,
+                $asOf,
+            ),
+            'lines' => $receivables->map(fn ($receivable) => $this->receivableAgingLine($receivable, $asOf))->values()->all(),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function apAging(): array
+    public function apAging(?int $supplierId = null): array
     {
-        $payables = Payable::query()->with('account')->where('status', 'open')->orderByDesc('balance')->get();
+        $asOf = now();
+        $query = Payable::query()
+            ->with('account')
+            ->whereIn('status', ['open', 'partial'])
+            ->orderByDesc('balance');
+
+        if ($supplierId !== null) {
+            $query->where('supplier_id', $supplierId);
+        }
+
+        $payables = $query->get();
 
         return [
             'report' => 'ap_aging',
-            'as_of' => now()->toDateString(),
+            'as_of' => $asOf->toDateString(),
             'total_outstanding' => $this->formatMoney((float) $payables->sum('balance')),
-            'lines' => $payables->map(fn ($p) => [
-                'id' => $p->id,
-                'vendor_name' => $p->vendor_name,
-                'source_reference' => $p->source_reference,
-                'account_code' => $p->account?->code,
-                'balance' => $this->formatMoney((float) $p->balance),
-            ])->values()->all(),
+            'bucket_totals' => SubledgerAging::bucketTotals(
+                $payables,
+                fn ($payable) => (float) $payable->balance,
+                fn ($payable) => $payable->due_date,
+                $asOf,
+            ),
+            'lines' => $payables->map(fn ($payable) => $this->payableAgingLine($payable, $asOf))->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function receivableAgingLine(Receivable $receivable, Carbon $asOf): array
+    {
+        $aging = SubledgerAging::classify($receivable->due_date, $asOf);
+
+        return [
+            'id' => $receivable->id,
+            'customer_type' => $receivable->customer_type,
+            'customer_ref_id' => $receivable->customer_ref_id,
+            'party_name' => $receivable->party_name,
+            'source_reference' => $receivable->source_reference,
+            'account_code' => $receivable->account?->code,
+            'due_date' => $receivable->due_date?->toDateString(),
+            'days_overdue' => $aging['days_overdue'],
+            'aging_bucket' => $aging['bucket'],
+            'balance' => $this->formatMoney((float) $receivable->balance),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payableAgingLine(Payable $payable, Carbon $asOf): array
+    {
+        $aging = SubledgerAging::classify($payable->due_date, $asOf);
+
+        return [
+            'id' => $payable->id,
+            'supplier_id' => $payable->supplier_id,
+            'vendor_name' => $payable->vendor_name,
+            'source_reference' => $payable->source_reference,
+            'account_code' => $payable->account?->code,
+            'due_date' => $payable->due_date?->toDateString(),
+            'days_overdue' => $aging['days_overdue'],
+            'aging_bucket' => $aging['bucket'],
+            'balance' => $this->formatMoney((float) $payable->balance),
         ];
     }
 

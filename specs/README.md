@@ -17,6 +17,7 @@ Before UI work or a "production" label:
 | File | Purpose |
 |------|---------|
 | [`traceability/matrix.yaml`](traceability/matrix.yaml) | SDD section → implementation status (no new features until critical gaps reviewed) |
+| [`traceability/s4-sdd-checklist.yaml`](traceability/s4-sdd-checklist.yaml) | S4 Finance & BI SDD v1.0 — 114 item-level checklist (phases 0–7) |
 | [`traceability/pilot-readiness.yaml`](traceability/pilot-readiness.yaml) | Backup, monitoring, support checklist (ops — not code) |
 | [`ui/README.md`](ui/README.md) | Web portal plan (Inertia + Vue BFF) — screens, phases, security |
 | [`ui/modules.yaml`](ui/modules.yaml) | Portal routes, permissions, API mapping per screen |

@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Supplier;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\Concerns\MocksS3Auth;
 use Tests\TestCase;
 
@@ -58,6 +59,31 @@ class SddAlignmentTest extends TestCase
         $this->getJson('/api/v1/suppliers', $headers)
             ->assertOk()
             ->assertJsonFragment(['name' => 'Fresh Farms PLC']);
+    }
+
+    public function test_supplier_payment_history_lists_recorded_payments(): void
+    {
+        $headers = $this->authHeaders();
+
+        Http::fake([
+            '*/api/v1/journal-entries' => Http::response(['data' => ['id' => 88]], 201),
+        ]);
+
+        $supplierId = $this->postJson('/api/v1/suppliers', [
+            'name' => 'Payment Vendor PLC',
+        ], $headers)->assertCreated()->json('data.id');
+
+        \App\Models\Supplier::query()->whereKey($supplierId)->update(['outstanding_balance' => 1000]);
+
+        $this->postJson("/api/v1/suppliers/{$supplierId}/payments", [
+            'amount' => 250,
+            'payment_method' => 'bank',
+        ], array_merge($headers, ['Idempotency-Key' => 'supplier-pay-1']))->assertCreated();
+
+        $this->getJson('/api/v1/supplier-payments', $headers)
+            ->assertOk()
+            ->assertJsonPath('data.0.supplier_id', $supplierId)
+            ->assertJsonPath('data.0.amount', '250.00');
     }
 
     public function test_guest_profile_and_folio_invoice_fields(): void

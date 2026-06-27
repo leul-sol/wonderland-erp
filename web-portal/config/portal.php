@@ -5,6 +5,9 @@ return [
 
     'refresh_before_expiry_seconds' => (int) env('PORTAL_TOKEN_REFRESH_BUFFER', 120),
 
+    // Bump when sidebar structure changes to invalidate cached shell navigation.
+    'nav_revision' => '2026-06-27-dashboards-v2',
+
     'module_icons' => [
         'dashboard' => 'layout-grid',
         'front_desk' => 'bed-double',
@@ -137,21 +140,28 @@ return [
             'label' => 'Finance',
             'icon' => 'file-bar-chart',
             'route' => 'finance.reports.index',
+            'active_prefixes' => ['/finance/dashboard'],
             'permissions' => [
                 'S4.finance.payables.read',
                 'S4.finance.reports.read',
                 'S4.finance.journal_entries.read',
                 'S4.finance.receivables.read',
                 'S4.bi.dashboards.read',
+                'S4.bi.reports.read',
+                'S4.bi.uat.read',
             ],
             'phase' => 7,
             'children' => [
-                ['key' => 'reports', 'label' => 'Reports', 'route' => 'finance.reports.index', 'permissions' => ['S4.finance.reports.read']],
+                ['key' => 'dashboards', 'label' => 'Dashboards', 'route' => 'finance.dashboard.executive', 'permissions' => ['S4.bi.dashboards.read'], 'active_prefixes' => ['/finance/dashboard']],
+                ['key' => 'reports', 'label' => 'Financial reports', 'route' => 'finance.reports.index', 'permissions' => ['S4.finance.reports.read']],
+                ['key' => 'accounts', 'label' => 'Chart of accounts', 'route' => 'finance.accounts.index', 'permissions' => ['S4.finance.accounts.read']],
+                ['key' => 'bi_reports', 'label' => 'Operational reports', 'route' => 'finance.bi-reports.index', 'permissions' => ['S4.bi.reports.read']],
                 ['key' => 'journals', 'label' => 'Journals', 'route' => 'finance.journals.index', 'permissions' => ['S4.finance.journal_entries.read']],
-                ['key' => 'payables', 'label' => 'Payables', 'route' => 'finance.payables.index', 'permissions' => ['S4.finance.payables.read']],
                 ['key' => 'receivables', 'label' => 'Receivables', 'route' => 'finance.receivables.index', 'permissions' => ['S4.finance.receivables.read']],
+                ['key' => 'payables', 'label' => 'Payables', 'route' => 'finance.payables.index', 'permissions' => ['S4.finance.payables.read']],
                 ['key' => 'budget', 'label' => 'Budget', 'route' => 'finance.budget.index', 'permissions' => ['S4.finance.budgets.read', 'S4.bi.reports.read']],
                 ['key' => 'fiscal_periods', 'label' => 'Fiscal periods', 'route' => 'finance.fiscal-periods.index', 'permissions' => ['S4.finance.fiscal_periods.read']],
+                ['key' => 'uat', 'label' => 'Acceptance testing', 'route' => 'finance.uat.index', 'permissions' => ['S4.bi.uat.read']],
             ],
         ],
         [
@@ -282,5 +292,11 @@ return [
             'module' => 'finance',
             'permissions' => ['S4.finance.journal_entries.create'],
         ],
+    ],
+
+    'notifications' => [
+        'fiscal_period_reminder_days' => (int) env('PORTAL_FISCAL_PERIOD_REMINDER_DAYS', 7),
+        'poll_interval_seconds' => (int) env('PORTAL_NOTIFICATION_POLL_SECONDS', 120),
+        'system_messages' => [],
     ],
 ];

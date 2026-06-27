@@ -1,5 +1,5 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
@@ -11,9 +11,18 @@ import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
+    sourceModule: { type: String, default: 'all' },
     canCreate: { type: Boolean, default: false },
     defaultEntryDate: { type: String, default: '' },
 });
+
+const sourceTabs = [
+    { key: 'all', label: 'All sources' },
+    { key: 'manual', label: 'Manual' },
+    { key: 's2', label: 'S2 payroll' },
+    { key: 's3', label: 'S3 hospitality' },
+    { key: 's4', label: 'S4 finance' },
+];
 
 const journalEntries = computed(() => props.pageLoad?.journalEntries ?? []);
 const accounts = computed(() => props.pageLoad?.accounts ?? []);
@@ -33,6 +42,7 @@ const form = useForm({
 const columns = [
     { key: 'entry_number', label: 'Entry #' },
     { key: 'entry_date', label: 'Date' },
+    { key: 'source_module', label: 'Source' },
     { key: 'description', label: 'Description' },
     { key: 'total_debit', label: 'Debit', class: 'text-right' },
     { key: 'status', label: 'Status' },
@@ -70,20 +80,39 @@ function submitCreate() {
     });
 }
 
+function switchSource(tab) {
+    router.get('/finance/journals', tab === 'all' ? {} : { source_module: tab }, { preserveScroll: true });
+}
+
 useQueryModal(showCreateModal, { onOpen: openCreateModal });
 </script>
 
 <template>
     <AppLayout title="Journal entries">
-        <PageHeader title="Manual journals" subtitle="Draft → finance approve → GM (if large) → posted">
+        <PageHeader title="Journal entries" subtitle="Draft → finance approve → GM (if large) → posted">
             <template #actions>
                 <Link href="/finance/reports" class="wh-btn-secondary">Reports</Link>
                 <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openCreateModal">New journal</button>
             </template>
         </PageHeader>
 
+        <section class="wh-card mb-6 p-4">
+            <div class="flex flex-wrap gap-2">
+                <button
+                    v-for="tab in sourceTabs"
+                    :key="tab.key"
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium"
+                    :class="sourceModule === tab.key ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700'"
+                    @click="switchSource(tab.key)"
+                >
+                    {{ tab.label }}
+                </button>
+            </div>
+        </section>
+
         <PageDataSection keys="pageLoad">
-        <DataTable list-title="Journal list" selectable :columns="columns" :rows="journalEntries" empty-message="No manual journal entries yet.">
+        <DataTable list-title="Journal list" selectable :columns="columns" :rows="journalEntries" empty-message="No journal entries for this filter.">
             <template #empty>
                 <p>No manual journal entries yet.</p>
                 <button v-if="canCreate" type="button" class="wh-btn-primary mt-3" @click="openCreateModal">Create your first journal</button>

@@ -11,6 +11,10 @@ use RuntimeException;
 
 class ReceivableService
 {
+    public function __construct(private readonly FinanceAuditLogger $audit)
+    {
+    }
+
     public function applyPostedEntry(JournalEntry $entry): void
     {
         if ($entry->status !== 'posted') {
@@ -59,7 +63,7 @@ class ReceivableService
 
         $accountCode = $receivable->account?->code ?? Account::query()->whereKey($receivable->account_id)->value('code');
 
-        return DB::transaction(function () use ($receivable, $amount, $userId, $cashAccount, $accountCode) {
+        return DB::transaction(function () use ($receivable, $amount, $userId, $cashAccount, $accountCode, $paymentMethod) {
             app(JournalService::class)->postImmediate([
                 'description' => 'AR settlement '.$receivable->source_reference,
                 'source_module' => 'manual',
@@ -70,7 +74,13 @@ class ReceivableService
                 ],
             ], 'ar-settle-'.$receivable->id.'-'.now()->timestamp, $userId);
 
-            return $receivable->fresh('account');
+            $updated = $receivable->fresh('account');
+            $this->audit->log('receivable.settle', 'receivable', $receivable->id, $userId, [
+                'amount' => $amount,
+                'payment_method' => $paymentMethod,
+            ]);
+
+            return $updated;
         });
     }
 
@@ -105,12 +115,17 @@ class ReceivableService
                 'settled_at' => now(),
             ]);
 
+            $this->audit->log('receivable.write_off', 'receivable', $receivable->id, $userId, [
+                'reason' => $reason,
+            ]);
+
             return $receivable->fresh('account');
         });
     }
 
     private function increaseBalance(int $accountId, string $reference, string $module, float $amount, int $journalEntryId): void
     {
+        $accountCode = Account::query()->whereKey($accountId)->value('code');
         $receivable = Receivable::query()->firstOrNew([
             'source_reference' => $reference,
             'account_id' => $accountId,
@@ -118,6 +133,8 @@ class ReceivableService
 
         if (! $receivable->exists) {
             $receivable->fill([
+                'customer_type' => $this->customerTypeForAccount($accountCode),
+                'customer_ref_id' => $this->parseCustomerRefId($reference),
                 'party_name' => $reference,
                 'source_module' => $module,
                 'original_amount' => $amount,
@@ -157,5 +174,23 @@ class ReceivableService
             'status' => $status,
             'settled_at' => $newBalance <= 0 ? now() : null,
         ]);
+    }
+
+    private function customerTypeForAccount(?string $accountCode): ?string
+    {
+        return match ($accountCode) {
+            '1100' => 'hotel_guest',
+            '1101' => 'event',
+            default => null,
+        };
+    }
+
+    private function parseCustomerRefId(string $reference): ?int
+    {
+        if (preg_match('/(?:folio|bill|guest|event)_id:(\d+)/', $reference, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 }

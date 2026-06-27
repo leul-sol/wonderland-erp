@@ -33,12 +33,6 @@ const brand = computed(() => page.props.brand ?? {});
             <div class="flex justify-center">
                 <AppLogo size="xl" :show-name="false" />
             </div>
-            <p class="mt-4 text-sm font-medium text-slate-600">
-                {{ brand.name }}
-            </p>
-            <p class="text-xs text-slate-400">
-                {{ brand.product }}
-            </p>
         </header>
 
         <main class="relative z-10 flex flex-1 items-start justify-center px-4 py-8 sm:py-10">

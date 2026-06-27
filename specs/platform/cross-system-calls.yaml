@@ -16,6 +16,15 @@ calls:
     path: /api/v1/journal-entries
     auth: service_key
     idempotent: true
+    idempotency_key_formats:
+      - { pattern: "payroll-run-{run_id}", caller: S2, use: "Payroll approval GL post" }
+      - { pattern: "order-{order_id}-revenue", caller: S3, use: "Folio F&B revenue on finalize" }
+      - { pattern: "order-{order_id}-cogs", caller: S3, use: "F&B COGS on finalize" }
+      - { pattern: "fb-daily-summary:{YYYY-MM-DD}", caller: S3, use: "End-of-day F&B summary (excludes hotel_guest)" }
+      - { pattern: "gr-{receipt_id}", caller: S3, use: "Goods receipt AP/inventory journal" }
+      - { pattern: "SUPPLIER-PAY-{payment_id}", caller: S3, use: "Supplier payment settlement" }
+      - { pattern: "folio-{folio_id}-settle", caller: S3, use: "Guest folio settlement" }
+      - { pattern: "consumption-{period_id}", caller: S3, use: "Employee consumption period close" }
 
   - id: staff-meal-deduction
     caller: S3

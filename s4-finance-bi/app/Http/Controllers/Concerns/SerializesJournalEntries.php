@@ -8,7 +8,7 @@ trait SerializesJournalEntries
 {
     protected function journalPayload(JournalEntry $entry): array
     {
-        $entry->loadMissing(['lines.account', 'fiscalPeriod']);
+        $entry->loadMissing(['lines.account', 'fiscalPeriod', 'reversalEntry']);
 
         return [
             'id' => $entry->id,
@@ -18,6 +18,9 @@ trait SerializesJournalEntries
             'source_module' => $entry->source_module,
             'source_reference' => $entry->source_reference,
             'status' => $entry->status,
+            'has_reversal' => $entry->hasBeenReversed(),
+            'reversal_of_id' => $entry->reversal_of_id,
+            'reversal_entry_id' => $entry->reversalEntry?->id,
             'total_debit' => (string) $entry->total_debit,
             'total_credit' => (string) $entry->total_credit,
             'fiscal_period_id' => $entry->fiscal_period_id,

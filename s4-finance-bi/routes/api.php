@@ -110,10 +110,57 @@ Route::middleware('jwt')->group(function () {
     Route::get('/bi/reports/{slug}', [BiReportController::class, 'show'])
         ->middleware('permission:S4.bi.reports.read');
 
+    Route::get('/reports/hr/employee-directory', [BiReportController::class, 'employeeDirectory'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/fb-sales-by-customer-type', [BiReportController::class, 'fbSalesByCustomerType'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/payroll-summary', [BiReportController::class, 'payrollSummary'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/leave-balance', [BiReportController::class, 'leaveBalance'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/inventory-expiry-alert', [BiReportController::class, 'inventoryExpiryAlert'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/inventory-valuation', [BiReportController::class, 'inventoryValuation'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hotel/cashier-shift', [BiReportController::class, 'cashierShift'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/payroll-overtime', [BiReportController::class, 'payrollOvertime'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/payroll-pension', [BiReportController::class, 'payrollPension'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/leave-utilisation', [BiReportController::class, 'leaveUtilisation'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hr/disciplinary-history', [BiReportController::class, 'disciplinaryHistory'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hr/asset-clearance', [BiReportController::class, 'assetClearance'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/stock-movement', [BiReportController::class, 'stockMovement'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/employee-consumption', [BiReportController::class, 'employeeConsumption'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hotel/guest-folio-invoice', [BiReportController::class, 'guestFolioInvoice'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hotel/folio-outstanding', [BiReportController::class, 'folioOutstanding'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/payslip', [BiReportController::class, 'payrollPayslip'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/workforce/payslip/{employeeId}/{payrollRunId}', [BiReportController::class, 'payslipPdf'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hr/guarantor-letter', [BiReportController::class, 'guarantorLetter'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hr/guarantor-letter/{employeeId}/{guarantorId}', [BiReportController::class, 'guarantorLetterPdf'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/supplier-payment-history', [BiReportController::class, 'supplierPaymentHistory'])
+        ->middleware('permission:S4.bi.reports.read');
+    Route::get('/reports/hospitality/event-fb-billing', [BiReportController::class, 'eventFbBilling'])
+        ->middleware('permission:S4.bi.reports.read');
+
     Route::post('/bi/exports', [ExportController::class, 'store'])
         ->middleware('permission:S4.bi.export.create');
 
     Route::get('/bi/rtm', [RtmController::class, 'index'])
+        ->middleware('permission:S4.bi.rtm.read');
+    Route::get('/rtm', [RtmController::class, 'index'])
         ->middleware('permission:S4.bi.rtm.read');
     Route::get('/bi/rtm/{rtmEntry}', [RtmController::class, 'show'])
         ->middleware('permission:S4.bi.rtm.read');
@@ -121,6 +168,17 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S4.bi.rtm.update');
     Route::put('/bi/rtm/{rtmEntry}', [RtmController::class, 'update'])
         ->middleware('permission:S4.bi.rtm.update');
+    Route::put('/rtm/{rtmEntry}', [RtmController::class, 'update'])
+        ->middleware('permission:S4.bi.rtm.update');
+
+    Route::get('/bi/rtm/{rtmEntry}/uat', [RtmController::class, 'uatChecklist'])
+        ->middleware('permission:S4.bi.rtm.read');
+    Route::get('/rtm/{rtmEntry}/uat', [RtmController::class, 'uatChecklist'])
+        ->middleware('permission:S4.bi.rtm.read');
+    Route::put('/bi/rtm/{rtmEntry}/uat/{uatScenario}', [RtmController::class, 'recordUatResult'])
+        ->middleware('permission:S4.bi.uat.update');
+    Route::put('/rtm/{rtmEntry}/uat/{uatScenario}', [RtmController::class, 'recordUatResult'])
+        ->middleware('permission:S4.bi.uat.update');
 
     Route::get('/bi/uat', [UatController::class, 'index'])
         ->middleware('permission:S4.bi.uat.read');

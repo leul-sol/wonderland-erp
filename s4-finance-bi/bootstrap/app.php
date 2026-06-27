@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api/v1',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->appendToGroup('api', \App\Http\Middleware\AppendIntegrationCacheHeaders::class);
+
         $middleware->alias([
             'jwt' => \App\Http\Middleware\JwtAuthenticate::class,
             'journal.post' => \App\Http\Middleware\JournalPostAuthenticate::class,

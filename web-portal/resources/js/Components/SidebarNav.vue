@@ -1,7 +1,13 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLogo from './AppLogo.vue';
 import { normalizePath, useInertiaNavigation } from '../composables/useInertiaNavigation.js';
+import {
+    readExpandedKeys,
+    readSidebarScroll,
+    writeExpandedKeys,
+    writeSidebarScroll,
+} from '../composables/useSidebarState.js';
 import {
     ArrowDownCircle,
     ArrowUpCircle,
@@ -27,7 +33,7 @@ import {
     X,
     Zap,
 } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     collapsed: {
@@ -92,8 +98,40 @@ const iconMap = {
     zap: Zap,
 };
 
-const expandedKeys = ref(new Set());
+const expandedKeys = ref(readExpandedKeys());
 const flyoutKey = ref(null);
+const navScrollRef = ref(null);
+let removeRouterListener = null;
+
+function restoreSidebarScroll() {
+    const saved = readSidebarScroll();
+
+    if (navScrollRef.value === null || saved === null || Number.isNaN(saved)) {
+        return;
+    }
+
+    navScrollRef.value.scrollTop = saved;
+}
+
+function onSidebarScroll() {
+    if (navScrollRef.value !== null) {
+        writeSidebarScroll(navScrollRef.value.scrollTop);
+    }
+}
+
+onMounted(() => {
+    restoreSidebarScroll();
+
+    removeRouterListener = router.on('finish', () => {
+        nextTick(restoreSidebarScroll);
+    });
+});
+
+onUnmounted(() => {
+    if (typeof removeRouterListener === 'function') {
+        removeRouterListener();
+    }
+});
 
 function resolveIcon(name) {
     return iconMap[name] ?? LayoutGrid;
@@ -124,12 +162,28 @@ function isActive(href) {
     return !hasMoreSpecificNavMatch;
 }
 
+function childIsActive(child) {
+    for (const prefix of child.active_prefixes ?? []) {
+        if (activePath.value === prefix || activePath.value.startsWith(`${prefix}/`)) {
+            return true;
+        }
+    }
+
+    return isActive(child.href);
+}
+
 function itemIsActive(item) {
+    for (const prefix of item.active_prefixes ?? []) {
+        if (activePath.value === prefix || activePath.value.startsWith(`${prefix}/`)) {
+            return true;
+        }
+    }
+
     if (item.href && isActive(item.href)) {
         return true;
     }
 
-    return (item.children ?? []).some((child) => isActive(child.href));
+    return (item.children ?? []).some((child) => childIsActive(child));
 }
 
 function syncExpandedFromRoute() {
@@ -147,7 +201,27 @@ function syncExpandedFromRoute() {
         });
     });
 
+    if (setsEqual(keys, expandedKeys.value)) {
+        return;
+    }
+
     expandedKeys.value = keys;
+    writeExpandedKeys(keys);
+    nextTick(restoreSidebarScroll);
+}
+
+function setsEqual(a, b) {
+    if (a.size !== b.size) {
+        return false;
+    }
+
+    for (const value of a) {
+        if (!b.has(value)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 watch([navigation, activePath, () => props.collapsed], syncExpandedFromRoute, { immediate: true });
@@ -164,6 +238,8 @@ function toggleExpanded(key) {
         return;
     }
 
+    onSidebarScroll();
+
     const keys = new Set(expandedKeys.value);
 
     if (keys.has(key)) {
@@ -173,6 +249,9 @@ function toggleExpanded(key) {
     }
 
     expandedKeys.value = keys;
+    writeExpandedKeys(keys);
+
+    nextTick(restoreSidebarScroll);
 }
 
 function isExpanded(key) {
@@ -199,11 +278,13 @@ function closeFlyout() {
 }
 
 function onNavClick(href) {
+    onSidebarScroll();
     markPendingNavigation(href);
     emit('close-mobile');
 }
 
 function onChildNavigate(href) {
+    onSidebarScroll();
     markPendingNavigation(href);
     emit('close-mobile');
     closeFlyout();
@@ -239,7 +320,11 @@ function onChildNavigate(href) {
             </div>
         </div>
 
-        <nav class="sidebar-scroll min-h-0 flex-1 overflow-y-auto pb-8">
+        <nav
+            ref="navScrollRef"
+            class="sidebar-scroll min-h-0 flex-1 overflow-y-auto pb-8"
+            @scroll="onSidebarScroll"
+        >
             <div v-for="section in navigation" :key="section.key">
                 <p
                     v-show="!collapsed"
@@ -266,13 +351,6 @@ function onChildNavigate(href) {
                                 :stroke-width="1.75"
                             />
                             <span v-show="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
-                            <span
-                                v-if="!collapsed && section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
-                                class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
-                                :class="isActive(item.href) ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
-                            >
-                                P{{ item.phase }}
-                            </span>
                             <ChevronRight
                                 v-if="!collapsed"
                                 class="h-4 w-4 shrink-0 transition"
@@ -295,13 +373,6 @@ function onChildNavigate(href) {
                                     :stroke-width="1.75"
                                 />
                                 <span v-show="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
-                                <span
-                                    v-if="!collapsed && section.key === 'modules' && item.phase > 0 && item.key !== 'dashboard'"
-                                    class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
-                                    :class="itemIsActive(item) ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
-                                >
-                                    P{{ item.phase }}
-                                </span>
                                 <ChevronRight
                                     v-if="!collapsed"
                                     class="h-4 w-4 shrink-0 transition-transform duration-200"
@@ -320,7 +391,7 @@ function onChildNavigate(href) {
                                     <Link
                                         :href="child.href"
                                         class="wh-sidebar-sublink"
-                                        :class="childClasses(isActive(child.href))"
+                                        :class="childClasses(childIsActive(child))"
                                         @click="onNavClick(child.href)"
                                     >
                                         {{ child.label }}
@@ -340,7 +411,7 @@ function onChildNavigate(href) {
                                     :key="child.key"
                                     :href="child.href"
                                     class="wh-sidebar-flyout-link"
-                                    :class="childClasses(isActive(child.href))"
+                                    :class="childClasses(childIsActive(child))"
                                     @click="onChildNavigate(child.href)"
                                 >
                                     {{ child.label }}

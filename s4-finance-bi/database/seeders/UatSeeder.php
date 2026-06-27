@@ -226,6 +226,14 @@ class UatSeeder extends Seeder
                 'Payable balance reduced; cash journal posted',
                 'pending',
             ],
+            [
+                'UAT-S4-010', 'S4', 'Daily F&B summary batch posts GL',
+                'S3-FB-003',
+                'Finalized walk-in F&B orders for business date',
+                'Run fb:daily-summary for date with deferred orders',
+                'Summary journal posted to S4; hotel_guest folio orders excluded',
+                'pending',
+            ],
         ];
 
         foreach ($scenarios as [$key, $system, $title, $requirement, $preconditions, $steps, $expected, $status]) {
@@ -251,6 +259,48 @@ class UatSeeder extends Seeder
             }
 
             $existing->update($attributes);
+        }
+
+        $reportScenarios = [
+            ['R-01', 'hr_employee_directory', 'Employee Directory'],
+            ['R-02', 'hr_disciplinary_history', 'Disciplinary History'],
+            ['R-03', 'hr_asset_clearance', 'Asset Clearance'],
+            ['R-04', 'hr_guarantor_letter', 'Guarantor Letter PDF'],
+            ['R-05', 'payroll_summary', 'Payroll Summary Sheet'],
+            ['R-06', 'payroll_payslip', 'Individual Payslip PDF'],
+            ['R-07', 'payroll_pension', 'Pension Contribution'],
+            ['R-08', 'payroll_overtime', 'Overtime Report'],
+            ['R-09', 'leave_balance', 'Leave Balance'],
+            ['R-10', 'leave_utilisation', 'Leave Utilisation'],
+            ['R-11', 'inventory_stock_movement', 'Stock Movement'],
+            ['R-12', 'inventory_expiry_alert', 'Expiry Alert'],
+            ['R-13', 'inventory_valuation', 'Inventory Valuation FIFO'],
+            ['R-14', 'supplier_payment_history', 'Supplier Payment History'],
+            ['R-15', 'fb_sales_by_customer_type', 'F&B Sales by Customer Type'],
+            ['R-16', 'employee_consumption', 'Employee Consumption'],
+            ['R-17', 'event_fb_billing', 'Event F&B Billing'],
+            ['R-18', 'occupancy', 'Room Occupancy'],
+            ['R-19', 'guest_folio_invoice', 'Guest Folio Invoice'],
+            ['R-20', 'folio_outstanding', 'Outstanding Folios'],
+            ['R-21', 'cashier_shift', 'Cashier Shift Report'],
+            ['R-22', 'ar_aging', 'AR Aging'],
+            ['R-23', 'ap_aging', 'AP Aging'],
+            ['R-24', 'income_statement', 'Profit & Loss with COGS'],
+        ];
+
+        foreach ($reportScenarios as [$requirementKey, $slug, $title]) {
+            UatScenario::query()->updateOrCreate(
+                ['scenario_key' => 'UAT-'.$requirementKey],
+                [
+                    'system' => 'S4',
+                    'title' => $title.' report returns data',
+                    'requirement_key' => $requirementKey,
+                    'preconditions' => 'S2/S3 integrations healthy; posted journals for finance reports',
+                    'steps' => 'GET /s4/api/v1/bi/reports/'.$slug.'?fiscal_period_id=current',
+                    'expected_outcome' => '200 OK with report payload',
+                    'status' => 'pending',
+                ],
+            );
         }
     }
 }

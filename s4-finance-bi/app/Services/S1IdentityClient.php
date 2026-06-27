@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class S1IdentityClient
 {
+    public function __construct(private readonly IntegrationCacheService $cache)
+    {
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -37,17 +40,13 @@ class S1IdentityClient
      */
     private function cachedGet(string $cacheKey, string $path, int $ttl): array
     {
-        return Cache::remember($cacheKey, $ttl, function () use ($path) {
+        return $this->cache->remember($cacheKey, $ttl, function () use ($path) {
             $url = rtrim((string) config('services.s1_url'), '/').'/api/v1/'.$path;
 
-            try {
-                $response = Http::withHeaders($this->headers())
-                    ->acceptJson()
-                    ->timeout(10)
-                    ->get($url);
-            } catch (\Throwable $exception) {
-                throw new RuntimeException('S1 request failed: '.$exception->getMessage(), 0, $exception);
-            }
+            $response = Http::withHeaders($this->headers())
+                ->acceptJson()
+                ->timeout(10)
+                ->get($url);
 
             if (! $response->successful()) {
                 throw new RuntimeException('S1 '.$path.' returned HTTP '.$response->status());

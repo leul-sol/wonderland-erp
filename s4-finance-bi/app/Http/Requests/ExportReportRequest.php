@@ -19,6 +19,9 @@ class ExportReportRequest extends FormRequest
             'fiscal_period_id' => ['nullable', 'integer', 'exists:fiscal_periods,id'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
+            'employee_id' => ['nullable', 'integer', 'min:1'],
+            'payroll_run_id' => ['nullable', 'integer', 'min:1'],
+            'guarantor_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

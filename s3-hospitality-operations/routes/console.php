@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('outbox:publish')->everyTenSeconds();
 Schedule::command('stock:expiry-alerts')->dailyAt('06:00');
 Schedule::command('consumption:push-to-payroll')->dailyAt('23:30');
+Schedule::command('fb:daily-summary')->dailyAt('23:45');

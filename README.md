@@ -118,6 +118,7 @@ Backup, TLS, monitoring, and incident response: [`ops/README.md`](ops/README.md)
 
 | Doc | Purpose |
 |-----|---------|
+| [`docs/hotel-go-live-runbook.md`](docs/hotel-go-live-runbook.md) | Hotel go-live setup, daily/monthly workflows, role cheat sheets |
 | [`specs/README.md`](specs/README.md) | Cross-system contracts — read before API changes |
 | [`specs/ui/README.md`](specs/ui/README.md) | Web portal UI plan (Inertia + Vue BFF) |
 | S0 | Platform integration |

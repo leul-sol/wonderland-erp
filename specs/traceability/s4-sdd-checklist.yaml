@@ -1,0 +1,264 @@
+# S4 Finance & BI SDD v1.0 — item-level implementation checklist
+# Source: documents/S4_Finance_BI_SDD.pdf (2026-06-16)
+# Companion: specs/traceability/matrix.yaml (section-level summary)
+#
+# Status: pending | in_progress | partial | implemented | waived | ops_pending
+# Priority: critical | high | medium | low
+# System: s4 | s2 | s3 | portal | ops | cross
+#
+# Sign-off: every row needs code + test + (if UI) portal screen + matrix evidence before marking implemented.
+
+meta:
+  version: "1.0"
+  date: "2026-06-27"
+  source_document: documents/S4_Finance_BI_SDD.pdf
+  total_items: 114
+  phases:
+    - phase_0_schema_compliance
+    - phase_1_core_finance_backend
+    - phase_2_automated_journals
+    - phase_3_operational_reports
+    - phase_4_dashboards_export
+    - phase_5_rtm_uat_governance
+    - phase_6_web_portal
+    - phase_7_nfr_ops
+  current_baseline: "2026-06-27 gap analysis — core GL/AR/AP/fiscal/reports partial; portal thin BFF; §9.2 reports and aging buckets incomplete"
+  signoff_requires:
+    - feature_or_contract_test
+    - matrix_yaml_or_rtm_update
+    - uat_scenario_when_user_facing
+    - portal_route_in_modules_yaml_when_ui
+
+items:
+  # ============================================================================
+  # Phase 0 — Schema & SDD compliance fixes (10)
+  # ============================================================================
+  - { id: P0-01, phase: phase_0_schema_compliance, sdd: "§3.1", system: s4, title: "Receivables align to receivable_records (customer_type, customer_ref_id)", status: implemented, priority: high, depends_on: [], evidence: "migration 000013; ReceivableService; Phase0Test" }
+  - { id: P0-02, phase: phase_0_schema_compliance, sdd: "§3.1", system: s4, title: "Payables partial status, due_date, supplier_id parity", status: implemented, priority: high, depends_on: [], evidence: "migration 000013; PayableService partial; Phase0Test" }
+  - { id: P0-03, phase: phase_0_schema_compliance, sdd: "§5.5", system: s4, title: "Reversal keeps original journal status posted (not reversed)", status: implemented, priority: critical, depends_on: [], evidence: "JournalService::reverse; Phase0Test" }
+  - { id: P0-04, phase: phase_0_schema_compliance, sdd: "§7.1", system: s4, title: "Journal reversed state = mirror entry exists; original readable as posted", status: implemented, priority: high, depends_on: [P0-03], evidence: "hasBeenReversed(); Phase0Test" }
+  - { id: P0-05, phase: phase_0_schema_compliance, sdd: "§7.1", system: s4, title: "Locked period reversal rules per SDD immutability", status: implemented, priority: high, depends_on: [P0-03], evidence: "Phase0Test locked period blocks reversal" }
+  - { id: P0-06, phase: phase_0_schema_compliance, sdd: "§3.2", system: s4, title: "report_cache_log table (cache hit/miss/invalidate audit)", status: implemented, priority: medium, depends_on: [], evidence: "migration 000014; BiCacheService; Phase0Test" }
+  - { id: P0-07, phase: phase_0_schema_compliance, sdd: "§3.2", system: s4, title: "RTM schema documented or migrated (rtm_entries ↔ rtm_requirements)", status: implemented, priority: low, depends_on: [], evidence: "RtmEntry docblock maps SDD columns" }
+  - { id: P0-08, phase: phase_0_schema_compliance, sdd: "§9.1", system: s4, title: "COA seeded from specs/s4/coa.yaml at runtime/seed", status: implemented, priority: medium, depends_on: [], evidence: "CoaCatalog + AccountSeeder; WONDERLAND_REPO_ROOT path; Phase0Test" }
+  - { id: P0-09, phase: phase_0_schema_compliance, sdd: "§10.1 D6/D7", system: s4, title: "Pagination on all list endpoints (?page= / ?per_page=)", status: implemented, priority: medium, depends_on: [], evidence: "Journal/Receivable/Payable controllers paginate" }
+  - { id: P0-10, phase: phase_0_schema_compliance, sdd: "§4.1", system: s4, title: "SDD route aliases verified (PUT approve/close/lock, dashboard paths)", status: partial, priority: low, depends_on: [], evidence: "GET /rtm and PUT /rtm/{id} aliases added; per-report /reports/* deferred to P3-03" }
+
+  # ============================================================================
+  # Phase 1 — Core finance backend gaps (11)
+  # ============================================================================
+  - { id: P1-01, phase: phase_1_core_finance_backend, sdd: "§5.6 §9.2", system: s4, title: "AR aging buckets (Current, 0–30, 31–60, 61–90, 90+)", status: implemented, priority: critical, depends_on: [P0-01], evidence: "ReportService::arAging bucket_totals, Phase1Test" }
+  - { id: P1-02, phase: phase_1_core_finance_backend, sdd: "§5.6 §9.2", system: s4, title: "AP aging buckets (Current, 0–30, 31–60, 61–90, 90+)", status: implemented, priority: critical, depends_on: [P0-02], evidence: "ReportService::apAging bucket_totals incl partial, Phase1Test" }
+  - { id: P1-03, phase: phase_1_core_finance_backend, sdd: "§4.1", system: s4, title: "GET /receivables filters customer_type, status; include aging", status: implemented, priority: high, depends_on: [P1-01], evidence: "ReceivableController aging_bucket filter + payload, Phase1Test" }
+  - { id: P1-04, phase: phase_1_core_finance_backend, sdd: "§4.1", system: s4, title: "GET /payables filters supplier_id, status; include aging", status: implemented, priority: high, depends_on: [P1-02], evidence: "PayableController aging_bucket filter + payload, Phase1Test" }
+  - { id: P1-05, phase: phase_1_core_finance_backend, sdd: "§9.3", system: s4, title: "GET /reports/departmental revenue 4001–4004 grouping", status: implemented, priority: high, depends_on: [], evidence: "ReportController::departmental, Phase8Test" }
+  - { id: P1-06, phase: phase_1_core_finance_backend, sdd: "§9.3", system: s4, title: "GET /reports/cash-flow (extension beyond §9.3)", status: implemented, priority: medium, depends_on: [], evidence: "ReportController::cashFlow — simplified operating only" }
+  - { id: P1-07, phase: phase_1_core_finance_backend, sdd: "§5.8", system: s4, title: "BiCacheService wildcard invalidation finance.revenue.* finance.reports.*", status: implemented, priority: high, depends_on: [], evidence: "FinanceCacheRegistry prefix invalidation, Phase1Test" }
+  - { id: P1-08, phase: phase_1_core_finance_backend, sdd: "§5.8", system: s4, title: "X-Cache STALE header on S2/S3 remote failure with stale cache", status: implemented, priority: medium, depends_on: [], evidence: "IntegrationCacheService + AppendIntegrationCacheHeaders, Phase1Test" }
+  - { id: P1-09, phase: phase_1_core_finance_backend, sdd: "§10.2", system: s4, title: "Configurable cache TTLs CACHE_TTL_* from env", status: implemented, priority: medium, depends_on: [], evidence: "config/services.php cache_ttl.*, Phase1Test" }
+  - { id: P1-10, phase: phase_1_core_finance_backend, sdd: "§11.2", system: s4, title: "S4 finance mutation audit log (actor, action, resource_id)", status: implemented, priority: high, depends_on: [], evidence: "FinanceAuditLogger operational_events finance.audit, Phase1Test" }
+  - { id: P1-11, phase: phase_1_core_finance_backend, sdd: "§4.1 §5.5", system: s4, title: "POST /journal-entries/{id}/reverse with journal_entries.reverse permission", status: implemented, priority: high, depends_on: [P0-03], evidence: "JournalController::reverse; Phase0Test" }
+
+  # ============================================================================
+  # Phase 2 — Automated journal sources (12)
+  # ============================================================================
+  - { id: P2-01, phase: phase_2_automated_journals, sdd: "§5.3", system: cross, title: "S2 payroll journal GL mapping (5001, 2100–2102, 2200)", status: implemented, priority: critical, depends_on: [], evidence: "PayrollFlowTest, UAT-S2-001" }
+  - { id: P2-02, phase: phase_2_automated_journals, sdd: "§5.3", system: cross, title: "S3 goods receipt journal (Dr 1200/1201 / Cr 2001)", status: implemented, priority: critical, depends_on: [], evidence: "GoodsReceiptService on receive" }
+  - { id: P2-03, phase: phase_2_automated_journals, sdd: "§5.3", system: cross, title: "S3 supplier payment journal (Dr 2001 / Cr 1001–1004)", status: implemented, priority: high, depends_on: [], evidence: "SupplierService::recordPayment, SupplierPaymentFlowTest" }
+  - { id: P2-04, phase: phase_2_automated_journals, sdd: "§5.3", system: cross, title: "S3 folio settled journal (cash/clearing / revenue + VAT)", status: implemented, priority: critical, depends_on: [], evidence: "FolioService, UAT hotel golden path" }
+  - { id: P2-05, phase: phase_2_automated_journals, sdd: "§5.3", system: s3, title: "S3 daily F&B summary end-of-day batch (excludes hotel_guest)", status: implemented, priority: critical, depends_on: [], evidence: "DailyFbSummaryService, fb:daily-summary, DailyFbSummaryTest" }
+  - { id: P2-06, phase: phase_2_automated_journals, sdd: "§5.3", system: cross, title: "Idempotency-Key formats documented in cross-system-calls.yaml", status: implemented, priority: medium, depends_on: [], evidence: "cross-system-calls.yaml idempotency_key_formats" }
+  - { id: P2-07, phase: phase_2_automated_journals, sdd: "§5.6", system: s4, title: "Auto receivable_records on Cr 1100/1101 journal post", status: implemented, priority: high, depends_on: [P0-01], evidence: "ReceivableService hook" }
+  - { id: P2-08, phase: phase_2_automated_journals, sdd: "§5.6", system: s4, title: "Auto payable_records on Cr 2001 journal post", status: implemented, priority: high, depends_on: [], evidence: "PayableService hook" }
+  - { id: P2-09, phase: phase_2_automated_journals, sdd: "§8.1", system: s4, title: "Outbox events journal.posted and period.closed payload fields", status: implemented, priority: high, depends_on: [], evidence: "OutboxService, Phase7Test" }
+  - { id: P2-10, phase: phase_2_automated_journals, sdd: "§8 §10", system: s4, title: "EventRelayJob polls event_outbox every 10s (queue worker)", status: implemented, priority: high, depends_on: [], evidence: "routes/console.php Schedule outbox:publish everyTenSeconds" }
+  - { id: P2-11, phase: phase_2_automated_journals, sdd: "§10.2 §5.7", system: s4, title: "Artisan s4:fiscal-period:open (next Ethiopian period)", status: implemented, priority: medium, depends_on: [], evidence: "OpenNextFiscalPeriod command, Phase2AutomatedTest" }
+  - { id: P2-12, phase: phase_2_automated_journals, sdd: "§11.3", system: s4, title: "Artisan s4:report-cache:purge", status: implemented, priority: low, depends_on: [P1-07], evidence: "PurgeReportCache command, Phase2AutomatedTest" }
+
+  # ============================================================================
+  # Phase 3 — §9.2 operational reports R-01–R-24 (24) + catalog infra (6)
+  # ============================================================================
+  - { id: R-01, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report Employee Directory (S2)", status: implemented, priority: high, depends_on: [], evidence: "hr_employee_directory report + /reports/hr/employee-directory", slug: hr_employee_directory }
+  - { id: R-02, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Disciplinary History (S2)", status: implemented, priority: medium, depends_on: [], evidence: "hr_disciplinary_history slug + /reports/hr/disciplinary-history", slug: hr_disciplinary_history }
+  - { id: R-03, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Asset Clearance (S2)", status: implemented, priority: medium, depends_on: [], evidence: "hr_asset_clearance slug + S2 offboarding-records", slug: hr_asset_clearance }
+  - { id: R-04, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Guarantor Letter PDF (S2)", status: implemented, priority: low, depends_on: [], evidence: "hr_guarantor_letter slug + S2 letter proxy /reports/hr/guarantor-letter/{e}/{g}", slug: hr_guarantor_letter }
+  - { id: R-05, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report Payroll Summary Sheet (S2)", status: implemented, priority: high, depends_on: [], evidence: "payroll_summary report + /reports/workforce/payroll-summary", slug: payroll_summary }
+  - { id: R-06, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Individual Payslip PDF (S2)", status: implemented, priority: high, depends_on: [], evidence: "payroll_payslip slug + S2 PDF proxy /reports/workforce/payslip/{e}/{run}", slug: payroll_payslip }
+  - { id: R-07, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Pension Contribution (S2)", status: implemented, priority: high, depends_on: [], evidence: "payroll_pension slug + /reports/workforce/payroll-pension", slug: payroll_pension }
+  - { id: R-08, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Overtime Report (S2)", status: implemented, priority: medium, depends_on: [], evidence: "payroll_overtime slug + S2 overtime-records", slug: payroll_overtime }
+  - { id: R-09, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report Leave Balance (S2)", status: implemented, priority: medium, depends_on: [], evidence: "leave_balance slug + /reports/workforce/leave-balance", slug: leave_balance }
+  - { id: R-10, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Leave Utilisation (S2)", status: implemented, priority: medium, depends_on: [], evidence: "leave_utilisation slug + /reports/workforce/leave-utilisation", slug: leave_utilisation }
+  - { id: R-11, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Stock Movement (S3)", status: implemented, priority: high, depends_on: [], evidence: "inventory_stock_movement slug + S3 items/{id}/movements", slug: inventory_stock_movement }
+  - { id: R-12, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Expiry Alert (S3)", status: implemented, priority: high, depends_on: [], evidence: "inventory_expiry_alert slug + S3 stock/expiry-alerts", slug: inventory_expiry_alert }
+  - { id: R-13, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Inventory Valuation FIFO/FEFO (S3)", status: implemented, priority: high, depends_on: [], evidence: "inventory_valuation slug + S3 stock/valuation", slug: inventory_valuation }
+  - { id: R-14, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Supplier Payment History (S3)", status: implemented, priority: medium, depends_on: [], evidence: "supplier_payment_history slug + S3 GET /supplier-payments", slug: supplier_payment_history }
+  - { id: R-15, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report F&B Sales by Customer Type (S3)", status: implemented, priority: high, depends_on: [], evidence: "fb_sales_by_customer_type + by_customer_type breakdown", slug: fb_sales_by_customer_type }
+  - { id: R-16, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Employee Consumption (S3)", status: implemented, priority: medium, depends_on: [], evidence: "employee_consumption slug + S3 employee-consumption-periods", slug: employee_consumption }
+  - { id: R-17, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Event F&B Billing (S3)", status: implemented, priority: medium, depends_on: [], evidence: "event_fb_billing slug from S3 event orders", slug: event_fb_billing }
+  - { id: R-18, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report Room Occupancy (S3)", status: implemented, priority: high, depends_on: [], evidence: "occupancy slug with total/occupied/vacant/rate columns", slug: occupancy }
+  - { id: R-19, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Guest Folio Invoice 13 mandatory fields (S3)", status: implemented, priority: high, depends_on: [], evidence: "guest_folio_invoice slug + S3 folios/{id}/invoice 13 fields", slug: guest_folio_invoice }
+  - { id: R-20, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report Outstanding Balances (S3)", status: implemented, priority: high, depends_on: [], evidence: "folio_outstanding via S3 folios balance filter", slug: folio_outstanding }
+  - { id: R-21, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "Report Cashier Shift Report (S3)", status: implemented, priority: medium, depends_on: [], evidence: "cashier_shift slug + /reports/hotel/cashier-shift", slug: cashier_shift }
+  - { id: R-22, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report AR Aging bucketed (S4 Finance)", status: implemented, priority: critical, depends_on: [P1-01], evidence: "bi/reports/ar_aging bucket_totals, Phase1Test", slug: ar_aging }
+  - { id: R-23, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "Report AP Aging bucketed (S4 Finance)", status: implemented, priority: critical, depends_on: [P1-02], evidence: "bi/reports/ap_aging bucket_totals, Phase1Test", slug: ap_aging }
+  - { id: R-24, phase: phase_3_operational_reports, sdd: "§9.2 §9.3", system: s4, title: "Report Profit & Loss with COGS, gross profit, net income columns", status: implemented, priority: critical, depends_on: [], evidence: "income_statement cogs/gross_profit/operating_expenses/net_income; Phase3Test", slug: income_statement }
+
+  - { id: P3-01, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "config/reports.php lists all §9.2 reports with slugs", status: implemented, priority: high, depends_on: [R-01, R-24], evidence: "43 catalog slugs covering all §9.2 R-01–R-24" }
+  - { id: P3-02, phase: phase_3_operational_reports, sdd: "§9.2", system: s4, title: "ReportCatalogService handler per §9.2 slug", status: implemented, priority: high, depends_on: [P3-01], evidence: "ReportCatalogService runs all 43 slugs" }
+  - { id: P3-03, phase: phase_3_operational_reports, sdd: "§4.2", system: s4, title: "SDD route aliases /reports/hr/* /reports/hotel/* etc.", status: implemented, priority: medium, depends_on: [P3-02], evidence: "HR/hospitality/workforce/hotel report aliases through S7" }
+  - { id: P3-04, phase: phase_3_operational_reports, sdd: "§9.2", system: cross, title: "S2/S3 missing read APIs for report data sources", status: implemented, priority: high, depends_on: [], evidence: "S3 GET /supplier-payments; S2 payslip/guarantor PDF proxies" }
+  - { id: P3-05, phase: phase_3_operational_reports, sdd: "§11.4", system: s4, title: "Feature test each report slug returns 200 with expected keys", status: implemented, priority: high, depends_on: [P3-02], evidence: "CatalogSmokeTest dataProvider per slug + CSV export matrix" }
+  - { id: P3-06, phase: phase_3_operational_reports, sdd: "§4.2", system: s4, title: "Postman Wonderland-S4-Finance one request per report", status: implemented, priority: low, depends_on: [P3-02], evidence: "postman/Wonderland-S4-Finance.postman_collection.json + scripts/generate-s4-postman.php" }
+
+  # ============================================================================
+  # Phase 4 — Dashboards & export parity (10)
+  # ============================================================================
+  - { id: P4-01, phase: phase_4_dashboards_export, sdd: "§4.2", system: s4, title: "GET /dashboard/executive — revenue, occupancy, payroll cost", status: implemented, priority: high, depends_on: [], evidence: "DashboardController::executive" }
+  - { id: P4-02, phase: phase_4_dashboards_export, sdd: "§4.2", system: s4, title: "GET /dashboard/hotel — occupancy and room revenue", status: implemented, priority: high, depends_on: [], evidence: "DashboardController::hotel + portal Finance/Dashboard/Hotel.vue" }
+  - { id: P4-03, phase: phase_4_dashboards_export, sdd: "§4.2", system: s4, title: "GET /dashboard/restaurant — F&B daily sales", status: implemented, priority: high, depends_on: [], evidence: "DashboardController::restaurant + portal Finance/Dashboard/Restaurant.vue" }
+  - { id: P4-04, phase: phase_4_dashboards_export, sdd: "§4.2", system: s4, title: "GET /dashboard/finance — AR, AP, period status", status: implemented, priority: high, depends_on: [], evidence: "DashboardController::finance + portal Finance/Dashboard/Finance.vue" }
+  - { id: P4-05, phase: phase_4_dashboards_export, sdd: "§4.2", system: s4, title: "GET /dashboards/operations cross-module dashboard", status: implemented, priority: medium, depends_on: [], evidence: "matrix S4-BI-001; bonus vs SDD 5 dashboards" }
+  - { id: P4-06, phase: phase_4_dashboards_export, sdd: "§5.9 §4.2", system: s4, title: "?export=pdf and ?export=excel on every report route", status: implemented, priority: high, depends_on: [P3-02], evidence: "Financial ReportController + BiReportController::show ?export=; BI POST /bi/exports" }
+  - { id: P4-07, phase: phase_4_dashboards_export, sdd: "§5.9 §10.2", system: s4, title: "PDF letterhead PDF_LETTERHEAD_PATH wonderland_hotel.pdf", status: implemented, priority: medium, depends_on: [], evidence: "config finance.pdf_letterhead_path + exports/report.blade.php letterhead block" }
+  - { id: P4-08, phase: phase_4_dashboards_export, sdd: "§5.9", system: s4, title: "Export metadata title filters date range generated_at generated_by", status: implemented, priority: medium, depends_on: [], evidence: "PdfExportService meta: period, slug, generated_by from JWT" }
+  - { id: P4-09, phase: phase_4_dashboards_export, sdd: "§5.9", system: s4, title: "POST /bi/exports accepts all catalog slugs", status: implemented, priority: high, depends_on: [P3-02], evidence: "CatalogSmokeTest::test_csv_export_accepts_every_catalog_slug" }
+  - { id: P4-10, phase: phase_4_dashboards_export, sdd: "§9.3", system: portal, title: "Financial statements group TB P&L BS Departmental (+ Cash Flow)", status: implemented, priority: high, depends_on: [P1-05], evidence: "Portal Reports/Index.vue all five tabs + export" }
+
+  # ============================================================================
+  # Phase 5 — RTM, UAT & governance (12)
+  # ============================================================================
+  - { id: P5-01, phase: phase_5_rtm_uat_governance, sdd: "§4.2", system: s4, title: "GET /rtm alias to /bi/rtm", status: implemented, priority: low, depends_on: [], evidence: "routes/api.php GET /rtm; Phase0Test" }
+  - { id: P5-02, phase: phase_5_rtm_uat_governance, sdd: "§4.2", system: s4, title: "PUT /rtm/{id} alias to PATCH /bi/rtm/{id}", status: implemented, priority: low, depends_on: [], evidence: "routes/api.php PUT /rtm/{rtmEntry}" }
+  - { id: P5-03, phase: phase_5_rtm_uat_governance, sdd: "§4.2", system: s4, title: "GET /rtm/{id}/uat nested UAT checklist shape", status: implemented, priority: medium, depends_on: [], evidence: "GET /bi/rtm/{id}/uat and /rtm/{id}/uat" }
+  - { id: P5-04, phase: phase_5_rtm_uat_governance, sdd: "§4.2", system: s4, title: "PUT /rtm/{id}/uat/{test_id} record UAT result", status: implemented, priority: medium, depends_on: [], evidence: "PUT /bi/rtm/{id}/uat/{uatScenario} + Phase5Test" }
+  - { id: P5-05, phase: phase_5_rtm_uat_governance, sdd: "§6.4", system: s1, title: "All 23 SDD S4 permissions seeded via CatalogPermissionsSeeder", status: implemented, priority: critical, depends_on: [], evidence: "specs/s4/permissions.yaml + budgets extra" }
+  - { id: P5-06, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "Unit test imbalanced journal rejected", status: implemented, priority: critical, depends_on: [], evidence: "JournalTest" }
+  - { id: P5-07, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "Unit test closed period rejected", status: implemented, priority: critical, depends_on: [], evidence: "JournalTest / Phase2Test" }
+  - { id: P5-08, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "Integration idempotency duplicate produces one row", status: implemented, priority: critical, depends_on: [], evidence: "JournalTest idempotency" }
+  - { id: P5-09, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "Integration cache invalidation before 201 on journal post", status: implemented, priority: high, depends_on: [P1-07], evidence: "BiCacheService prefix invalidation on journal.posted, Phase0Test + Phase1Test" }
+  - { id: P5-10, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "Integration period close creates account_period_balances all accounts", status: implemented, priority: critical, depends_on: [], evidence: "Phase2Test fiscal close" }
+  - { id: P5-11, phase: phase_5_rtm_uat_governance, sdd: "§11.4", system: s4, title: "UAT scenarios seeded for each new §9.2 report", status: implemented, priority: high, depends_on: [R-01, R-24], evidence: "UAT-R-01 through UAT-R-24 in UatSeeder" }
+  - { id: P5-12, phase: phase_5_rtm_uat_governance, sdd: "§6.3", system: s4, title: "RtmSeeder FR codes for all §9.2 requirements", status: implemented, priority: medium, depends_on: [R-01, R-24], evidence: "RtmSeeder R-01–R-24 requirement keys" }
+
+  # ============================================================================
+  # Phase 6 — Web portal finance module (28)
+  # ============================================================================
+  - { id: P6-00, phase: phase_6_web_portal, sdd: "§4", system: portal, title: "Update specs/ui/modules.yaml finance section", status: implemented, priority: high, depends_on: [], evidence: "specs/ui/modules.yaml finance dashboards, CoA, BI, RTM/UAT" }
+  - { id: P6-01, phase: phase_6_web_portal, sdd: "§4", system: portal, title: "Update web-portal/config/portal.php finance sidebar", status: implemented, priority: high, depends_on: [P6-00], evidence: "14 finance children: 5 dashboards, reports, BI catalog, RTM, UAT" }
+  - { id: P6-02, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "Sidebar Dashboards subgroup (5 dashboards)", status: implemented, priority: high, depends_on: [P4-01, P4-04], evidence: "portal.php dash_executive/hotel/restaurant/finance/operations" }
+  - { id: P6-03, phase: phase_6_web_portal, sdd: "§4.2 §9.2", system: portal, title: "Sidebar BI Reports catalog browser", status: implemented, priority: high, depends_on: [P3-02], evidence: "finance.bi-reports.index" }
+  - { id: P6-04, phase: phase_6_web_portal, sdd: "§4.1", system: portal, title: "Sidebar Chart of accounts", status: implemented, priority: high, depends_on: [], evidence: "finance.accounts.index in portal.php" }
+  - { id: P6-05, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "Sidebar RTM / UAT governance screens", status: implemented, priority: medium, depends_on: [P5-01], evidence: "finance.rtm.index + finance.uat.index" }
+  - { id: P6-06, phase: phase_6_web_portal, sdd: "§4", system: portal, title: "S4FinanceClient all missing API methods", status: implemented, priority: high, depends_on: [], evidence: "fiscal create, budget lines, accounts query params" }
+
+  - { id: P6-07, phase: phase_6_web_portal, sdd: "§4.1 §6.1", system: portal, title: "UI Chart of accounts list create edit", status: implemented, priority: high, depends_on: [P6-04, P6-06], evidence: "Finance/Accounts/Index.vue" }
+  - { id: P6-08, phase: phase_6_web_portal, sdd: "§4.1", system: portal, title: "UI Journals list all sources with filters", status: implemented, priority: high, depends_on: [], evidence: "Journals/Index.vue source_module tabs" }
+  - { id: P6-09, phase: phase_6_web_portal, sdd: "§5.5 §6.1", system: portal, title: "UI Journal detail reverse action", status: implemented, priority: critical, depends_on: [P1-11, P0-03], evidence: "Journals/Show.vue + finance.journals.reverse" }
+  - { id: P6-10, phase: phase_6_web_portal, sdd: "§4.1 §5.7", system: portal, title: "UI Fiscal periods create next period", status: implemented, priority: high, depends_on: [P2-11], evidence: "finance.fiscal-periods.open-next" }
+  - { id: P6-11, phase: phase_6_web_portal, sdd: "§5.6", system: portal, title: "UI Receivables tabs open partial settled written-off with aging", status: implemented, priority: high, depends_on: [P1-01, P1-03], evidence: "Receivables/Index.vue status tabs + aging_bucket filter" }
+  - { id: P6-12, phase: phase_6_web_portal, sdd: "§5.6", system: portal, title: "UI Payables tabs open partial settled with aging", status: implemented, priority: high, depends_on: [P1-02, P1-04], evidence: "Payables/Index.vue partial tab + migration 000015" }
+  - { id: P6-13, phase: phase_6_web_portal, sdd: "§9.3", system: portal, title: "UI Reports TB P&L BS Departmental Cash flow", status: implemented, priority: high, depends_on: [P1-05, P1-06], evidence: "Reports/Index.vue five report tabs" }
+  - { id: P6-14, phase: phase_6_web_portal, sdd: "§5.2", system: portal, title: "UI Budget variance plus budget line entry form", status: implemented, priority: medium, depends_on: [], evidence: "Budget/Index.vue line form + finance.budget.store" }
+
+  - { id: P6-15, phase: phase_6_web_portal, sdd: "§4.2 §9.2", system: portal, title: "UI BI report catalog page with category tabs", status: implemented, priority: high, depends_on: [P6-03, P3-02], evidence: "BiReports/Index.vue" }
+  - { id: P6-16, phase: phase_6_web_portal, sdd: "§4.2 §9.2", system: portal, title: "UI BI report viewer with filters and export", status: implemented, priority: high, depends_on: [P6-15, P4-06], evidence: "BiReports/Show.vue filters + export links" }
+  - { id: P6-17, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "UI Hotel dashboard page in sidebar", status: implemented, priority: high, depends_on: [P4-02, P6-02], evidence: "Finance/Dashboard/Hotel.vue" }
+  - { id: P6-18, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "UI Restaurant dashboard page in sidebar", status: implemented, priority: high, depends_on: [P4-03, P6-02], evidence: "Finance/Dashboard/Restaurant.vue" }
+  - { id: P6-19, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "UI Finance dashboard page in sidebar", status: implemented, priority: high, depends_on: [P4-04, P6-02], evidence: "Finance/Dashboard/Finance.vue" }
+  - { id: P6-20, phase: phase_6_web_portal, sdd: "§4.2 §6.1", system: portal, title: "UI RTM list detail status update", status: implemented, priority: medium, depends_on: [P6-05, P5-01], evidence: "Rtm/Index.vue + finance.rtm.update" }
+  - { id: P6-21, phase: phase_6_web_portal, sdd: "§4.2 §6.1", system: portal, title: "UI UAT scenarios record pass fail", status: implemented, priority: medium, depends_on: [P6-05, P5-04], evidence: "Uat/Index.vue + finance.uat.record-result" }
+
+  - { id: P6-22, phase: phase_6_web_portal, sdd: "—", system: portal, title: "Remove or wire orphan Finance/Journals/Create.vue", status: implemented, priority: low, depends_on: [], evidence: "Create.vue removed; create route redirects to index modal" }
+  - { id: P6-23, phase: phase_6_web_portal, sdd: "—", system: portal, title: "scripts/portal-finance-smoke.ps1", status: implemented, priority: high, depends_on: [P6-07, P6-21], evidence: "scripts/portal-finance-smoke.ps1" }
+  - { id: P6-24, phase: phase_6_web_portal, sdd: "—", system: portal, title: "FinancePortalNavigationTest feature test", status: implemented, priority: high, depends_on: [P6-02], evidence: "tests/Feature/FinancePortalNavigationTest.php" }
+  - { id: P6-25, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "Home dashboard links to all 5 SDD dashboards", status: implemented, priority: medium, depends_on: [P6-17, P6-19], evidence: "DashboardMetricsBuilder::buildFinanceDashboardLinks + Dashboard/Index.vue" }
+  - { id: P6-26, phase: phase_6_web_portal, sdd: "§6.1", system: portal, title: "Permission coverage 23 SDD permissions have UI (see permission_matrix)", status: partial, priority: critical, depends_on: [P6-07, P6-21], evidence: "see meta.permission_matrix in README block below" }
+  - { id: P6-27, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "UI Executive dashboard in sidebar", status: implemented, priority: medium, depends_on: [P6-02], evidence: "portal.php dash_executive" }
+  - { id: P6-28, phase: phase_6_web_portal, sdd: "§4.2", system: portal, title: "UI Operations dashboard in sidebar", status: implemented, priority: medium, depends_on: [P6-02], evidence: "portal.php dash_operations" }
+
+  # ============================================================================
+  # Phase 7 — NFR, security & pilot hardening (10)
+  # ============================================================================
+  - { id: P7-01, phase: phase_7_nfr_ops, sdd: "§10.2 §11.2", system: ops, title: "DB_ENCRYPT=true MySQL TLS for financial data", status: ops_pending, priority: high, depends_on: [], evidence: "pilot-readiness security" }
+  - { id: P7-02, phase: phase_7_nfr_ops, sdd: "§11.1", system: ops, title: "Load test dashboard P95 150ms journal post P95 400ms", status: ops_pending, priority: medium, depends_on: [], evidence: "scripts/load-test-s4.ps1" }
+  - { id: P7-03, phase: phase_7_nfr_ops, sdd: "§11.1", system: ops, title: "Soak test 30 concurrent report users", status: ops_pending, priority: medium, depends_on: [], evidence: "scripts/soak-test-s4.ps1" }
+  - { id: P7-04, phase: phase_7_nfr_ops, sdd: "§11.3", system: s4, title: "Health check DB ping and Redis ping", status: implemented, priority: medium, depends_on: [], evidence: "GET /health checks.database + checks.redis + observability" }
+  - { id: P7-05, phase: phase_7_nfr_ops, sdd: "§11.3", system: s4, title: "report_cache_log wired to observability", status: implemented, priority: medium, depends_on: [P0-06], evidence: "migration 000014; BiCacheService; health observability.report_cache_log" }
+  - { id: P7-06, phase: phase_7_nfr_ops, sdd: "§11.2", system: s4, title: "Posted journals immutable no UPDATE except reversal flow", status: implemented, priority: high, depends_on: [P0-03], evidence: "JournalEntry/JournalLine model guards; Phase3ReportsTest" }
+  - { id: P7-07, phase: phase_7_nfr_ops, sdd: "§11.2", system: s4, title: "Locked fiscal period irreversible no unlock path", status: implemented, priority: high, depends_on: [], evidence: "FiscalPeriodService::lock" }
+  - { id: P7-08, phase: phase_7_nfr_ops, sdd: "§11.3", system: ops, title: "Disk DB latency SLOs ops/monitor MON-005", status: implemented, priority: medium, depends_on: [], evidence: "ops/monitor/check-stack.sh disk + mysql latency checks" }
+  - { id: P7-09, phase: phase_7_nfr_ops, sdd: "—", system: cross, title: "pilot-gate.ps1 blocks on S4 checklist missing critical/high", status: implemented, priority: high, depends_on: [], evidence: "scripts/pilot-gate.ps1 Get-S4ChecklistSummary blockers" }
+  - { id: P7-10, phase: phase_7_nfr_ops, sdd: "—", system: cross, title: "matrix.yaml S4 rows updated when checklist items implemented", status: implemented, priority: high, depends_on: [], evidence: "matrix S4-BI-002, S4-COA-001, S4-NFR-001, S3-HTL-002 synced S7" }
+
+# Summary counts (114 items: P0×10 + P1×11 + P2×12 + R×24 + P3×6 + P4×10 + P5×12 + P6×29 + P7×10)
+summary:
+  by_status:
+    implemented: 32
+    partial: 39
+    missing: 30
+    pending: 4
+    ops_pending: 4
+    waived: 0
+  by_phase:
+    phase_0_schema_compliance: 10
+    phase_1_core_finance_backend: 11
+    phase_2_automated_journals: 12
+    phase_3_operational_reports: 30
+    phase_4_dashboards_export: 10
+    phase_5_rtm_uat_governance: 12
+    phase_6_web_portal: 29
+    phase_7_nfr_ops: 10
+  critical_open:
+    - P1-01
+    - P1-02
+    - P2-05
+    - R-22
+    - R-23
+    - P6-09
+    - P6-26
+
+permission_matrix:
+  # Track portal UI coverage for each SDD §6.1 permission (budgets are extra)
+  - { permission: S4.finance.accounts.read, checklist: [P6-07], status: implemented }
+  - { permission: S4.finance.accounts.create, checklist: [P6-07], status: implemented }
+  - { permission: S4.finance.accounts.update, checklist: [P6-07], status: implemented }
+  - { permission: S4.finance.journal_entries.read, checklist: [P6-08], status: implemented }
+  - { permission: S4.finance.journal_entries.create, checklist: [P6-08], status: implemented }
+  - { permission: S4.finance.journal_entries.approve, checklist: [P6-08], status: implemented }
+  - { permission: S4.finance.journal_entries.reverse, checklist: [P6-09], status: implemented }
+  - { permission: S4.finance.receivables.read, checklist: [P6-11], status: implemented }
+  - { permission: S4.finance.receivables.settle, checklist: [P6-11], status: implemented }
+  - { permission: S4.finance.payables.read, checklist: [P6-12], status: implemented }
+  - { permission: S4.finance.payables.settle, checklist: [P6-12], status: implemented }
+  - { permission: S4.finance.fiscal_periods.read, checklist: [P6-10], status: implemented }
+  - { permission: S4.finance.fiscal_periods.create, checklist: [P6-10], status: implemented }
+  - { permission: S4.finance.fiscal_periods.close, checklist: [P6-10], status: implemented }
+  - { permission: S4.finance.fiscal_periods.lock, checklist: [P6-10], status: implemented }
+  - { permission: S4.finance.reports.read, checklist: [P6-13], status: implemented }
+  - { permission: S4.bi.dashboards.read, checklist: [P6-02, P6-17, P6-18, P6-19, P6-27, P6-28], status: implemented }
+  - { permission: S4.bi.reports.read, checklist: [P6-15, P6-16], status: implemented }
+  - { permission: S4.bi.export.create, checklist: [P6-16, P4-06], status: implemented }
+  - { permission: S4.bi.rtm.read, checklist: [P6-20], status: implemented }
+  - { permission: S4.bi.rtm.update, checklist: [P6-20], status: implemented }
+  - { permission: S4.bi.uat.read, checklist: [P6-21], status: implemented }
+  - { permission: S4.bi.uat.update, checklist: [P6-21], status: implemented }
+  - { permission: S4.finance.budgets.read, checklist: [P6-14], status: implemented, note: "Extra — not in SDD §6.1" }
+  - { permission: S4.finance.budgets.create, checklist: [P6-14], status: implemented, note: "Extra — not in SDD §6.1" }
+
+uat_scenarios:
+  existing:
+    - UAT-S4-001
+    - UAT-S4-002
+    - UAT-S4-003
+    - UAT-S4-004
+    - UAT-S4-005
+    - UAT-S4-006
+    - UAT-S4-007
+    - UAT-S4-008
+    - UAT-S4-009
+  planned:
+    - { id: UAT-S4-010, title: "Daily F&B summary batch posts GL", checklist: [P2-05] }
+    - { id: UAT-S4-011, title: "AR aging bucket columns", checklist: [P1-01, R-22] }
+    - { id: UAT-S4-012, title: "Journal reversal SDD semantics", checklist: [P0-03, P6-09] }
+    - { id: UAT-S4-013, title: "Chart of accounts CRUD via portal", checklist: [P6-07] }
+    - { id: UAT-S4-014, title: "BI report catalog run and export", checklist: [P6-15, P6-16] }

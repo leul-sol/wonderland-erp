@@ -9,6 +9,8 @@ class Receivable extends Model
 {
     protected $fillable = [
         'account_id',
+        'customer_type',
+        'customer_ref_id',
         'party_name',
         'source_reference',
         'source_module',

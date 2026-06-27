@@ -5,9 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class JournalEntry extends Model
 {
+    protected static function booted(): void
+    {
+        static::updating(function (JournalEntry $entry) {
+            if ($entry->getOriginal('status') === 'posted') {
+                throw new \RuntimeException('Posted journal entries are immutable.');
+            }
+        });
+
+        static::deleting(function (JournalEntry $entry) {
+            if ($entry->status === 'posted') {
+                throw new \RuntimeException('Posted journal entries cannot be deleted.');
+            }
+        });
+    }
+
     public bool $replayed = false;
 
     protected $fillable = [
@@ -50,5 +66,24 @@ class JournalEntry extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(JournalLine::class);
+    }
+
+    public function reversalEntry(): HasOne
+    {
+        return $this->hasOne(self::class, 'reversal_of_id');
+    }
+
+    public function reversedEntry(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
+    }
+
+    public function hasBeenReversed(): bool
+    {
+        if ($this->relationLoaded('reversalEntry')) {
+            return $this->reversalEntry !== null;
+        }
+
+        return $this->reversalEntry()->exists();
     }
 }

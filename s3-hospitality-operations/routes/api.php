@@ -20,6 +20,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierPaymentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
@@ -69,6 +70,8 @@ Route::middleware('jwt')->group(function () {
         ->middleware('permission:S3.inventory.suppliers.write');
     Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'recordPayment'])
         ->middleware(['permission:S3.inventory.suppliers.write', 'idempotent']);
+    Route::get('/supplier-payments', [SupplierPaymentController::class, 'index'])
+        ->middleware('permission:S3.inventory.suppliers.read');
 
     Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
         ->middleware('permission:S3.inventory.purchase_orders.read');

@@ -36,7 +36,7 @@ class Phase5Test extends TestCase
         $response = $this->getJson('/api/v1/bi/rtm', $this->authHeaders());
 
         $response->assertOk()
-            ->assertJsonPath('meta.total', 30)
+            ->assertJsonPath('meta.total', 54)
             ->assertJsonStructure(['data' => [['requirement_key', 'system', 'status']], 'meta' => ['coverage_percent', 'by_status']]);
     }
 
@@ -76,7 +76,7 @@ class Phase5Test extends TestCase
         $response = $this->getJson('/api/v1/bi/uat', $this->authHeaders());
 
         $response->assertOk()
-            ->assertJsonPath('meta.total', 24)
+            ->assertJsonPath('meta.total', 52)
             ->assertJsonStructure(['meta' => ['pass_rate_percent', 'by_status']]);
     }
 
@@ -107,5 +107,44 @@ class Phase5Test extends TestCase
         $this->postJson("/api/v1/bi/uat/{$scenario->id}/results", [
             'status' => 'failed',
         ], $this->authHeaders(['S4.bi.uat.read']))->assertStatus(403);
+    }
+
+    public function test_rtm_nested_uat_checklist_returns_linked_scenarios(): void
+    {
+        $entry = RtmEntry::query()->where('requirement_key', 'R-22')->firstOrFail();
+
+        $response = $this->getJson("/api/v1/rtm/{$entry->id}/uat", $this->authHeaders());
+
+        $response->assertOk()
+            ->assertJsonPath('data.rtm_entry.requirement_key', 'R-22')
+            ->assertJsonPath('data.uat_scenarios.0.scenario_key', 'UAT-R-22');
+    }
+
+    public function test_rtm_nested_uat_record_updates_scenario(): void
+    {
+        $entry = RtmEntry::query()->where('requirement_key', 'R-24')->firstOrFail();
+        $scenario = UatScenario::query()->where('scenario_key', 'UAT-R-24')->firstOrFail();
+        $entry->update(['status' => 'implemented']);
+
+        $response = $this->putJson("/api/v1/bi/rtm/{$entry->id}/uat/{$scenario->id}", [
+            'status' => 'passed',
+            'notes' => 'P&L columns verified in UAT',
+        ], $this->authHeaders());
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'passed');
+
+        $entry->refresh();
+        $this->assertSame('verified', $entry->status);
+    }
+
+    public function test_rtm_nested_uat_rejects_mismatched_scenario(): void
+    {
+        $entry = RtmEntry::query()->where('requirement_key', 'R-01')->firstOrFail();
+        $scenario = UatScenario::query()->where('scenario_key', 'UAT-R-24')->firstOrFail();
+
+        $this->putJson("/api/v1/rtm/{$entry->id}/uat/{$scenario->id}", [
+            'status' => 'passed',
+        ], $this->authHeaders())->assertStatus(422);
     }
 }

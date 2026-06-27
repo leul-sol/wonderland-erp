@@ -11,6 +11,36 @@ function Write-Step([string]$Message) {
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
+function Get-S4ChecklistSummary {
+    $path = Join-Path $RepoRoot "specs\traceability\s4-sdd-checklist.yaml"
+    if (-not (Test-Path $path)) {
+        throw "Missing S4 checklist: $path"
+    }
+
+    $lines = Get-Content $path
+    $items = @()
+    foreach ($line in $lines) {
+        if ($line -notmatch '^\s*-\s*\{\s*id:\s*') { continue }
+        if ($line -notmatch 'id:\s*([^,]+)') { continue }
+        $id = $Matches[1].Trim()
+        if ($line -notmatch 'status:\s*(\w+)') { continue }
+        $status = $Matches[1]
+        if ($line -notmatch 'priority:\s*(\w+)') { $priority = "medium" } else { $priority = $Matches[1] }
+        $items += [pscustomobject]@{ Id = $id; Status = $status; Priority = $priority }
+    }
+
+    $blockers = $items | Where-Object {
+        $_.Status -in @("missing", "pending") -and $_.Priority -in @("critical", "high")
+    }
+
+    return [pscustomobject]@{
+        Total     = $items.Count
+        Missing   = ($items | Where-Object { $_.Status -eq "missing" }).Count
+        Partial   = ($items | Where-Object { $_.Status -eq "partial" }).Count
+        Blockers  = $blockers
+    }
+}
+
 function Get-TraceabilitySummary {
     $matrixPath = Join-Path $RepoRoot "specs\traceability\matrix.yaml"
     if (-not (Test-Path $matrixPath)) {
@@ -65,6 +95,17 @@ if ($trace.CriticalMissing.Count -gt 0) {
     $failed = $true
 } else {
     Write-Host "  No critical SDD gaps marked missing." -ForegroundColor Green
+}
+
+Write-Step "S4 SDD checklist (critical/high blockers)"
+$s4 = Get-S4ChecklistSummary
+Write-Host "  Checklist items: $($s4.Total) | missing: $($s4.Missing) | partial: $($s4.Partial)"
+if ($s4.Blockers.Count -gt 0) {
+    Write-Host "  BLOCKED - S4 checklist critical/high gaps:" -ForegroundColor Red
+    $s4.Blockers | ForEach-Object { Write-Host "    - $($_.Id) ($($_.Status), $($_.Priority))" -ForegroundColor Red }
+    $failed = $true
+} else {
+    Write-Host "  No critical/high S4 checklist items marked missing/pending." -ForegroundColor Green
 }
 
 Write-Step "Pilot readiness (backup / monitoring / support)"

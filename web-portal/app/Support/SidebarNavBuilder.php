@@ -7,6 +7,20 @@ use Illuminate\Support\Facades\Route;
 
 class SidebarNavBuilder
 {
+    /** @var list<string> */
+    private const LEGACY_FINANCE_DASHBOARD_KEYS = [
+        'executive',
+        'hotel',
+        'restaurant',
+        'operations',
+        'finance_dashboard',
+        'dash_executive',
+        'dash_hotel',
+        'dash_restaurant',
+        'dash_finance',
+        'dash_operations',
+    ];
+
     public function __construct(
         private readonly PortalAuthService $auth,
     ) {
@@ -56,6 +70,10 @@ class SidebarNavBuilder
             $moduleKey = (string) ($module['key'] ?? 'module');
             $href = null;
 
+            if ($moduleKey === 'finance') {
+                $children = $this->normalizeFinanceChildren($children);
+            }
+
             if ($children === [] && Route::has($routeName)) {
                 $href = route($routeName, $routeParams);
             }
@@ -71,6 +89,7 @@ class SidebarNavBuilder
                 'href' => $href,
                 'children' => $children,
                 'phase' => (int) ($module['phase'] ?? 0),
+                'active_prefixes' => is_array($module['active_prefixes'] ?? null) ? $module['active_prefixes'] : [],
             ];
         }
 
@@ -112,10 +131,68 @@ class SidebarNavBuilder
                 'key' => (string) ($child['key'] ?? 'child'),
                 'label' => (string) ($child['label'] ?? 'Link'),
                 'href' => route($routeName, $routeParams),
+                'active_prefixes' => is_array($child['active_prefixes'] ?? null) ? $child['active_prefixes'] : [],
             ];
         }
 
         return $items;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $children
+     * @return list<array<string, mixed>>
+     */
+    private function normalizeFinanceChildren(array $children): array
+    {
+        $filtered = array_values(array_filter(
+            $children,
+            fn (array $child): bool => ! $this->isLegacyFinanceDashboardChild($child),
+        ));
+
+        $hasDashboards = false;
+
+        foreach ($filtered as $child) {
+            if (($child['key'] ?? '') === 'dashboards') {
+                $hasDashboards = true;
+                break;
+            }
+        }
+
+        if (! $hasDashboards && $this->auth->hasAnyPermission(['S4.bi.dashboards.read']) && Route::has('finance.dashboard.executive')) {
+            array_unshift($filtered, [
+                'key' => 'dashboards',
+                'label' => 'Dashboards',
+                'href' => route('finance.dashboard.executive'),
+                'active_prefixes' => ['/finance/dashboard'],
+            ]);
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @param  array<string, mixed>  $child
+     */
+    private function isLegacyFinanceDashboardChild(array $child): bool
+    {
+        $key = (string) ($child['key'] ?? '');
+
+        if (in_array($key, self::LEGACY_FINANCE_DASHBOARD_KEYS, true)) {
+            return true;
+        }
+
+        $label = strtolower((string) ($child['label'] ?? ''));
+        $href = (string) ($child['href'] ?? '');
+
+        if ($key !== 'dashboards' && str_ends_with($label, ' dashboard')) {
+            return true;
+        }
+
+        if (preg_match('#/finance/dashboard/(executive|hotel|restaurant|finance|operations)(?:/|$|\?)#', $href) === 1 && $key !== 'dashboards') {
+            return true;
+        }
+
+        return false;
     }
 
     private function moduleIcon(string $moduleKey): string

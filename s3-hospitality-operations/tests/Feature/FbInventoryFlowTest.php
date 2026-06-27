@@ -170,12 +170,27 @@ class FbInventoryFlowTest extends TestCase
 
         $this->postJson("/api/v1/orders/{$order}/finalize", [], $this->authHeaders())->assertOk();
 
-        Http::assertSent(function ($request) {
-            $body = $request->data();
+        $orderModel = \App\Models\RestaurantOrder::query()->findOrFail($order);
+        $this->assertNull($orderModel->revenue_journal_entry_id);
 
-            return str_contains($request->url(), '/api/v1/journal-entries')
-                && ($body['lines'][0]['account_code'] ?? '') === '1001'
-                && ($body['lines'][1]['account_code'] ?? '') === '4002';
+        \Illuminate\Support\Facades\Artisan::call('fb:daily-summary', ['--date' => now()->toDateString()]);
+
+        $orderModel->refresh();
+        $this->assertNotNull($orderModel->revenue_journal_entry_id);
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/api/v1/journal-entries')) {
+                return false;
+            }
+
+            $body = $request->data();
+            if (($body['source_reference'] ?? '') !== 'FB-DAILY:'.now()->toDateString()) {
+                return false;
+            }
+
+            $codes = collect($body['lines'] ?? [])->pluck('account_code');
+
+            return $codes->contains('1001') && $codes->contains('4002');
         });
     }
 

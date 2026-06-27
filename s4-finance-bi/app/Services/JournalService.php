@@ -18,6 +18,7 @@ class JournalService
         private readonly FiscalPeriodService $fiscalPeriods,
         private readonly BiCacheService $biCache,
         private readonly OutboxService $outbox,
+        private readonly FinanceAuditLogger $audit,
     ) {
     }
 
@@ -69,6 +70,8 @@ class JournalService
                 'approved_at' => now(),
             ]);
 
+            $this->audit->log('journal.approve', 'journal_entry', $entry->id, $approvedBy);
+
             if (! $requiresGm) {
                 return $this->finalizePosting($entry->fresh(['lines.account', 'fiscalPeriod']));
             }
@@ -89,6 +92,8 @@ class JournalService
                 'second_approved_by' => $approvedBy,
                 'second_approved_at' => now(),
             ]);
+
+            $this->audit->log('journal.approve_gm', 'journal_entry', $entry->id, $approvedBy);
 
             return $this->finalizePosting($entry->fresh(['lines.account', 'fiscalPeriod']));
         }
@@ -120,7 +125,8 @@ class JournalService
             throw new \App\Exceptions\InvalidJournalStateException('Only the creator can delete a draft entry.');
         }
 
-        DB::transaction(function () use ($entry) {
+        DB::transaction(function () use ($entry, $userId) {
+            $this->audit->log('journal.delete_draft', 'journal_entry', $entry->id, $userId);
             $entry->lines()->delete();
             $entry->delete();
         });
@@ -130,6 +136,10 @@ class JournalService
     {
         if ($entry->status !== 'posted') {
             throw new \App\Exceptions\InvalidJournalStateException('Only posted entries can be reversed.');
+        }
+
+        if ($entry->hasBeenReversed()) {
+            throw new \App\Exceptions\InvalidJournalStateException('A reversal entry already exists for this journal.');
         }
 
         $entry->loadMissing('lines');
@@ -145,12 +155,15 @@ class JournalService
                 'entry_date' => now()->toDateString(),
                 'description' => 'Reversal of '.$entry->entry_number.($reason ? ' — '.$reason : ''),
                 'source_module' => 'manual',
-                'source_reference' => 'REV-'.$entry->entry_number,
+                'source_reference' => 'reversal_of:'.$entry->entry_number,
+                'reversal_of_id' => $entry->id,
                 'lines' => $reversalLines,
             ], 'reverse-'.$entry->id, $userId);
 
-            $reversal->update(['reversal_of_id' => $entry->id]);
-            $entry->update(['status' => 'reversed']);
+            $this->audit->log('journal.reverse', 'journal_entry', $entry->id, $userId, [
+                'reversal_entry_id' => $reversal->id,
+                'reason' => $reason,
+            ]);
 
             return $reversal->load('lines.account', 'fiscalPeriod');
         });
@@ -196,6 +209,7 @@ class JournalService
                 'total_credit' => $totalCredit,
                 'idempotency_key' => $idempotencyKey,
                 'fiscal_period_id' => $period->id,
+                'reversal_of_id' => $payload['reversal_of_id'] ?? null,
                 'posted_at' => $status === 'posted' ? now() : null,
                 'created_by' => $createdBy ?? 0,
             ]);
@@ -245,8 +259,12 @@ class JournalService
 
     private function afterPosted(JournalEntry $entry): void
     {
-        $this->biCache->invalidate($entry->fiscal_period_id);
+        $this->biCache->invalidate($entry->fiscal_period_id, 'journal.posted');
         $this->applySubledgerHooks($entry);
+        $this->audit->log('journal.post', 'journal_entry', $entry->id, (int) $entry->created_by, [
+            'entry_number' => $entry->entry_number,
+            'source_module' => $entry->source_module,
+        ]);
         $this->outbox->enqueue(config('events.channels.journal_posted'), [
             'journal_entry_id' => $entry->id,
             'entry_number' => $entry->entry_number,

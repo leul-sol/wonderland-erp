@@ -88,9 +88,35 @@ class S4FinanceClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
-    public function accounts(): array
+    public function accounts(array $query = []): array
     {
-        return $this->json('GET', '/s4/api/v1/accounts');
+        return $this->json('GET', '/s4/api/v1/accounts', $query);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function createFiscalPeriod(array $payload): array
+    {
+        return $this->json('POST', '/s4/api/v1/fiscal-periods', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function budgetLines(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/finance/budgets', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function createBudgetLine(array $payload): array
+    {
+        return $this->json('POST', '/s4/api/v1/finance/budgets', $payload);
     }
 
     /**
@@ -198,6 +224,129 @@ class S4FinanceClient extends GatewayClient
         return $this->json('GET', '/s4/api/v1/dashboards/operations', $query);
     }
 
+    public function hotelDashboard(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/dashboard/hotel', $query);
+    }
+
+    public function restaurantDashboard(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/dashboard/restaurant', $query);
+    }
+
+    public function financeDashboard(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/dashboard/finance', $query);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function biReportCatalog(?string $category = null): array
+    {
+        $query = $category ? ['category' => $category] : [];
+
+        return $this->json('GET', '/s4/api/v1/bi/reports', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function biReport(string $slug, array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/bi/reports/'.$slug, $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function rtmEntries(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/rtm', $query);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rtmEntry(int $rtmEntryId): array
+    {
+        return $this->json('GET', "/s4/api/v1/bi/rtm/{$rtmEntryId}");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateRtmEntry(int $rtmEntryId, array $payload): array
+    {
+        return $this->json('PUT', "/s4/api/v1/rtm/{$rtmEntryId}", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function uatScenarios(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/bi/uat', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function recordUatResult(int $uatScenarioId, array $payload): array
+    {
+        return $this->json('POST', "/s4/api/v1/bi/uat/{$uatScenarioId}/results", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function reverseJournalEntry(int $journalEntryId, array $payload = []): array
+    {
+        return $this->json('POST', "/s4/api/v1/journal-entries/{$journalEntryId}/reverse", $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function cashFlow(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/reports/cash-flow', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function departmental(array $query = []): array
+    {
+        return $this->json('GET', '/s4/api/v1/reports/departmental', $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function createAccount(array $payload): array
+    {
+        return $this->json('POST', '/s4/api/v1/accounts', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function updateAccount(int $accountId, array $payload): array
+    {
+        return $this->json('PUT', "/s4/api/v1/accounts/{$accountId}", $payload);
+    }
+
     /**
      * @param  array<string, mixed>  $query
      * @return Response
@@ -209,10 +358,19 @@ class S4FinanceClient extends GatewayClient
         $path = match ($report) {
             'income_statement' => '/s4/api/v1/reports/income-statement',
             'balance_sheet' => '/s4/api/v1/reports/balance-sheet',
+            'cash_flow' => '/s4/api/v1/reports/cash-flow',
+            'departmental' => '/s4/api/v1/reports/departmental',
             default => '/s4/api/v1/reports/trial-balance',
         };
 
         return $this->send('GET', $path, $query);
+    }
+
+    public function downloadBiReport(string $slug, string $format, array $query = []): Response
+    {
+        $query['export'] = $format;
+
+        return $this->send('GET', '/s4/api/v1/bi/reports/'.$slug, $query);
     }
 
     /**

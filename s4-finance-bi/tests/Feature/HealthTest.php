@@ -15,6 +15,12 @@ class HealthTest extends TestCase
                 'status' => 'ok',
                 'system' => 'S4',
             ])
-            ->assertJsonStructure(['status', 'system', 'version']);
+            ->assertJsonStructure([
+                'status',
+                'system',
+                'version',
+                'checks' => ['database', 'redis'],
+                'observability' => ['report_cache_log' => ['hits_last_hour', 'invalidations_last_hour']],
+            ]);
     }
 }

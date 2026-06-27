@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Exceptions\ApiException;
 use App\Services\Api\S1AuthClient;
+use App\Services\Notifications\NotificationInboxService;
 use App\Support\PortalNavigationCache;
 use Illuminate\Support\Facades\Session;
 
@@ -113,6 +114,11 @@ class PortalAuthService
         }
 
         PortalNavigationCache::forget();
+
+        $profile = $this->user();
+        app(NotificationInboxService::class)->sync(
+            is_numeric($profile['id'] ?? null) ? (int) $profile['id'] : null,
+        );
     }
 
     public function logout(): void

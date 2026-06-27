@@ -22,11 +22,24 @@ class PayableController extends Controller
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $status = (string) $request->input('status', 'open');
+        $agingBucket = $request->string('aging_bucket')->toString() ?: null;
+
+        if (! in_array($status, ['open', 'partial', 'settled'], true)) {
+            $status = 'open';
+        }
+
         return Inertia::render('Finance/Payables/Index', [
-            'payables' => $this->deferApi(function () {
-                $response = $this->s4->payables('open');
+            'status' => $status,
+            'agingBucket' => $agingBucket,
+            'payables' => $this->deferApi(function () use ($status, $agingBucket) {
+                $query = array_filter([
+                    'aging_bucket' => $agingBucket,
+                ], fn ($value) => $value !== null && $value !== '');
+
+                $response = $this->s4->payables($status, $query);
                 $payables = $response['data'] ?? [];
 
                 return is_array($payables) ? $payables : [];

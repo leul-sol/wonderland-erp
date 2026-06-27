@@ -7,6 +7,10 @@ use InvalidArgumentException;
 
 class AccountService
 {
+    public function __construct(private readonly FinanceAuditLogger $audit)
+    {
+    }
+
     public function create(array $data): Account
     {
         $type = (string) $data['type'];
@@ -18,7 +22,7 @@ class AccountService
             throw new InvalidArgumentException('Account code already exists.');
         }
 
-        return Account::query()->create([
+        $account = Account::query()->create([
             'code' => $data['code'],
             'name' => $data['name'],
             'type' => $type,
@@ -27,6 +31,16 @@ class AccountService
             'is_active' => $data['is_active'] ?? true,
             'parent_id' => $data['parent_id'] ?? null,
         ]);
+
+        $this->audit->log(
+            'account.create',
+            'account',
+            $account->id,
+            (int) (request()->attributes->get('auth_user_id', 0)),
+            ['code' => $account->code],
+        );
+
+        return $account;
     }
 
     public function update(Account $account, array $data): Account
@@ -38,6 +52,14 @@ class AccountService
         $account->update(array_intersect_key($data, array_flip([
             'name', 'type', 'sub_type', 'normal_balance', 'is_active', 'parent_id',
         ])));
+
+        $this->audit->log(
+            'account.update',
+            'account',
+            $account->id,
+            (int) (request()->attributes->get('auth_user_id', 0)),
+            ['code' => $account->code],
+        );
 
         return $account->fresh();
     }

@@ -44,6 +44,9 @@ class Phase3Test extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.revenue.total', '2500.00')
+            ->assertJsonPath('data.cogs.total', '600.00')
+            ->assertJsonPath('data.gross_profit', '1900.00')
+            ->assertJsonPath('data.operating_expenses.total', '0.00')
             ->assertJsonPath('data.expenses.total', '600.00')
             ->assertJsonPath('data.net_income', '1900.00');
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\RespondsWithApiErrors;
 use App\Http\Requests\SettlePayableRequest;
 use App\Models\Payable;
 use App\Services\PayableService;
+use App\Support\SubledgerAging;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,8 +26,16 @@ class PayableController extends Controller
             $query->where('status', $request->string('status'));
         }
 
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
+
         if ($request->filled('source_module')) {
             $query->where('source_module', $request->string('source_module'));
+        }
+
+        if ($request->filled('aging_bucket')) {
+            SubledgerAging::applyBucketFilter($query, (string) $request->input('aging_bucket'));
         }
 
         $paginator = $query->orderByDesc('id')->paginate(
@@ -65,16 +74,21 @@ class PayableController extends Controller
     private function payablePayload(Payable $payable): array
     {
         $payable->loadMissing('account');
+        $aging = SubledgerAging::classify($payable->due_date);
 
         return [
             'id' => $payable->id,
             'account_id' => $payable->account_id,
             'account_code' => $payable->account?->code,
+            'supplier_id' => $payable->supplier_id,
             'vendor_name' => $payable->vendor_name,
             'source_reference' => $payable->source_reference,
             'source_module' => $payable->source_module,
             'original_amount' => (string) $payable->original_amount,
             'balance' => (string) $payable->balance,
+            'due_date' => $payable->due_date?->toDateString(),
+            'days_overdue' => $aging['days_overdue'],
+            'aging_bucket' => $aging['bucket'],
             'status' => $payable->status,
             'journal_entry_id' => $payable->journal_entry_id,
             'settled_at' => $payable->settled_at?->toIso8601String(),

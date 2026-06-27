@@ -20,6 +20,7 @@ class OrderService
         private readonly S4FinanceClient $s4,
         private readonly OutboxService $outbox,
         private readonly TaxBreakdownService $tax,
+        private readonly DailyFbSummaryService $dailyFbSummary,
     ) {
     }
 
@@ -169,7 +170,7 @@ class OrderService
             $cogsTotal = round($cogsTotal, 2);
 
             $revenueJournal = null;
-            if ($order->payment_context !== 'employee_meal') {
+            if ($order->payment_context !== 'employee_meal' && ! $this->dailyFbSummary->shouldDeferRevenueJournal($order)) {
                 $debitAccount = $order->payment_context === 'folio'
                     ? $accounts['ar_guest']
                     : $accounts['cash'];

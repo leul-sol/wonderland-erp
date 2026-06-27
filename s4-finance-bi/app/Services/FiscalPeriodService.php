@@ -10,6 +10,7 @@ class FiscalPeriodService
     public function __construct(
         private readonly AccountPeriodBalanceService $periodBalances,
         private readonly OutboxService $outbox,
+        private readonly FinanceAuditLogger $audit,
     ) {
     }
 
@@ -57,6 +58,8 @@ class FiscalPeriodService
 
             $period = $period->fresh();
 
+            $this->audit->log('fiscal_period.close', 'fiscal_period', $period->id, $closedBy);
+
             $this->outbox->enqueue(config('events.channels.period_closed'), [
                 'fiscal_period_id' => $period->id,
                 'year' => $period->year,
@@ -78,6 +81,8 @@ class FiscalPeriodService
         }
 
         $period->update(['status' => 'locked']);
+
+        $this->audit->log('fiscal_period.lock', 'fiscal_period', $period->id, (int) (request()->attributes->get('auth_user_id', 0)));
 
         return $period->fresh();
     }
@@ -106,12 +111,21 @@ class FiscalPeriodService
             throw new \InvalidArgumentException('Fiscal period dates overlap an existing period.');
         }
 
-        return FiscalPeriod::query()->create([
+        $period = FiscalPeriod::query()->create([
             'year' => $year,
             'period_number' => $periodNumber,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'status' => 'open',
         ]);
+
+        $this->audit->log(
+            'fiscal_period.create',
+            'fiscal_period',
+            $period->id,
+            (int) (request()->attributes->get('auth_user_id', 0)),
+        );
+
+        return $period;
     }
 }

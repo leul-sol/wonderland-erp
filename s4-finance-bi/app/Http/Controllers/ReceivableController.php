@@ -7,6 +7,7 @@ use App\Http\Requests\WriteOffReceivableRequest;
 use App\Http\Requests\SettleReceivableRequest;
 use App\Models\Receivable;
 use App\Services\ReceivableService;
+use App\Support\SubledgerAging;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,8 +27,16 @@ class ReceivableController extends Controller
             $query->where('status', $request->string('status'));
         }
 
+        if ($request->filled('customer_type')) {
+            $query->where('customer_type', $request->string('customer_type'));
+        }
+
         if ($request->filled('source_module')) {
             $query->where('source_module', $request->string('source_module'));
+        }
+
+        if ($request->filled('aging_bucket')) {
+            SubledgerAging::applyBucketFilter($query, (string) $request->input('aging_bucket'));
         }
 
         $paginator = $query->orderByDesc('id')->paginate(
@@ -83,17 +92,22 @@ class ReceivableController extends Controller
     private function receivablePayload(Receivable $receivable): array
     {
         $receivable->loadMissing('account');
+        $aging = SubledgerAging::classify($receivable->due_date);
 
         return [
             'id' => $receivable->id,
             'account_id' => $receivable->account_id,
             'account_code' => $receivable->account?->code,
+            'customer_type' => $receivable->customer_type,
+            'customer_ref_id' => $receivable->customer_ref_id,
             'party_name' => $receivable->party_name,
             'source_reference' => $receivable->source_reference,
             'source_module' => $receivable->source_module,
             'original_amount' => (string) $receivable->original_amount,
             'balance' => (string) $receivable->balance,
             'due_date' => $receivable->due_date?->toDateString(),
+            'days_overdue' => $aging['days_overdue'],
+            'aging_bucket' => $aging['bucket'],
             'status' => $receivable->status,
             'journal_entry_id' => $receivable->journal_entry_id,
             'settled_at' => $receivable->settled_at?->toIso8601String(),

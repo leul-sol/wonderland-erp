@@ -1,7 +1,8 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { Bell, LogOut, Menu, RefreshCw, Search } from 'lucide-vue-next';
+import { LogOut, Menu, RefreshCw, Search } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import NotificationBell from './NotificationBell.vue';
 
 defineProps({
     sidebarCollapsed: {
@@ -158,10 +159,7 @@ onUnmounted(() => {
                     <RefreshCw class="h-[18px] w-[18px]" />
                 </button>
 
-                <button type="button" class="wh-icon-btn relative hidden sm:inline-flex" aria-label="Notifications">
-                    <Bell class="h-[18px] w-[18px]" />
-                    <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-                </button>
+                <NotificationBell />
 
                 <div class="relative">
                     <button

@@ -9,6 +9,23 @@ class JournalLine extends Model
 {
     public $timestamps = false;
 
+    protected static function booted(): void
+    {
+        static::updating(function (JournalLine $line) {
+            $line->loadMissing('journalEntry');
+            if ($line->journalEntry?->status === 'posted') {
+                throw new \RuntimeException('Posted journal lines are immutable.');
+            }
+        });
+
+        static::deleting(function (JournalLine $line) {
+            $line->loadMissing('journalEntry');
+            if ($line->journalEntry?->status === 'posted') {
+                throw new \RuntimeException('Posted journal lines cannot be deleted.');
+            }
+        });
+    }
+
     protected $fillable = [
         'journal_entry_id',
         'account_id',

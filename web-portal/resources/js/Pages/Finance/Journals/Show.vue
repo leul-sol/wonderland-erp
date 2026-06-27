@@ -14,9 +14,11 @@ const props = defineProps({
     canApproveFinance: { type: Boolean, default: false },
     canApproveGm: { type: Boolean, default: false },
     canDelete: { type: Boolean, default: false },
+    canReverse: { type: Boolean, default: false },
 });
 
 const approveForm = useForm({});
+const reverseForm = useForm({ reason: '' });
 
 const lineColumns = [
     { key: 'account_code', label: 'Code' },
@@ -31,6 +33,10 @@ function approve() {
 
 function destroyEntry() {
     router.delete(`/finance/journals/${props.journalEntry.id}`);
+}
+
+function reverseEntry() {
+    reverseForm.post(`/finance/journals/${props.journalEntry.id}/reverse`, { preserveScroll: true });
 }
 </script>
 
@@ -53,6 +59,15 @@ function destroyEntry() {
                 Entry total ≥ ETB {{ gmThreshold.toLocaleString() }} — GM approval required before posting.
             </p>
             <div class="mt-4 flex flex-wrap justify-end gap-2">
+                <button
+                    v-if="canReverse"
+                    type="button"
+                    class="wh-btn-secondary"
+                    :disabled="reverseForm.processing"
+                    @click="reverseEntry"
+                >
+                    Reverse entry
+                </button>
                 <button
                     v-if="canDelete"
                     type="button"

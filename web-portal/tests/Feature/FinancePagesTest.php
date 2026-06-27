@@ -130,9 +130,22 @@ class FinancePagesTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->component('Finance/Dashboard/Executive')
+            ->component('Finance/Dashboard/Index')
+            ->where('tab', 'executive')
             ->has('dashboard.kpis')
         );
+    }
+
+    public function test_home_dashboard_renders_role_metrics(): void
+    {
+        Session::put('portal.permissions', array_merge(Session::get('portal.permissions', []), [
+            'S3.hotel.rooms.read',
+        ]));
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Dashboard/Index'));
     }
 
     public function test_budget_variance_page_renders(): void
