@@ -41,10 +41,8 @@ class CashierSettingsPagesTest extends TestCase
         $response = $this->get('/front-desk/cashier-shifts');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('FrontDesk/CashierShifts/Index')
-            ->where('openShift.id', 2)
-        );
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/CashierShifts/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->where('pageLoad.openShift.id', 2));
     }
 
     public function test_cashier_shift_show_includes_report(): void
@@ -113,25 +111,25 @@ class CashierSettingsPagesTest extends TestCase
     public function test_hotel_settings_room_types_page_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('roomTypes')->once()->with(false)->andReturn([
-                'data' => [[
-                    'id' => 1,
-                    'code' => 'STD',
-                    'name' => 'Standard',
-                    'base_rate' => '2500.00',
-                    'max_occupancy' => 2,
-                    'is_active' => true,
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'roomTypes' => [
+                    'data' => [[
+                        'id' => 1,
+                        'code' => 'STD',
+                        'name' => 'Standard',
+                        'base_rate' => '2500.00',
+                        'max_occupancy' => 2,
+                        'is_active' => true,
+                    ]],
+                ],
+                'rooms' => ['data' => []],
             ]);
-            $mock->shouldReceive('rooms')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/front-desk/settings');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('FrontDesk/Settings/Index')
-            ->has('roomTypes', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Settings/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.roomTypes', 1));
     }
 }

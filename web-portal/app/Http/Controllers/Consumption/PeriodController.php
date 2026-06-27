@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Consumption;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -15,6 +16,7 @@ use Inertia\Response;
 
 class PeriodController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -24,41 +26,42 @@ class PeriodController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->consumptionPeriods();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $employees = [];
-
-        if ($this->auth->hasAnyPermission(['S2.workforce.employees.read'])) {
-            try {
-                $employeeResponse = $this->s2->employees('active');
-                $employees = $employeeResponse['data'] ?? [];
-            } catch (ApiException) {
-                // Employee picker optional when S2 is unavailable.
-            }
-        }
-
         $monthStart = now()->startOfMonth()->toDateString();
         $monthEnd = now()->toDateString();
 
-        $employeeMap = collect(is_array($employees) ? $employees : [])
-            ->mapWithKeys(fn (array $employee): array => [
-                (int) $employee['id'] => $employee['full_name'] ?? $employee['employee_number'] ?? ('#'.$employee['id']),
-            ])
-            ->all();
-
         return Inertia::render('Consumption/Periods/Index', [
-            'periods' => $response['data'] ?? [],
-            'employees' => is_array($employees) ? $employees : [],
-            'employeeMap' => $employeeMap,
             'canWrite' => $this->auth->hasAnyPermission(['S3.restaurant.consumption.write']),
             'defaultPeriodStart' => $monthStart,
             'defaultPeriodEnd' => $monthEnd,
+            'pageLoad' => $this->deferPageLoad(function () {
+                $response = $this->s3->consumptionPeriods();
+
+                $employees = [];
+
+                if ($this->auth->hasAnyPermission(['S2.workforce.employees.read'])) {
+                    try {
+                        $employeeResponse = $this->s2->employees('active');
+                        $employees = $employeeResponse['data'] ?? [];
+                    } catch (ApiException) {
+                        // Employee picker optional when S2 is unavailable.
+                    }
+                }
+
+                $employees = is_array($employees) ? $employees : [];
+                $employeeMap = collect($employees)
+                    ->mapWithKeys(fn (array $employee): array => [
+                        (int) $employee['id'] => $employee['full_name'] ?? $employee['employee_number'] ?? ('#'.$employee['id']),
+                    ])
+                    ->all();
+
+                return [
+                    'periods' => $response['data'] ?? [],
+                    'employees' => $employees,
+                    'employeeMap' => $employeeMap,
+                ];
+            }),
         ]);
     }
 

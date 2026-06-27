@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\GroupBookings;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use App\Support\GroupBookingLifecycleSteps;
@@ -14,37 +16,42 @@ use Inertia\Response;
 
 class GroupBookingController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request): Response
     {
         $tab = $request->string('tab')->toString() ?: 'all';
         $status = match ($tab) {
             'confirmed', 'checked_in', 'checked_out' => $tab,
             default => null,
         };
-
-        try {
-            $response = $this->s3->groupBookings($status);
-            $roomTypes = $this->s3->roomTypes();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
 
         return Inertia::render('GroupBookings/Index', [
-            'groupBookings' => $response['data'] ?? [],
             'filters' => ['tab' => $tab],
-            'roomTypes' => $roomTypes['data'] ?? [],
             'defaultCheckIn' => $today,
             'defaultCheckOut' => $tomorrow,
+            'pageLoad' => $this->deferPageLoad(function () use ($status) {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'groupBookings' => ['path' => '/s3/api/v1/group-bookings', 'query' => array_filter(['status' => $status])],
+                    'roomTypes' => ['path' => '/s3/api/v1/room-types', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'groupBookings');
+                $roomTypes = $results['roomTypes'] ?? ['data' => []];
+
+                return [
+                    'groupBookings' => $response['data'] ?? [],
+                    'roomTypes' => $roomTypes['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

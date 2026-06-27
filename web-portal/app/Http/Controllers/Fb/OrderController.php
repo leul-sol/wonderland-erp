@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Fb;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -13,55 +15,62 @@ use Inertia\Response;
 
 class OrderController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request): Response
     {
         $tab = $request->string('tab')->toString() ?: 'open';
 
-        try {
-            $status = match ($tab) {
-                'open' => 'open',
-                'finalized', 'billed' => 'finalized',
-                default => null,
-            };
-            $response = $this->s3->orders($status);
-            $foliosResponse = $this->s3->folios('open');
-            $tablesResponse = $this->s3->diningTables();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $paginator = $foliosResponse['data'] ?? [];
-        $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
-
-        $orders = collect($response['data'] ?? []);
-
-        if ($tab === 'billed') {
-            $orders = $orders->filter(function (array $order): bool {
-                $bill = $order['bill'] ?? null;
-
-                return $bill !== null && in_array($bill['status'] ?? '', ['paid', 'posted_to_folio', 'posted_to_event'], true);
-            });
-        } elseif ($tab === 'finalized') {
-            $orders = $orders->filter(function (array $order): bool {
-                $bill = $order['bill'] ?? null;
-
-                return $bill === null || in_array($bill['status'] ?? '', ['unpaid', 'partial'], true);
-            });
-        }
-
         return Inertia::render('Fb/Orders/Index', [
-            'orders' => $orders->values()->all(),
             'filters' => ['tab' => $tab],
-            'folios' => $folios,
-            'diningTables' => $tablesResponse['data'] ?? [],
             'customerTypes' => $this->customerTypes(),
+            'pageLoad' => $this->deferPageLoad(function () use ($tab) {
+                $status = match ($tab) {
+                    'open' => 'open',
+                    'finalized', 'billed' => 'finalized',
+                    default => null,
+                };
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'orders' => ['path' => '/s3/api/v1/orders', 'query' => $status ? ['status' => $status] : []],
+                    'folios' => ['path' => '/s3/api/v1/folios', 'query' => ['status' => 'open', 'per_page' => 50]],
+                    'tables' => ['path' => '/s3/api/v1/dining-tables', 'query' => ['active_only' => true]],
+                ]);
+                $response = $this->requireParallelResult($results, 'orders');
+                $foliosResponse = $results['folios'] ?? ['data' => ['data' => []]];
+                $tablesResponse = $results['tables'] ?? ['data' => []];
+
+                $paginator = $foliosResponse['data'] ?? [];
+                $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
+
+                $orders = collect($response['data'] ?? []);
+
+                if ($tab === 'billed') {
+                    $orders = $orders->filter(function (array $order): bool {
+                        $bill = $order['bill'] ?? null;
+
+                        return $bill !== null && in_array($bill['status'] ?? '', ['paid', 'posted_to_folio', 'posted_to_event'], true);
+                    });
+                } elseif ($tab === 'finalized') {
+                    $orders = $orders->filter(function (array $order): bool {
+                        $bill = $order['bill'] ?? null;
+
+                        return $bill === null || in_array($bill['status'] ?? '', ['unpaid', 'partial'], true);
+                    });
+                }
+
+                return [
+                    'orders' => $orders->values()->all(),
+                    'folios' => $folios,
+                    'diningTables' => $tablesResponse['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

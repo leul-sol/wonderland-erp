@@ -44,6 +44,11 @@ class HrPortalNavigationTest extends TestCase
         $empty = ['data' => []];
 
         $this->mock(S2WorkforceClient::class, function (MockInterface $mock) use ($empty): void {
+            $mock->shouldReceive('fetchMany')->andReturn([
+                'employees' => $empty,
+                'departments' => $empty,
+                'positions' => $empty,
+            ]);
             $mock->shouldReceive('employees')->andReturn($empty);
             $mock->shouldReceive('departments')->andReturn($empty);
             $mock->shouldReceive('positions')->andReturn($empty);

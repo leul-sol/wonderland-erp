@@ -1,15 +1,19 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
-    shifts: { type: Array, default: () => [] },
-    openShift: { type: Object, default: null },
+const props = defineProps({
+    pageLoad: { type: Object, default: null },
 });
+
+const shifts = computed(() => props.pageLoad?.shifts ?? []);
+const openShift = computed(() => props.pageLoad?.openShift ?? null);
 
 const openForm = useForm({
     opening_cash_float: '',
@@ -59,6 +63,7 @@ function submitOpen() {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="!openShift" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Open shift</h3>
             <form class="flex flex-wrap items-end gap-3" @submit.prevent="submitOpen">
@@ -94,5 +99,6 @@ function submitOpen() {
                 <StatusBadge :status="row.status" />
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

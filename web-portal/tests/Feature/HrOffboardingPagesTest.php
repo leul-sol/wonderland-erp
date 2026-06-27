@@ -49,9 +49,11 @@ class HrOffboardingPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Hr/Offboarding/Index')
-            ->has('offboardingRecords', 1)
-            ->has('eligibleEmployees', 1)
             ->where('canCreate', true));
+        $this->assertDeferredInertia($response, fn ($page) => $page
+            ->has('pageLoad.offboardingRecords', 1)
+            ->has('pageLoad.eligibleEmployees', 1)
+        );
     }
 
     public function test_offboarding_store_posts_to_s2(): void

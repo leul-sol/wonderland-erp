@@ -1,5 +1,7 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
+import AppLogo from './AppLogo.vue';
+import { normalizePath, useInertiaNavigation } from '../composables/useInertiaNavigation.js';
 import {
     ArrowDownCircle,
     ArrowUpCircle,
@@ -41,8 +43,10 @@ const props = defineProps({
 const emit = defineEmits(['close-mobile']);
 
 const page = usePage();
+const { pendingPath, markPendingNavigation } = useInertiaNavigation();
 const navigation = computed(() => page.props.navigation ?? []);
 const currentPath = computed(() => normalizePath(page.url));
+const activePath = computed(() => pendingPath.value ?? currentPath.value);
 
 const allNavPaths = computed(() => {
     const paths = [];
@@ -95,26 +99,6 @@ function resolveIcon(name) {
     return iconMap[name] ?? LayoutGrid;
 }
 
-function normalizePath(href) {
-    if (!href) {
-        return '';
-    }
-
-    const raw = String(href).split('?')[0];
-
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-        try {
-            return new URL(raw).pathname.replace(/\/+$/, '') || '/';
-        } catch {
-            return raw;
-        }
-    }
-
-    const path = raw.startsWith('/') ? raw : `/${raw}`;
-
-    return path.replace(/\/+$/, '') || '/';
-}
-
 function isActive(href) {
     const target = normalizePath(href);
 
@@ -122,11 +106,11 @@ function isActive(href) {
         return false;
     }
 
-    if (currentPath.value === target) {
+    if (activePath.value === target) {
         return true;
     }
 
-    if (target === '/' || !currentPath.value.startsWith(`${target}/`)) {
+    if (target === '/' || !activePath.value.startsWith(`${target}/`)) {
         return false;
     }
 
@@ -134,7 +118,7 @@ function isActive(href) {
         (path) =>
             path !== target &&
             path.startsWith(`${target}/`) &&
-            (currentPath.value === path || currentPath.value.startsWith(`${path}/`)),
+            (activePath.value === path || activePath.value.startsWith(`${path}/`)),
     );
 
     return !hasMoreSpecificNavMatch;
@@ -166,7 +150,7 @@ function syncExpandedFromRoute() {
     expandedKeys.value = keys;
 }
 
-watch([navigation, currentPath, () => props.collapsed], syncExpandedFromRoute, { immediate: true });
+watch([navigation, activePath, () => props.collapsed], syncExpandedFromRoute, { immediate: true });
 
 watch(() => props.collapsed, (value) => {
     if (value) {
@@ -214,7 +198,13 @@ function closeFlyout() {
     flyoutKey.value = null;
 }
 
-function onChildNavigate() {
+function onNavClick(href) {
+    markPendingNavigation(href);
+    emit('close-mobile');
+}
+
+function onChildNavigate(href) {
+    markPendingNavigation(href);
     emit('close-mobile');
     closeFlyout();
 }
@@ -231,18 +221,11 @@ function onChildNavigate() {
                 :class="collapsed ? 'lg:justify-center' : ''"
             >
                 <div class="flex min-w-0 items-center gap-3" :class="collapsed ? 'lg:justify-center lg:gap-0' : ''">
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-base font-bold text-white"
-                        :title="collapsed ? 'Wonderland' : undefined"
-                    >
-                        W
-                    </div>
-                    <span
-                        v-show="!collapsed"
-                        class="truncate text-[17px] font-bold tracking-tight text-slate-800"
-                    >
-                        Wonderland
-                    </span>
+                    <AppLogo
+                        :variant="collapsed ? 'mark' : 'full'"
+                        :show-name="!collapsed"
+                        size="md"
+                    />
                 </div>
 
                 <button
@@ -274,7 +257,7 @@ function onChildNavigate() {
                             class="group wh-sidebar-link"
                             :class="itemClasses(isActive(item.href))"
                             :title="collapsed ? item.label : undefined"
-                            @click="emit('close-mobile')"
+                            @click="onNavClick(item.href)"
                         >
                             <component
                                 :is="resolveIcon(item.icon)"
@@ -338,7 +321,7 @@ function onChildNavigate() {
                                         :href="child.href"
                                         class="wh-sidebar-sublink"
                                         :class="childClasses(isActive(child.href))"
-                                        @click="emit('close-mobile')"
+                                        @click="onNavClick(child.href)"
                                     >
                                         {{ child.label }}
                                     </Link>
@@ -358,7 +341,7 @@ function onChildNavigate() {
                                     :href="child.href"
                                     class="wh-sidebar-flyout-link"
                                     :class="childClasses(isActive(child.href))"
-                                    @click="onChildNavigate"
+                                    @click="onChildNavigate(child.href)"
                                 >
                                     {{ child.label }}
                                 </Link>

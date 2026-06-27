@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +15,9 @@ use Inertia\Response;
 
 class ReservationController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
@@ -23,27 +27,31 @@ class ReservationController extends Controller
     public function index(Request $request): Response|RedirectResponse
     {
         $status = $request->string('status')->toString() ?: null;
-
-        try {
-            $response = $this->s3->reservations($status);
-            $roomTypes = $this->s3->roomTypes();
-            $guestsResponse = $this->s3->guestProfiles();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $paginator = $guestsResponse['data'] ?? [];
-        $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
 
         return Inertia::render('FrontDesk/Reservations/Index', [
-            'reservations' => $response['data'] ?? [],
             'filters' => ['status' => $status ?? ''],
-            'roomTypes' => $roomTypes['data'] ?? [],
-            'guests' => $guests,
             'defaultCheckIn' => $today,
             'defaultCheckOut' => $tomorrow,
+            'pageLoad' => $this->deferPageLoad(function () use ($status) {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'reservations' => ['path' => '/s3/api/v1/reservations', 'query' => array_filter(['status' => $status])],
+                    'roomTypes' => ['path' => '/s3/api/v1/room-types', 'query' => []],
+                    'guests' => ['path' => '/s3/api/v1/guest-profiles', 'query' => ['per_page' => 50]],
+                ]);
+                $response = $this->requireParallelResult($results, 'reservations');
+                $roomTypes = $results['roomTypes'] ?? ['data' => []];
+                $guestsResponse = $results['guests'] ?? ['data' => ['data' => []]];
+                $paginator = $guestsResponse['data'] ?? [];
+                $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
+
+                return [
+                    'reservations' => $response['data'] ?? [],
+                    'roomTypes' => $roomTypes['data'] ?? [],
+                    'guests' => $guests,
+                ];
+            }),
         ]);
     }
 

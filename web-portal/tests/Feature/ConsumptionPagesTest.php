@@ -55,9 +55,11 @@ class ConsumptionPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Consumption/Periods/Index')
             ->where('canWrite', true)
-            ->has('periods', 1)
-            ->has('employees', 1)
-            ->where('employeeMap.5', 'Kitchen Staff')
+        );
+        $this->assertDeferredInertia($response, fn ($page) => $page
+            ->has('pageLoad.periods', 1)
+            ->has('pageLoad.employees', 1)
+            ->where('pageLoad.employeeMap.5', 'Kitchen Staff')
         );
     }
 

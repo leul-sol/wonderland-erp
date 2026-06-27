@@ -45,37 +45,35 @@ class FbCatalogPagesTest extends TestCase
         $response = $this->get('/fb/menu-categories');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/MenuCategories/Index')
-            ->has('categories', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Fb/MenuCategories/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('categories', 1));
     }
 
     public function test_menu_items_admin_index_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('menuItemsCatalog')->once()->with(false)->andReturn([
-                'data' => [[
-                    'id' => 2,
-                    'code' => 'BURGER-CL',
-                    'name' => 'Classic Burger',
-                    'price' => '450.00',
-                    'employee_price' => '200.00',
-                    'category' => 'Mains',
-                    'has_recipe' => true,
-                    'is_active' => true,
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'menuItems' => [
+                    'data' => [[
+                        'id' => 2,
+                        'code' => 'BURGER-CL',
+                        'name' => 'Classic Burger',
+                        'price' => '450.00',
+                        'employee_price' => '200.00',
+                        'category' => 'Mains',
+                        'has_recipe' => true,
+                        'is_active' => true,
+                    ]],
+                ],
+                'categories' => ['data' => []],
             ]);
-            $mock->shouldReceive('menuCategories')->once()->with(false)->andReturn(['data' => []]);
         });
 
         $response = $this->get('/fb/menu-items');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/MenuItems/Index')
-            ->has('menuItems', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Fb/MenuItems/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.menuItems', 1));
     }
 
     public function test_menu_item_create_redirects_to_index(): void
@@ -187,9 +185,7 @@ class FbCatalogPagesTest extends TestCase
         $response = $this->get('/fb/dining-tables');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/DiningTables/Index')
-            ->has('tables', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Fb/DiningTables/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('tables', 1));
     }
 }

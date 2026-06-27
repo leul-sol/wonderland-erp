@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S4FinanceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class ReceivableController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,19 +24,16 @@ class ReceivableController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s4->receivables('open');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $receivables = $response['data'] ?? [];
-
         return Inertia::render('Finance/Receivables/Index', [
-            'receivables' => is_array($receivables) ? $receivables : [],
             'canSettle' => $this->auth->hasAnyPermission(['S4.finance.receivables.settle']),
+            'receivables' => $this->deferApi(function () {
+                $response = $this->s4->receivables('open');
+                $receivables = $response['data'] ?? [];
+
+                return is_array($receivables) ? $receivables : [];
+            }),
         ]);
     }
 

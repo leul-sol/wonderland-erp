@@ -1,9 +1,10 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
@@ -11,20 +12,22 @@ import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    employees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCreate: { type: Boolean, default: false },
-    departments: { type: Array, default: () => [] },
-    positions: { type: Array, default: () => [] },
     defaultHireDate: { type: String, default: '' },
 });
+
+const employees = computed(() => props.pageLoad?.employees ?? []);
+const departments = computed(() => props.pageLoad?.departments ?? []);
+const positions = computed(() => props.pageLoad?.positions ?? []);
 
 const showCreateModal = ref(false);
 
 const form = useForm({
     full_name: '',
     email: '',
-    department_id: props.departments[0]?.id ?? '',
-    position_id: props.positions[0]?.id ?? '',
+    department_id: '',
+    position_id: '',
     job_title: '',
     base_salary: '',
     pension_category: 'covered',
@@ -49,8 +52,8 @@ function formatMoney(value) {
 
 function openCreateModal() {
     form.reset();
-    form.department_id = props.departments[0]?.id ?? '';
-    form.position_id = props.positions[0]?.id ?? '';
+    form.department_id = departments.value[0]?.id ?? '';
+    form.position_id = positions.value[0]?.id ?? '';
     form.pension_category = 'covered';
     form.default_role = 'report_viewer';
     form.hire_date = props.defaultHireDate;
@@ -85,6 +88,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <DataTable list-title="Employee list" :columns="columns" :rows="employees" empty-message="No employees yet." selectable>
             <template #empty>
                 <p>No employees yet.</p>
@@ -106,6 +110,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <RowActions :items="[{ label: 'Open', href: `/hr/employees/${row.id}` }]" />
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="Add employee" subtitle="Creates workforce record; S1 user is provisioned asynchronously" size="lg" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

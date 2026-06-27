@@ -26,17 +26,19 @@ class GroupBookingPagesTest extends TestCase
     public function test_group_booking_index_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('groupBookings')->once()->with(null)->andReturn([
-                'data' => [[
-                    'id' => 1,
-                    'group_code' => 'GRP-ABC123',
-                    'group_name' => 'Corporate Retreat',
-                    'contact_name' => 'Planner',
-                    'room_count' => 2,
-                    'status' => 'confirmed',
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'groupBookings' => [
+                    'data' => [[
+                        'id' => 1,
+                        'group_code' => 'GRP-ABC123',
+                        'group_name' => 'Corporate Retreat',
+                        'contact_name' => 'Planner',
+                        'room_count' => 2,
+                        'status' => 'confirmed',
+                    ]],
+                ],
+                'roomTypes' => ['data' => []],
             ]);
-            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/group-bookings');
@@ -44,22 +46,25 @@ class GroupBookingPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('GroupBookings/Index')
-            ->has('groupBookings', 1)
             ->where('filters.tab', 'all')
         );
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.groupBookings', 1));
     }
 
     public function test_group_booking_index_filters_by_status(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('groupBookings')->once()->with('checked_in')->andReturn(['data' => []]);
-            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'groupBookings' => ['data' => []],
+                'roomTypes' => ['data' => []],
+            ]);
         });
 
         $response = $this->get('/group-bookings?tab=checked_in');
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->where('filters.tab', 'checked_in'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.groupBookings'));
     }
 
     public function test_group_booking_create_redirects_to_index(): void

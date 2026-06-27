@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class GuestProfileController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -20,19 +22,15 @@ class GuestProfileController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->guestProfiles();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $paginator = $response['data'] ?? [];
-        $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : (is_array($paginator) ? $paginator : []);
-
         return Inertia::render('FrontDesk/Guests/Index', [
-            'guests' => $guests,
+            'guests' => $this->deferApi(function () {
+                $response = $this->s3->guestProfiles();
+                $paginator = $response['data'] ?? [];
+
+                return is_array($paginator['data'] ?? null) ? $paginator['data'] : (is_array($paginator) ? $paginator : []);
+            }),
         ]);
     }
 

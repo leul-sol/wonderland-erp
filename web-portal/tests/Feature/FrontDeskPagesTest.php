@@ -44,10 +44,8 @@ class FrontDeskPagesTest extends TestCase
         $response = $this->get('/front-desk/rooms');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('FrontDesk/Rooms/Index')
-            ->has('rooms', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Rooms/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('rooms', 1));
     }
 
     public function test_check_in_page_renders(): void
@@ -79,23 +77,27 @@ class FrontDeskPagesTest extends TestCase
     public function test_reservations_index_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('reservations')->once()->with(null)->andReturn([
-                'data' => [[
-                    'id' => 1,
-                    'confirmation_code' => 'WH-ABC123',
-                    'guest_name' => 'Jane Guest',
-                    'status' => 'confirmed',
-                    'check_in_date' => '2026-06-24',
-                    'check_out_date' => '2026-06-25',
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'reservations' => [
+                    'data' => [[
+                        'id' => 1,
+                        'confirmation_code' => 'WH-ABC123',
+                        'guest_name' => 'Jane Guest',
+                        'status' => 'confirmed',
+                        'check_in_date' => '2026-06-24',
+                        'check_out_date' => '2026-06-25',
+                    ]],
+                ],
+                'roomTypes' => ['data' => []],
+                'guests' => ['data' => ['data' => []]],
             ]);
-            $mock->shouldReceive('roomTypes')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('guestProfiles')->once()->andReturn(['data' => ['data' => []]]);
         });
 
-        $this->get('/front-desk/reservations')
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('FrontDesk/Reservations/Index')->has('reservations', 1));
+        $response = $this->get('/front-desk/reservations');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Reservations/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.reservations', 1));
     }
 
     public function test_reservation_show_renders(): void
@@ -136,9 +138,11 @@ class FrontDeskPagesTest extends TestCase
             ]);
         });
 
-        $this->get('/front-desk/guests')
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('FrontDesk/Guests/Index')->has('guests', 1));
+        $response = $this->get('/front-desk/guests');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Guests/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('guests', 1));
     }
 
     public function test_folio_invoice_download_returns_json(): void

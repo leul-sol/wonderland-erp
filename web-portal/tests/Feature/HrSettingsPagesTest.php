@@ -42,10 +42,12 @@ class HrSettingsPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Hr/Settings/Index')
-            ->has('leaveTypes', 1)
-            ->has('overtimeRates', 1)
-            ->has('assetTypes', 1)
             ->where('canUpdateOvertimeRates', true));
+        $this->assertDeferredInertia($response, fn ($page) => $page
+            ->has('pageLoad.leaveTypes', 1)
+            ->has('pageLoad.overtimeRates', 1)
+            ->has('pageLoad.assetTypes', 1)
+        );
     }
 
     public function test_overtime_rate_update_posts_to_s2(): void

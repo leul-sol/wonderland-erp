@@ -1,22 +1,26 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    leaveRequests: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCreate: { type: Boolean, default: false },
     canApprove: { type: Boolean, default: false },
     canReject: { type: Boolean, default: false },
     canCancel: { type: Boolean, default: false },
 });
 
+const leaveRequests = computed(() => props.pageLoad?.leaveRequests ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
+
 const form = useForm({
-    employee_id: props.employees[0]?.id ?? '',
+    employee_id: '',
     leave_type: 'annual',
     start_date: '',
     end_date: '',
@@ -83,6 +87,7 @@ async function cancel(id) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canCreate" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">New request</h3>
             <form class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" @submit.prevent="submit">
@@ -161,5 +166,6 @@ async function cancel(id) {
                 </div>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

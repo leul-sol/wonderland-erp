@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Fb;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -13,25 +15,31 @@ use Inertia\Response;
 
 class MenuItemController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->menuItemsCatalog(false);
-            $categories = $this->s3->menuCategories(false);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'fb.settings.index');
-        }
-
         return Inertia::render('Fb/MenuItems/Index', [
-            'menuItems' => $response['data'] ?? [],
-            'categories' => $categories['data'] ?? [],
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'menuItems' => ['path' => '/s3/api/v1/menu-items', 'query' => ['active_only' => false]],
+                    'categories' => ['path' => '/s3/api/v1/menu-categories', 'query' => ['active_only' => false]],
+                ]);
+                $response = $this->requireParallelResult($results, 'menuItems');
+                $categories = $results['categories'] ?? ['data' => []];
+
+                return [
+                    'menuItems' => $response['data'] ?? [],
+                    'categories' => $categories['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

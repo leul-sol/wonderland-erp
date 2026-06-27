@@ -1,13 +1,17 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
-    lowStockAlerts: { type: Array, default: () => [] },
-    expiryAlerts: { type: Array, default: () => [] },
+const props = defineProps({
+    pageLoad: { type: Object, default: null },
 });
+
+const lowStockAlerts = computed(() => props.pageLoad?.lowStockAlerts ?? []);
+const expiryAlerts = computed(() => props.pageLoad?.expiryAlerts ?? []);
 
 const lowStockColumns = [
     { key: 'sku', label: 'SKU' },
@@ -34,6 +38,7 @@ const expiryColumns = [
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-800">
                 Low stock ({{ lowStockAlerts.length }})
@@ -77,5 +82,6 @@ const expiryColumns = [
                 </template>
             </DataTable>
         </section>
+        </PageDataSection>
     </AppLayout>
 </template>

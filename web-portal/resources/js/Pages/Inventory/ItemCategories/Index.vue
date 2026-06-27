@@ -1,6 +1,7 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -51,6 +52,7 @@ async function deactivate(category) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="categories">
         <form class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add category</h3>
             <div class="grid gap-3 sm:grid-cols-3">
@@ -68,5 +70,6 @@ async function deactivate(category) {
                 <button type="button" class="wh-btn-secondary text-xs" @click="deactivate(row)">Deactivate</button>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

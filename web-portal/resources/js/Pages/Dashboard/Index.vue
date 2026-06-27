@@ -1,26 +1,31 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import ApprovalList from '../../Components/Dashboard/ApprovalList.vue';
 import DateRangeFilter from '../../Components/Dashboard/DateRangeFilter.vue';
 import KpiStatCard from '../../Components/Dashboard/KpiStatCard.vue';
 import QuickLinksGrid from '../../Components/Dashboard/QuickLinksGrid.vue';
 import RevenueBySourceChart from '../../Components/Dashboard/RevenueBySourceChart.vue';
+import PageDataSection from '../../Components/PageDataSection.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
-defineProps({
-    persona: { type: String, default: 'default' },
-    user_name: { type: String, default: 'User' },
-    roles: { type: Array, default: () => [] },
-    filters: { type: Object, default: () => ({ from: '', to: '', label: '' }) },
-    kpis: { type: Array, default: () => [] },
-    secondary_kpis: { type: Array, default: () => [] },
-    quick_links: { type: Array, default: () => [] },
-    approvals: { type: Array, default: () => [] },
-    notices: { type: Array, default: () => [] },
-    occupancy: { type: Object, default: null },
-    attendance: { type: Object, default: null },
-    revenue_chart: { type: Object, default: null },
+const props = defineProps({
+    filters: { type: Object, default: () => ({ from: '', to: '' }) },
+    metrics: { type: Object, default: null },
 });
+
+const persona = computed(() => props.metrics?.persona ?? 'default');
+const user_name = computed(() => props.metrics?.user_name ?? 'User');
+const roles = computed(() => props.metrics?.roles ?? []);
+const kpis = computed(() => props.metrics?.kpis ?? []);
+const secondary_kpis = computed(() => props.metrics?.secondary_kpis ?? []);
+const quick_links = computed(() => props.metrics?.quick_links ?? []);
+const approvals = computed(() => props.metrics?.approvals ?? []);
+const notices = computed(() => props.metrics?.notices ?? []);
+const occupancy = computed(() => props.metrics?.occupancy ?? null);
+const attendance = computed(() => props.metrics?.attendance ?? null);
+const revenue_chart = computed(() => props.metrics?.revenue_chart ?? null);
+const dateLabel = computed(() => props.metrics?.filters?.label ?? '');
 </script>
 
 <template>
@@ -29,7 +34,7 @@ defineProps({
             <DateRangeFilter
                 :from="filters.from"
                 :to="filters.to"
-                :label="filters.label"
+                :label="dateLabel"
             />
             <span
                 v-for="role in roles.slice(0, 1)"
@@ -40,6 +45,7 @@ defineProps({
             </span>
         </div>
 
+        <PageDataSection keys="metrics">
         <section v-if="kpis.length" class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiStatCard
                 v-for="kpi in kpis"
@@ -53,7 +59,7 @@ defineProps({
                 <div class="wh-dash-panel-header">
                     <div>
                         <h3>Revenue by source</h3>
-                        <p class="mt-0.5 text-xs text-slate-500">{{ filters.label }}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">{{ dateLabel }}</p>
                     </div>
                     <Link href="/finance/dashboard/operations" class="text-xs font-medium text-teal-700 hover:underline">
                         Operations dashboard
@@ -154,5 +160,6 @@ defineProps({
                 v-bind="kpi"
             />
         </section>
+        </PageDataSection>
     </AppLayout>
 </template>

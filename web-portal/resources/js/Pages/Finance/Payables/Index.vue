@@ -2,6 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -42,6 +43,7 @@ function settle(payable) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="payables">
         <DataTable list-title="Payable list" selectable :columns="columns" :rows="payables" empty-message="No open payables.">
             <template #cell-balance="{ row }">
                 <span class="wh-money font-semibold">ETB {{ formatMoney(row.balance) }}</span>
@@ -74,5 +76,6 @@ function settle(payable) {
                 </div>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

@@ -73,12 +73,24 @@ class AuthController extends Controller
 
         AuditService::logFromRequest($request, 'login.success', $user->id);
 
+        $claims = $this->jwt->buildClaims($user);
+
         return response()->json([
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
             'token_type' => 'Bearer',
             'expires_in' => config('jwt.ttl') * 60,
             'must_change_password' => (bool) $user->must_change_password,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'name' => $user->display_name,
+                'employee_id' => $user->employee_id,
+                'roles' => $claims['roles'] ?? [],
+                'permissions' => $claims['permissions'] ?? [],
+                'must_change_password' => (bool) $user->must_change_password,
+            ],
         ]);
     }
 

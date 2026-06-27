@@ -53,6 +53,29 @@ class S3PortalNavigationTest extends TestCase
         $emptyPaginated = ['data' => ['data' => []]];
 
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock) use ($empty, $emptyPaginated): void {
+            $mock->shouldReceive('fetchMany')->andReturnUsing(function (array $requests) use ($empty, $emptyPaginated): array {
+                $pool = [
+                    'reservations' => $empty,
+                    'roomTypes' => $empty,
+                    'guests' => ['data' => ['data' => []]],
+                    'rooms' => $empty,
+                    'orders' => $empty,
+                    'folios' => $emptyPaginated,
+                    'tables' => $empty,
+                    'menuItems' => $empty,
+                    'categories' => $empty,
+                    'items' => $empty,
+                    'purchaseOrders' => $empty,
+                    'suppliers' => $empty,
+                    'groupBookings' => $empty,
+                ];
+                $results = [];
+                foreach (array_keys($requests) as $key) {
+                    $results[$key] = $pool[$key] ?? $empty;
+                }
+
+                return $results;
+            });
             $mock->shouldReceive('rooms')->andReturn($empty);
             $mock->shouldReceive('reservations')->andReturn($empty);
             $mock->shouldReceive('guestProfiles')->andReturn(['data' => ['data' => []]]);
@@ -78,6 +101,11 @@ class S3PortalNavigationTest extends TestCase
         });
 
         $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('fetchMany')->andReturn([
+                'employees' => ['data' => []],
+                'departments' => ['data' => []],
+                'positions' => ['data' => []],
+            ]);
             $mock->shouldReceive('employees')->andReturn(['data' => []]);
         });
 

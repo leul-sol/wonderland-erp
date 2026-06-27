@@ -36,24 +36,27 @@ class HrPayrollPagesTest extends TestCase
     public function test_employees_index_renders(): void
     {
         $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('employees')->once()->andReturn([
-                'data' => [[
-                    'id' => 1,
-                    'employee_number' => 'EMP-0001',
-                    'full_name' => 'Selam Tadesse',
-                    'department' => ['name' => 'Front office'],
-                    'base_salary' => '12000.00',
-                    'status' => 'active',
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'employees' => [
+                    'data' => [[
+                        'id' => 1,
+                        'employee_number' => 'EMP-0001',
+                        'full_name' => 'Selam Tadesse',
+                        'department' => ['name' => 'Front office'],
+                        'base_salary' => '12000.00',
+                        'status' => 'active',
+                    ]],
+                ],
+                'departments' => ['data' => []],
+                'positions' => ['data' => []],
             ]);
-            $mock->shouldReceive('departments')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('positions')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/hr/employees');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Hr/Employees/Index')->has('employees', 1));
+        $response->assertInertia(fn ($page) => $page->component('Hr/Employees/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.employees', 1));
     }
 
     public function test_employee_show_includes_platform_user(): void
@@ -101,6 +104,7 @@ class HrPayrollPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('Hr/Leave/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.leaveRequests'));
     }
 
     public function test_payroll_run_show_includes_approval_flags(): void
@@ -211,5 +215,6 @@ class HrPayrollPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('Payroll/Severance/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.calculations'));
     }
 }

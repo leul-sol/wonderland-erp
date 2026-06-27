@@ -2,18 +2,18 @@
 import { Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
-import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    permissions: { type: Array, default: () => [] },
-    meta: { type: Object, default: null },
+    pageLoad: { type: Object, default: null },
     domain: { type: String, default: '' },
-    domains: { type: Array, default: () => [] },
-    loadError: { type: String, default: null },
-    loadErrorCode: { type: String, default: null },
 });
+
+const permissions = computed(() => props.pageLoad?.permissions ?? []);
+const meta = computed(() => props.pageLoad?.meta ?? null);
+const domains = computed(() => props.pageLoad?.domains ?? []);
 
 const columns = [
     { key: 'action', label: 'Permission' },
@@ -24,7 +24,7 @@ const columns = [
 const groupedBySystem = computed(() => {
     const groups = {};
 
-    for (const permission of props.permissions) {
+    for (const permission of permissions.value) {
         const system = systemLabel(permission.action ?? '');
         groups[system] = (groups[system] ?? 0) + 1;
     }
@@ -79,8 +79,7 @@ const breadcrumbs = [
             </template>
         </PageHeader>
 
-        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
-
+        <PageDataSection keys="pageLoad">
         <div class="mb-4 flex flex-wrap items-center gap-3">
             <label class="text-sm text-slate-600">
                 Domain
@@ -114,5 +113,6 @@ const breadcrumbs = [
         <p v-if="meta?.total" class="mt-3 text-xs text-slate-500">
             Showing {{ permissions.length }} of {{ meta.total }} permissions
         </p>
+        </PageDataSection>
     </AppLayout>
 </template>

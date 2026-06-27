@@ -55,6 +55,14 @@ use App\Http\Middleware\EnsurePortalAuthenticated;
 use App\Http\Middleware\RedirectIfPortalAuthenticated;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/favicon.ico', function () {
+    $logoPath = public_path(ltrim((string) config('brand.favicon', '/images/brand/logo.png'), '/'));
+
+    abort_unless(is_file($logoPath), 404);
+
+    return response()->file($logoPath, ['Content-Type' => 'image/png']);
+});
+
 Route::middleware(RedirectIfPortalAuthenticated::class)->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');

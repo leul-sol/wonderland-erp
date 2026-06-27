@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
@@ -63,6 +64,7 @@ function canChangeStatus(row) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="rooms">
         <div class="mb-4 flex flex-wrap gap-2">
             <button
                 v-for="filter in statusFilters"
@@ -117,5 +119,6 @@ function canChangeStatus(row) {
                 <span v-else-if="row.status === 'occupied'" class="text-xs text-slate-400">In-house</span>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

@@ -3,7 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title inertia>Wonderland ERP</title>
+        <title inertia>{{ config('brand.product') }}</title>
+        <link rel="icon" type="image/png" href="{{ config('brand.favicon') }}">
+        <link rel="apple-touch-icon" href="{{ config('brand.favicon') }}">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @inertiaHead
     </head>

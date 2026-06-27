@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S1AdminClient;
 use App\Services\Api\S2WorkforceClient;
@@ -15,7 +17,9 @@ use Inertia\Response;
 
 class EmployeeController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S2WorkforceClient $s2,
@@ -24,22 +28,27 @@ class EmployeeController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s2->employees();
-            $departments = $this->s2->departments();
-            $positions = $this->s2->positions();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Hr/Employees/Index', [
-            'employees' => $response['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.employees.create']),
-            'departments' => $departments['data'] ?? [],
-            'positions' => $positions['data'] ?? [],
             'defaultHireDate' => now()->toDateString(),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s2, [
+                    'employees' => ['path' => '/s2/api/v1/employees', 'query' => []],
+                    'departments' => ['path' => '/s2/api/v1/departments', 'query' => []],
+                    'positions' => ['path' => '/s2/api/v1/positions', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'employees');
+                $departments = $results['departments'] ?? ['data' => []];
+                $positions = $results['positions'] ?? ['data' => []];
+
+                return [
+                    'employees' => $response['data'] ?? [],
+                    'departments' => $departments['data'] ?? [],
+                    'positions' => $positions['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

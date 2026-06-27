@@ -1,23 +1,27 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
+import { computed } from 'vue';
 import DataTable from '../../../../Components/DataTable.vue';
+import PageDataSection from '../../../../Components/PageDataSection.vue';
 import PageHeader from '../../../../Components/PageHeader.vue';
 import RowActions from '../../../../Components/RowActions.vue';
 import { confirmAction } from '../../../../composables/useConfirm';
 import AppLayout from '../../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    positions: { type: Array, default: () => [] },
-    departments: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCreate: { type: Boolean, default: false },
     canUpdate: { type: Boolean, default: false },
     canDelete: { type: Boolean, default: false },
 });
 
+const positions = computed(() => props.pageLoad?.positions ?? []);
+const departments = computed(() => props.pageLoad?.departments ?? []);
+
 const form = useForm({
     title: '',
-    department_id: props.departments[0]?.id ?? '',
+    department_id: '',
     grade: '',
     transport_allowance: '',
     housing_allowance: '',
@@ -79,6 +83,7 @@ async function removePosition(position) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canCreate" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">New position</h3>
             <form class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" @submit.prevent="submit">
@@ -144,5 +149,6 @@ async function removePosition(position) {
                 />
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

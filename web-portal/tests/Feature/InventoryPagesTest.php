@@ -31,24 +31,27 @@ class InventoryPagesTest extends TestCase
     public function test_inventory_items_page_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('inventoryItems')->once()->with(false)->andReturn([
-                'data' => [[
-                    'id' => 1,
-                    'sku' => 'BEEF-001',
-                    'name' => 'Beef patty',
-                    'unit' => 'kg',
-                    'quantity_on_hand' => '12.000',
-                    'reorder_level' => '5.000',
-                    'unit_cost' => '450.00',
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'items' => [
+                    'data' => [[
+                        'id' => 1,
+                        'sku' => 'BEEF-001',
+                        'name' => 'Beef patty',
+                        'unit' => 'kg',
+                        'quantity_on_hand' => '12.000',
+                        'reorder_level' => '5.000',
+                        'unit_cost' => '450.00',
+                    ]],
+                ],
+                'categories' => ['data' => []],
             ]);
-            $mock->shouldReceive('itemCategories')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/inventory/items');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Inventory/Items/Index')->has('items', 1));
+        $response->assertInertia(fn ($page) => $page->component('Inventory/Items/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.items', 1));
     }
 
     public function test_inventory_item_show_renders_stock_and_movements(): void
@@ -122,10 +125,8 @@ class InventoryPagesTest extends TestCase
         $response = $this->get('/inventory/alerts');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Inventory/Alerts/Index')
-            ->has('lowStockAlerts', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Inventory/Alerts/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.lowStockAlerts', 1));
     }
 
     public function test_valuation_page_renders(): void
@@ -148,10 +149,8 @@ class InventoryPagesTest extends TestCase
         $response = $this->get('/inventory/valuation');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Inventory/Valuation/Index')
-            ->where('totalValue', '5400')
-        );
+        $response->assertInertia(fn ($page) => $page->component('Inventory/Valuation/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->where('pageLoad.totalValue', '5400'));
     }
 
     public function test_supplier_show_exposes_payment_form(): void
@@ -287,6 +286,7 @@ class InventoryPagesTest extends TestCase
         $response = $this->get('/finance/payables');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Finance/Payables/Index')->has('payables', 1));
+        $response->assertInertia(fn ($page) => $page->component('Finance/Payables/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('payables', 1));
     }
 }

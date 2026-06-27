@@ -2,20 +2,17 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\PermissionMenuBuilder;
-use App\Support\SidebarNavBuilder;
-use App\Support\TaskMenuBuilder;
+use App\Support\PortalNavigationCache;
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
     public function __construct(
-        private readonly PermissionMenuBuilder $menu,
-        private readonly TaskMenuBuilder $tasks,
-        private readonly SidebarNavBuilder $navigation,
+        private readonly PortalNavigationCache $shell,
     ) {
     }
 
@@ -23,7 +20,17 @@ class HandleInertiaRequests extends Middleware
 
     public function version(Request $request): ?string
     {
-        return parent::version($request);
+        $base = parent::version($request) ?? '';
+        $permissions = session('portal.permissions', []);
+
+        if (! is_array($permissions)) {
+            return $base !== '' ? $base : null;
+        }
+
+        sort($permissions);
+        $shellVersion = hash('xxh128', implode('|', $permissions));
+
+        return trim("{$base}-{$shellVersion}", '-');
     }
 
     /**
@@ -34,15 +41,23 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'app' => [
-                'name' => 'Wonderland ERP',
+                'name' => config('brand.product'),
+            ],
+            'brand' => [
+                'name' => config('brand.name'),
+                'product' => config('brand.product'),
+                'tagline' => config('brand.tagline'),
+                'logo' => config('brand.logo'),
+                'logo_mark' => config('brand.logo_mark'),
+                'favicon' => config('brand.favicon'),
             ],
             'auth' => [
                 'user' => session('portal.user'),
                 'must_change_password' => (bool) data_get(session('portal.user'), 'must_change_password', false),
             ],
-            'menu' => fn () => $this->menu->build(),
-            'tasks' => fn () => $this->tasks->build(),
-            'navigation' => fn () => $this->navigation->build(),
+            'menu' => Inertia::once(fn () => $this->shell->menu()),
+            'tasks' => Inertia::once(fn () => $this->shell->tasks()),
+            'navigation' => Inertia::once(fn () => $this->shell->navigation()),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

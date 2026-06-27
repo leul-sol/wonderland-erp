@@ -3,7 +3,7 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
-import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
@@ -17,10 +17,6 @@ defineProps({
     canDelete: { type: Boolean, default: false },
     canSyncPermissions: { type: Boolean, default: false },
     canBrowsePermissions: { type: Boolean, default: false },
-    loadError: { type: String, default: null },
-    loadErrorCode: { type: String, default: null },
-    loadErrorTitle: { type: String, default: null },
-    loadErrorRecommendation: { type: String, default: null },
 });
 
 const showCreateModal = ref(false);
@@ -99,14 +95,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
-        <LoadErrorBanner
-            v-if="loadError"
-            :title="loadErrorTitle"
-            :message="loadError"
-            :recommendation="loadErrorRecommendation"
-            :code="loadErrorCode"
-        />
-
+        <PageDataSection keys="roles">
         <DataTable list-title="Role list" selectable :columns="columns" :rows="roles" empty-message="No roles configured.">
             <template #cell-type="{ row }">
                 <StatusBadge :status="row.is_system ? 'locked' : 'draft'" />
@@ -139,6 +128,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 </div>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="Create custom role" subtitle="System roles are seeded; add roles for special access bundles" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

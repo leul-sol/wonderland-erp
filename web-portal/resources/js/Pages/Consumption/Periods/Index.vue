@@ -1,22 +1,26 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    periods: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
-    employeeMap: { type: Object, default: () => ({}) },
+    pageLoad: { type: Object, default: null },
     canWrite: { type: Boolean, default: false },
     defaultPeriodStart: { type: String, required: true },
     defaultPeriodEnd: { type: String, required: true },
 });
 
+const periods = computed(() => props.pageLoad?.periods ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
+const employeeMap = computed(() => props.pageLoad?.employeeMap ?? {});
+
 const openForm = useForm({
-    employee_id: props.employees[0]?.id ?? '',
+    employee_id: '',
     period_start: props.defaultPeriodStart,
     period_end: props.defaultPeriodEnd,
 });
@@ -38,7 +42,7 @@ function formatMoney(value) {
 }
 
 function employeeLabel(employeeId) {
-    return props.employeeMap[employeeId] ?? `Employee #${employeeId}`;
+    return employeeMap.value[employeeId] ?? `Employee #${employeeId}`;
 }
 
 function deductionLabel(status) {
@@ -81,6 +85,7 @@ function startMealOrder(periodId) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canWrite" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Open period</h3>
             <form class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="openPeriod">
@@ -150,5 +155,6 @@ function startMealOrder(periodId) {
                 </p>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

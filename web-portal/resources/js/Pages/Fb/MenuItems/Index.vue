@@ -1,18 +1,21 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    menuItems: { type: Array, default: () => [] },
-    categories: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
 });
+
+const menuItems = computed(() => props.pageLoad?.menuItems ?? []);
+const categories = computed(() => props.pageLoad?.categories ?? []);
 
 const showCreateModal = ref(false);
 
@@ -71,6 +74,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <DataTable list-title="All menu items" :columns="columns" :rows="menuItems" empty-message="No menu items found.">
             <template #empty>
                 <p>No menu items found.</p>
@@ -98,6 +102,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <StatusBadge :status="row.is_active ? 'active' : 'inactive'" />
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="New menu item" subtitle="Add a sellable item to the restaurant catalog" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

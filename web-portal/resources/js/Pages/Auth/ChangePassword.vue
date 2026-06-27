@@ -2,7 +2,7 @@
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 
-defineProps({
+const props = defineProps({
     required: { type: Boolean, default: true },
     username: { type: String, default: '' },
 });
@@ -22,21 +22,24 @@ function submit() {
 </script>
 
 <template>
-    <GuestLayout :title="required ? 'Change your password' : 'Update password'">
+    <GuestLayout
+        :title="required ? 'Change your password' : 'Update password'"
+        :subtitle="required ? 'Set a new password before you can access the portal.' : 'Keep your account secure with a strong password.'"
+    >
         <div
             v-if="required"
-            class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
         >
             You must set a new password before continuing to Wonderland ERP.
         </div>
 
-        <p v-if="username" class="mb-5 text-sm text-slate-600">
-            Signed in as <span class="font-medium text-slate-900">{{ username }}</span>
+        <p v-if="username" class="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            Signed in as <span class="font-semibold text-slate-900">{{ username }}</span>
         </p>
 
         <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <label for="current_password" class="mb-1 block text-sm font-medium text-slate-700">
+                <label for="current_password" class="mb-1.5 block text-sm font-medium text-slate-700">
                     Current password
                 </label>
                 <input
@@ -53,7 +56,7 @@ function submit() {
             </div>
 
             <div>
-                <label for="password" class="mb-1 block text-sm font-medium text-slate-700">
+                <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700">
                     New password
                 </label>
                 <input
@@ -73,7 +76,7 @@ function submit() {
             </div>
 
             <div>
-                <label for="password_confirmation" class="mb-1 block text-sm font-medium text-slate-700">
+                <label for="password_confirmation" class="mb-1.5 block text-sm font-medium text-slate-700">
                     Confirm new password
                 </label>
                 <input
@@ -91,7 +94,7 @@ function submit() {
             </button>
         </form>
 
-        <div class="mt-6 text-center">
+        <div class="mt-6 border-t border-slate-100 pt-6 text-center">
             <Link
                 href="/logout"
                 method="post"

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S1AdminClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class RoleController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -24,29 +26,13 @@ class RoleController extends Controller
 
     public function index(): Response
     {
-        try {
-            $response = $this->s1->roles(['per_page' => 50]);
-        } catch (ApiException $e) {
-            return Inertia::render('Admin/Roles/Index', [
-                'roles' => [],
-                'canCreate' => $this->auth->hasAnyPermission(['S1.identity.roles.create']),
-                'canUpdate' => $this->auth->hasAnyPermission(['S1.identity.roles.update']),
-                'canDelete' => $this->auth->hasAnyPermission(['S1.identity.roles.delete']),
-                'canSyncPermissions' => $this->auth->hasAnyPermission(['S1.identity.roles.sync_permissions']),
-                'canBrowsePermissions' => $this->auth->hasAnyPermission(['S1.identity.permissions.read']),
-                ...$this->apiLoadErrorProps($e),
-            ]);
-        }
-
         return Inertia::render('Admin/Roles/Index', [
-            'roles' => $response['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S1.identity.roles.create']),
             'canUpdate' => $this->auth->hasAnyPermission(['S1.identity.roles.update']),
             'canDelete' => $this->auth->hasAnyPermission(['S1.identity.roles.delete']),
             'canSyncPermissions' => $this->auth->hasAnyPermission(['S1.identity.roles.sync_permissions']),
             'canBrowsePermissions' => $this->auth->hasAnyPermission(['S1.identity.permissions.read']),
-            'loadError' => null,
-            'loadErrorCode' => null,
+            'roles' => $this->deferApi(fn () => ($this->s1->roles(['per_page' => 50]))['data'] ?? []),
         ]);
     }
 

@@ -3,6 +3,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
@@ -58,6 +59,7 @@ function submitCreate() {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="suppliers">
         <DataTable list-title="Supplier list" selectable :columns="columns" :rows="suppliers" empty-message="No suppliers found.">
             <template #cell-name="{ row }">
                 <Link :href="`/inventory/suppliers/${row.id}`" class="wh-table-link">{{ row.name }}</Link>
@@ -66,6 +68,7 @@ function submitCreate() {
                 <span class="wh-money">ETB {{ row.outstanding_balance ?? '0.00' }}</span>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showCreateModal"

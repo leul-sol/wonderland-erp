@@ -1,22 +1,25 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    records: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     filterDate: { type: String, required: true },
     canCreate: { type: Boolean, default: false },
 });
 
+const records = computed(() => props.pageLoad?.records ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
+
 const dateFilter = ref(props.filterDate);
 
 const form = useForm({
-    employee_id: props.employees[0]?.id ?? '',
+    employee_id: '',
     work_date: props.filterDate,
     check_in: '08:00',
     check_out: '17:00',
@@ -51,6 +54,7 @@ function filterByDate() {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section class="wh-card mb-6 p-4">
             <form class="flex flex-wrap items-end gap-3" @submit.prevent="filterByDate">
                 <div>
@@ -111,5 +115,6 @@ function filterByDate() {
                 <StatusBadge :status="row.status" />
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

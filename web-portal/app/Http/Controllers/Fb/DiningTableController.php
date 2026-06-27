@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Fb;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class DiningTableController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -20,16 +22,10 @@ class DiningTableController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->diningTables(false);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'fb.settings.index');
-        }
-
         return Inertia::render('Fb/DiningTables/Index', [
-            'tables' => $response['data'] ?? [],
+            'tables' => $this->deferApi(fn () => ($this->s3->diningTables(false))['data'] ?? []),
         ]);
     }
 

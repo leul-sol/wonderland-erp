@@ -40,27 +40,27 @@ class FbPagesTest extends TestCase
         $response = $this->get('/fb/menu');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Fb/Menu/Index')
-            ->has('menuItems', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Fb/Menu/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('menuItems', 1));
     }
 
     public function test_orders_index_lists_open_orders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('orders')->once()->with('open')->andReturn([
-                'data' => [[
-                    'id' => 2,
-                    'order_number' => 'ORD-0002',
-                    'customer_type' => 'outside_cash',
-                    'status' => 'open',
-                    'total_amount' => '500.00',
-                    'bill' => null,
-                ]],
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'orders' => [
+                    'data' => [[
+                        'id' => 2,
+                        'order_number' => 'ORD-0002',
+                        'customer_type' => 'outside_cash',
+                        'status' => 'open',
+                        'total_amount' => '500.00',
+                        'bill' => null,
+                    ]],
+                ],
+                'folios' => ['data' => ['data' => []]],
+                'tables' => ['data' => []],
             ]);
-            $mock->shouldReceive('folios')->once()->with('open')->andReturn(['data' => ['data' => []]]);
-            $mock->shouldReceive('diningTables')->once()->andReturn(['data' => []]);
         });
 
         $response = $this->get('/fb/orders?tab=open');
@@ -69,8 +69,8 @@ class FbPagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Fb/Orders/Index')
             ->where('filters.tab', 'open')
-            ->has('orders', 1)
         );
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.orders', 1));
     }
 
     public function test_order_create_redirects_to_index_with_folio_query(): void

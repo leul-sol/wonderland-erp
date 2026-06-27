@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -12,6 +13,7 @@ use Inertia\Response;
 
 class AlertController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -19,18 +21,18 @@ class AlertController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $lowStock = $this->s3->lowStockAlerts();
-            $expiry = $this->s3->expiryAlerts();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'inventory.items.index');
-        }
-
         return Inertia::render('Inventory/Alerts/Index', [
-            'lowStockAlerts' => $this->normalizeAlerts($lowStock['data'] ?? []),
-            'expiryAlerts' => $this->normalizeExpiryAlerts($expiry['data'] ?? []),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $lowStock = $this->s3->lowStockAlerts();
+                $expiry = $this->s3->expiryAlerts();
+
+                return [
+                    'lowStockAlerts' => $this->normalizeAlerts($lowStock['data'] ?? []),
+                    'expiryAlerts' => $this->normalizeExpiryAlerts($expiry['data'] ?? []),
+                ];
+            }),
         ]);
     }
 

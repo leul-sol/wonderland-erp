@@ -51,8 +51,8 @@ class HrOvertimePagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Hr/Overtime/Index')
             ->where('filterStatus', 'pending')
-            ->has('overtimeRecords', 1)
             ->where('canApprove', true));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.overtimeRecords', 1));
     }
 
     public function test_overtime_store_posts_to_s2(): void

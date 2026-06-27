@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class SupplierController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -21,16 +23,10 @@ class SupplierController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->suppliers();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Inventory/Suppliers/Index', [
-            'suppliers' => $response['data'] ?? [],
+            'suppliers' => $this->deferApi(fn () => ($this->s3->suppliers())['data'] ?? []),
         ]);
     }
 

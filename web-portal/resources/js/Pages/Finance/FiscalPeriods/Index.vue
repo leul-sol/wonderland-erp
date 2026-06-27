@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -37,6 +38,7 @@ function lockPeriod(id) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="fiscalPeriods">
         <p class="mb-4 text-sm text-slate-600">
             Click close twice on an open period: first moves to closing, second completes close. Lock only after closed.
         </p>
@@ -66,5 +68,6 @@ function lockPeriod(id) {
                 </div>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

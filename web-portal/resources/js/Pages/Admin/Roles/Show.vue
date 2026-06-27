@@ -1,5 +1,5 @@
 <script setup>
-import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import { confirmAction } from '../../../composables/useConfirm';
@@ -13,9 +13,6 @@ const props = defineProps({
     canDelete: { type: Boolean, default: false },
     canSyncPermissions: { type: Boolean, default: false },
 });
-
-const page = usePage();
-const flashSuccess = computed(() => page.props.flash?.success ?? null);
 
 const form = useForm({
     permission_ids: [...props.assignedPermissionIds],
@@ -160,13 +157,6 @@ onBeforeUnmount(() => {
                 <Link href="/admin/roles" class="wh-btn-secondary">All roles</Link>
             </template>
         </PageHeader>
-
-        <div
-            v-if="flashSuccess"
-            class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-        >
-            {{ flashSuccess }}
-        </div>
 
         <section v-if="role.description" class="wh-card mb-4 p-4 text-sm text-slate-600">
             {{ role.description }}

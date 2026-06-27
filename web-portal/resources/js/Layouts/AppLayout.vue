@@ -1,9 +1,10 @@
 <script setup>
 import ConfirmModal from '../Components/ConfirmModal.vue';
-import FlashToast from '../Components/FlashToast.vue';
+import FlashHost from '../Components/FlashHost.vue';
+import PageDataLoading from '../Components/PageDataLoading.vue';
 import SidebarNav from '../Components/SidebarNav.vue';
 import TopBar from '../Components/TopBar.vue';
-import { usePage } from '@inertiajs/vue3';
+import { useInertiaNavigation } from '../composables/useInertiaNavigation.js';
 import { computed, onMounted, ref, watch } from 'vue';
 
 defineProps({
@@ -13,13 +14,9 @@ defineProps({
     },
 });
 
-const page = usePage();
-const flashError = computed(() => page.props.flash?.error ?? null);
-const flashErrorDetail = computed(() => page.props.flash?.error_detail ?? null);
-const flashSuccess = computed(() => page.props.flash?.success ?? null);
-
 const mobileNavOpen = ref(false);
 const sidebarCollapsed = ref(false);
+const { isNavigating } = useInertiaNavigation();
 
 const sidebarWidth = computed(() => (sidebarCollapsed.value ? '80px' : '260px'));
 
@@ -50,7 +47,7 @@ function handleSidebarToggle() {
 <template>
     <div class="min-h-screen bg-[#f8fafc]">
         <ConfirmModal />
-        <FlashToast :error="flashError" :error-detail="flashErrorDetail" :success="flashSuccess" />
+        <FlashHost />
 
         <div
             v-if="mobileNavOpen"
@@ -83,8 +80,15 @@ function handleSidebarToggle() {
                     :on-toggle-sidebar="handleSidebarToggle"
                 />
 
-                <main class="flex-1 px-4 py-6 sm:px-6">
-                    <slot />
+                <main class="relative flex-1 px-4 py-6 sm:px-6">
+                    <PageDataLoading
+                        v-if="isNavigating"
+                        label="Opening page…"
+                    />
+
+                    <div v-show="!isNavigating">
+                        <slot />
+                    </div>
                 </main>
             </div>
         </div>

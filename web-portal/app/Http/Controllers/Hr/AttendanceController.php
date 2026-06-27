@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class AttendanceController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,7 +24,7 @@ class AttendanceController extends Controller
     ) {
     }
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request): Response
     {
         $query = [];
 
@@ -30,18 +32,18 @@ class AttendanceController extends Controller
             $query['work_date'] = $request->string('work_date');
         }
 
-        try {
-            $records = $this->s2->attendanceRecords($query);
-            $employees = $this->s2->employees('active');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Hr/Attendance/Index', [
-            'records' => $records['data'] ?? [],
-            'employees' => $employees['data'] ?? [],
             'filterDate' => $request->input('work_date', now()->toDateString()),
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.attendance.create']),
+            'pageLoad' => $this->deferPageLoad(function () use ($query) {
+                $records = $this->s2->attendanceRecords($query);
+                $employees = $this->s2->employees('active');
+
+                return [
+                    'records' => $records['data'] ?? [],
+                    'employees' => $employees['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

@@ -1,17 +1,20 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    items: { type: Array, default: () => [] },
-    categories: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
 });
+
+const items = computed(() => props.pageLoad?.items ?? []);
+const categories = computed(() => props.pageLoad?.categories ?? []);
 
 const showCreateModal = ref(false);
 
@@ -20,7 +23,7 @@ const form = useForm({
     name: '',
     unit: 'each',
     unit_cost: '',
-    category_id: props.categories[0]?.id ?? '',
+    category_id: '',
     rotation_strategy: 'fifo',
     is_perishable: false,
     reorder_level: '',
@@ -39,7 +42,7 @@ function openCreateModal() {
     form.reset();
     form.unit = 'each';
     form.rotation_strategy = 'fifo';
-    form.category_id = props.categories[0]?.id ?? '';
+    form.category_id = categories.value[0]?.id ?? '';
     showCreateModal.value = true;
 }
 
@@ -73,6 +76,7 @@ useQueryModal(showCreateModal, {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <DataTable list-title="Inventory item list" selectable :columns="columns" :rows="items" empty-message="No inventory items found.">
             <template #cell-sku="{ row }">
                 <Link :href="`/inventory/items/${row.id}`" class="wh-table-link">{{ row.sku }}</Link>
@@ -90,6 +94,7 @@ useQueryModal(showCreateModal, {
                 <span class="wh-money">{{ row.unit_cost }}</span>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showCreateModal"

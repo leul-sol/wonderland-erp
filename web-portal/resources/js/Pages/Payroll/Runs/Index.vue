@@ -3,6 +3,7 @@ import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -85,6 +86,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="payrollRuns">
         <DataTable list-title="Payroll run list" selectable :columns="columns" :rows="payrollRuns" empty-message="No payroll runs yet.">
             <template #empty>
                 <p>No payroll runs yet.</p>
@@ -112,6 +114,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <Link :href="`/payroll/runs/${row.id}`" class="wh-btn-secondary text-xs">Open</Link>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="Create payroll run" subtitle="Generates draft lines for all active employees" @close="closeCreateModal">
             <section class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">

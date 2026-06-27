@@ -1,18 +1,21 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    roomTypes: { type: Array, default: () => [] },
-    rooms: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
 });
+
+const roomTypes = computed(() => props.pageLoad?.roomTypes ?? []);
+const rooms = computed(() => props.pageLoad?.rooms ?? []);
 
 const showRoomsModal = ref(false);
 const editingRoomId = ref(null);
@@ -26,7 +29,7 @@ const createForm = useForm({
 
 const roomForm = useForm({
     room_number: '',
-    room_type_id: props.roomTypes[0]?.id ?? '',
+    room_type_id: '',
     floor: '',
 });
 
@@ -67,7 +70,7 @@ function submitCreate() {
 
 function openRoomsModal() {
     roomForm.reset();
-    roomForm.room_type_id = props.roomTypes[0]?.id ?? '';
+    roomForm.room_type_id = roomTypes.value[0]?.id ?? '';
     editingRoomId.value = null;
     showRoomsModal.value = true;
 }
@@ -133,6 +136,7 @@ async function toggleActive(roomType) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <form class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add room type</h3>
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -157,6 +161,7 @@ async function toggleActive(roomType) {
                 </button>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showRoomsModal"

@@ -1,10 +1,10 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
-import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
@@ -12,17 +12,15 @@ import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    users: { type: Array, default: () => [] },
-    meta: { type: Object, default: null },
+    pageLoad: { type: Object, default: null },
     search: { type: String, default: '' },
     canCreate: { type: Boolean, default: false },
     canDeactivate: { type: Boolean, default: false },
     canAssignRoles: { type: Boolean, default: false },
-    loadError: { type: String, default: null },
-    loadErrorCode: { type: String, default: null },
-    loadErrorTitle: { type: String, default: null },
-    loadErrorRecommendation: { type: String, default: null },
 });
+
+const users = computed(() => props.pageLoad?.users ?? []);
+const meta = computed(() => props.pageLoad?.meta ?? null);
 
 const showCreateModal = ref(false);
 
@@ -118,14 +116,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
-        <LoadErrorBanner
-            v-if="loadError"
-            :title="loadErrorTitle"
-            :message="loadError"
-            :recommendation="loadErrorRecommendation"
-            :code="loadErrorCode"
-        />
-
+        <PageDataSection keys="pageLoad">
         <DataTable
             list-title="User list"
             :columns="columns"
@@ -153,6 +144,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <RowActions v-if="rowActions(row).length" :items="rowActions(row)" />
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="Create platform user" subtitle="User must change password on first login" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

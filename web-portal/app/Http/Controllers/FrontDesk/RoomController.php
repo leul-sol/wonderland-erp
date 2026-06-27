@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class RoomController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -24,19 +26,14 @@ class RoomController extends Controller
 
     public function index(Request $request): Response|RedirectResponse
     {
-        try {
-            $status = $request->string('status')->toString() ?: null;
-            $response = $this->s3->rooms($status);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
+        $status = $request->string('status')->toString() ?: null;
 
         return Inertia::render('FrontDesk/Rooms/Index', [
-            'rooms' => $response['data'] ?? [],
             'filters' => [
                 'status' => $status ?? '',
             ],
             'canUpdateStatus' => $this->auth->hasAnyPermission(['S3.hotel.rooms.write']),
+            'rooms' => $this->deferApi(fn () => ($this->s3->rooms($status))['data'] ?? []),
         ]);
     }
 

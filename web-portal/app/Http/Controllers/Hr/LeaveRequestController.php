@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class LeaveRequestController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,22 +24,22 @@ class LeaveRequestController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $leaveRequests = $this->s2->leaveRequests();
-            $employees = $this->s2->employees('active');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Hr/Leave/Index', [
-            'leaveRequests' => $leaveRequests['data'] ?? [],
-            'employees' => $employees['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.create']),
             'canApprove' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.approve']),
             'canReject' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.reject']),
             'canCancel' => $this->auth->hasAnyPermission(['S2.workforce.leave_requests.create']),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $leaveRequests = $this->s2->leaveRequests();
+                $employees = $this->s2->employees('active');
+
+                return [
+                    'leaveRequests' => $leaveRequests['data'] ?? [],
+                    'employees' => $employees['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

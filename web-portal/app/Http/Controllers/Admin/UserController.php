@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S1AdminClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,7 +24,7 @@ class UserController extends Controller
     ) {
     }
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request): Response
     {
         $query = array_filter([
             'search' => $request->input('search'),
@@ -30,29 +32,19 @@ class UserController extends Controller
             'per_page' => 25,
         ], fn ($value) => $value !== null && $value !== '');
 
-        try {
-            $response = $this->s1->users($query);
-        } catch (ApiException $e) {
-            return Inertia::render('Admin/Users/Index', [
-                'users' => [],
-                'meta' => null,
-                'search' => $request->input('search', ''),
-                'canCreate' => $this->auth->hasAnyPermission(['S1.identity.users.create']),
-                'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
-                'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
-                ...$this->apiLoadErrorProps($e),
-            ]);
-        }
-
         return Inertia::render('Admin/Users/Index', [
-            'users' => $response['data'] ?? [],
-            'meta' => $response['meta'] ?? null,
             'search' => $request->input('search', ''),
             'canCreate' => $this->auth->hasAnyPermission(['S1.identity.users.create']),
             'canDeactivate' => $this->auth->hasAnyPermission(['S1.identity.users.deactivate']),
             'canAssignRoles' => $this->auth->hasAnyPermission(['S1.identity.users.assign_role']),
-            'loadError' => null,
-            'loadErrorCode' => null,
+            'pageLoad' => $this->deferPageLoad(function () use ($query) {
+                $response = $this->s1->users($query);
+
+                return [
+                    'users' => $response['data'] ?? [],
+                    'meta' => $response['meta'] ?? null,
+                ];
+            }),
         ]);
     }
 

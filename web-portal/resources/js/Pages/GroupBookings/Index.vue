@@ -1,20 +1,23 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../Components/DataTable.vue';
 import FormModal from '../../Components/FormModal.vue';
+import PageDataSection from '../../Components/PageDataSection.vue';
 import PageHeader from '../../Components/PageHeader.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../composables/useQueryModal';
 
 const props = defineProps({
-    groupBookings: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     filters: { type: Object, default: () => ({ tab: 'all' }) },
-    roomTypes: { type: Array, default: () => [] },
     defaultCheckIn: { type: String, default: '' },
     defaultCheckOut: { type: String, default: '' },
 });
+
+const groupBookings = computed(() => props.pageLoad?.groupBookings ?? []);
+const roomTypes = computed(() => props.pageLoad?.roomTypes ?? []);
 
 const showCreateModal = ref(false);
 
@@ -25,8 +28,8 @@ const form = useForm({
     check_in_date: props.defaultCheckIn,
     check_out_date: props.defaultCheckOut,
     rooms: [
-        { guest_name: '', room_type_id: props.roomTypes[0]?.id ?? '' },
-        { guest_name: '', room_type_id: props.roomTypes[0]?.id ?? '' },
+        { guest_name: '', room_type_id: '' },
+        { guest_name: '', room_type_id: '' },
     ],
 });
 
@@ -54,8 +57,8 @@ function openCreateModal() {
     form.check_in_date = props.defaultCheckIn;
     form.check_out_date = props.defaultCheckOut;
     form.rooms = [
-        { guest_name: '', room_type_id: props.roomTypes[0]?.id ?? '' },
-        { guest_name: '', room_type_id: props.roomTypes[0]?.id ?? '' },
+        { guest_name: '', room_type_id: roomTypes.value[0]?.id ?? '' },
+        { guest_name: '', room_type_id: roomTypes.value[0]?.id ?? '' },
     ];
     showCreateModal.value = true;
 }
@@ -67,7 +70,7 @@ function closeCreateModal() {
 function addRoom() {
     form.rooms.push({
         guest_name: '',
-        room_type_id: props.roomTypes[0]?.id ?? '',
+        room_type_id: roomTypes.value[0]?.id ?? '',
     });
 }
 
@@ -99,6 +102,7 @@ useQueryModal(showCreateModal, {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <div class="mb-4 flex flex-wrap gap-2">
             <button
                 v-for="tab in tabs"
@@ -127,6 +131,7 @@ useQueryModal(showCreateModal, {
                 <StatusBadge :status="row.status" />
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showCreateModal"

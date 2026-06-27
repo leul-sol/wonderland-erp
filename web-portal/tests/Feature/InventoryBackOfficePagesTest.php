@@ -35,10 +35,8 @@ class InventoryBackOfficePagesTest extends TestCase
         $response = $this->get('/inventory/item-categories');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Inventory/ItemCategories/Index')
-            ->has('categories', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Inventory/ItemCategories/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('categories', 1));
     }
 
     public function test_inventory_item_create_redirects_to_index(): void

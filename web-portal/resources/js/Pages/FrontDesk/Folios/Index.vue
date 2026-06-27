@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -31,6 +32,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="folios">
         <DataTable list-title="Folio list" selectable :columns="columns" :rows="folios" empty-message="No open folios.">
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
@@ -42,5 +44,6 @@ function formatMoney(value) {
                 <Link :href="`/front-desk/folios/${row.id}`" class="wh-btn-secondary text-xs">Open folio</Link>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

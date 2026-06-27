@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S4FinanceClient;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -21,7 +23,7 @@ class ReportController extends Controller
     ) {
     }
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request): Response
     {
         $type = (string) $request->input('type', 'trial_balance');
         $query = array_filter([
@@ -30,26 +32,24 @@ class ReportController extends Controller
             'to' => $request->input('to'),
         ], fn ($value) => $value !== null && $value !== '');
 
-        try {
-            $response = match ($type) {
-                'income_statement' => $this->s4->incomeStatement($query),
-                'balance_sheet' => $this->s4->balanceSheet($query),
-                default => $this->s4->trialBalance($query),
-            };
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Finance/Reports/Index', [
             'reportType' => in_array($type, ['trial_balance', 'income_statement', 'balance_sheet'], true)
                 ? $type
                 : 'trial_balance',
-            'report' => $response['data'] ?? [],
             'filters' => [
                 'fiscal_period_id' => $request->input('fiscal_period_id'),
                 'from' => $request->input('from'),
                 'to' => $request->input('to'),
             ],
+            'report' => $this->deferApi(function () use ($type, $query) {
+                $response = match ($type) {
+                    'income_statement' => $this->s4->incomeStatement($query),
+                    'balance_sheet' => $this->s4->balanceSheet($query),
+                    default => $this->s4->trialBalance($query),
+                };
+
+                return $response['data'] ?? [];
+            }),
         ]);
     }
 

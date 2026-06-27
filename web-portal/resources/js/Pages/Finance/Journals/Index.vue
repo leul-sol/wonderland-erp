@@ -1,19 +1,22 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    journalEntries: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCreate: { type: Boolean, default: false },
-    accounts: { type: Array, default: () => [] },
     defaultEntryDate: { type: String, default: '' },
 });
+
+const journalEntries = computed(() => props.pageLoad?.journalEntries ?? []);
+const accounts = computed(() => props.pageLoad?.accounts ?? []);
 
 const showCreateModal = ref(false);
 
@@ -22,8 +25,8 @@ const form = useForm({
     entry_date: props.defaultEntryDate,
     source_reference: '',
     lines: [
-        { account_code: props.accounts[0]?.code ?? '', debit: '', credit: '', description: '' },
-        { account_code: props.accounts[1]?.code ?? props.accounts[0]?.code ?? '', debit: '', credit: '', description: '' },
+        { account_code: '', debit: '', credit: '', description: '' },
+        { account_code: '', debit: '', credit: '', description: '' },
     ],
 });
 
@@ -40,8 +43,8 @@ function openCreateModal() {
     form.reset();
     form.entry_date = props.defaultEntryDate;
     form.lines = [
-        { account_code: props.accounts[0]?.code ?? '', debit: '', credit: '', description: '' },
-        { account_code: props.accounts[1]?.code ?? props.accounts[0]?.code ?? '', debit: '', credit: '', description: '' },
+        { account_code: accounts.value[0]?.code ?? '', debit: '', credit: '', description: '' },
+        { account_code: accounts.value[1]?.code ?? accounts.value[0]?.code ?? '', debit: '', credit: '', description: '' },
     ];
     showCreateModal.value = true;
 }
@@ -51,7 +54,7 @@ function closeCreateModal() {
 }
 
 function addLine() {
-    form.lines.push({ account_code: props.accounts[0]?.code ?? '', debit: '', credit: '', description: '' });
+    form.lines.push({ account_code: accounts.value[0]?.code ?? '', debit: '', credit: '', description: '' });
 }
 
 function removeLine(index) {
@@ -79,6 +82,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <DataTable list-title="Journal list" selectable :columns="columns" :rows="journalEntries" empty-message="No manual journal entries yet.">
             <template #empty>
                 <p>No manual journal entries yet.</p>
@@ -94,6 +98,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <Link :href="`/finance/journals/${row.id}`" class="wh-btn-secondary text-xs">Open</Link>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="New manual journal" subtitle="Saved as draft until finance approval" size="xl" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

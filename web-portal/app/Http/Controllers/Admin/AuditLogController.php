@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S1AdminClient;
@@ -12,6 +13,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditLogController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -23,25 +25,17 @@ class AuditLogController extends Controller
     {
         $query = $this->filterQuery($request);
 
-        try {
-            $response = $this->s1->auditLogs($query);
-        } catch (ApiException $e) {
-            return \Inertia\Inertia::render('Admin/Audit/Index', [
-                'auditLogs' => [],
-                'meta' => null,
-                'filters' => $this->filterProps($request),
-                'exportQuery' => '',
-                ...$this->apiLoadErrorProps($e),
-            ]);
-        }
-
         return \Inertia\Inertia::render('Admin/Audit/Index', [
-            'auditLogs' => $response['data'] ?? [],
-            'meta' => $response['meta'] ?? null,
             'filters' => $this->filterProps($request),
             'exportQuery' => $this->exportQueryString($request),
-            'loadError' => null,
-            'loadErrorCode' => null,
+            'pageLoad' => $this->deferPageLoad(function () use ($query) {
+                $response = $this->s1->auditLogs($query);
+
+                return [
+                    'auditLogs' => $response['data'] ?? [],
+                    'meta' => $response['meta'] ?? null,
+                ];
+            }),
         ]);
     }
 

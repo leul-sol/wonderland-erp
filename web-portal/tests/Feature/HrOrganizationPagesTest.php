@@ -42,8 +42,8 @@ class HrOrganizationPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Hr/Organization/Departments/Index')
-            ->has('departments', 1)
             ->where('canWrite', true));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.departments', 1));
     }
 
     public function test_department_store_posts_to_s2(): void
@@ -108,8 +108,8 @@ class HrOrganizationPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Hr/Organization/Positions/Index')
-            ->has('positions', 1)
             ->where('canCreate', true));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.positions', 1));
     }
 
     public function test_position_store_posts_to_s2(): void

@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
@@ -49,6 +50,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="report">
         <section class="wh-card mb-6 p-4">
             <div class="flex flex-wrap gap-2">
                 <button
@@ -146,5 +148,6 @@ function formatMoney(value) {
                 <p class="mt-3 text-right wh-money font-semibold">Total {{ report.liabilities?.total ?? '0.00' }}</p>
             </div>
         </section>
+        </PageDataSection>
     </AppLayout>
 </template>

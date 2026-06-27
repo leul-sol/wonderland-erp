@@ -1,6 +1,7 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -44,6 +45,7 @@ function writeOff(receivable) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="receivables">
         <DataTable list-title="Receivable list" selectable :columns="columns" :rows="receivables" empty-message="No open receivables.">
             <template #cell-balance="{ row }">
                 <span class="wh-money font-semibold">ETB {{ formatMoney(row.balance) }}</span>
@@ -65,5 +67,6 @@ function writeOff(receivable) {
                 </div>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

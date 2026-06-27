@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S4FinanceClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class PayableController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -20,18 +22,15 @@ class PayableController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s4->payables('open');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $payables = $response['data'] ?? [];
-
         return Inertia::render('Finance/Payables/Index', [
-            'payables' => is_array($payables) ? $payables : [],
+            'payables' => $this->deferApi(function () {
+                $response = $this->s4->payables('open');
+                $payables = $response['data'] ?? [];
+
+                return is_array($payables) ? $payables : [];
+            }),
         ]);
     }
 

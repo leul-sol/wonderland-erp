@@ -1,22 +1,26 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    overtimeRecords: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
-    overtimeRates: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     filterStatus: { type: String, default: 'pending' },
     canCreate: { type: Boolean, default: false },
     canApprove: { type: Boolean, default: false },
 });
 
+const overtimeRecords = computed(() => props.pageLoad?.overtimeRecords ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
+const overtimeRates = computed(() => props.pageLoad?.overtimeRates ?? []);
+
 const form = useForm({
-    employee_id: props.employees[0]?.id ?? '',
+    employee_id: '',
     work_date: '',
     hours: '2',
     category: 'working_day',
@@ -50,7 +54,7 @@ function categoryLabel(category) {
 }
 
 function rateLabel(category) {
-    const rate = props.overtimeRates.find((item) => item.category === category);
+    const rate = overtimeRates.value.find((item) => item.category === category);
 
     return rate ? `${rate.multiplier}x` : '—';
 }
@@ -91,6 +95,7 @@ async function approve(id) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="overtimeRates.length" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Rate multipliers</h3>
             <div class="flex flex-wrap gap-3 text-sm text-slate-700">
@@ -187,5 +192,6 @@ async function approve(id) {
                 </button>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

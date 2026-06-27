@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S4FinanceClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class FiscalPeriodController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -21,18 +23,12 @@ class FiscalPeriodController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s4->fiscalPeriods();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Finance/FiscalPeriods/Index', [
-            'fiscalPeriods' => $response['data'] ?? [],
             'canClose' => $this->auth->hasAnyPermission(['S4.finance.fiscal_periods.close']),
             'canLock' => $this->auth->hasAnyPermission(['S4.finance.fiscal_periods.lock']),
+            'fiscalPeriods' => $this->deferApi(fn () => ($this->s4->fiscalPeriods())['data'] ?? []),
         ]);
     }
 

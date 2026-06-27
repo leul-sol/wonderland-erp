@@ -3,26 +3,29 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    purchaseOrders: { type: Array, default: () => [] },
-    inventoryItems: { type: Array, default: () => [] },
-    suppliers: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
 });
+
+const purchaseOrders = computed(() => props.pageLoad?.purchaseOrders ?? []);
+const inventoryItems = computed(() => props.pageLoad?.inventoryItems ?? []);
+const suppliers = computed(() => props.pageLoad?.suppliers ?? []);
 
 const showCreateModal = ref(false);
 
 const form = useForm({
-    vendor_name: props.suppliers[0]?.name ?? '',
+    vendor_name: '',
     lines: [
         {
-            inventory_item_id: props.inventoryItems[0]?.id ?? '',
+            inventory_item_id: '',
             quantity: 1,
-            unit_cost: props.inventoryItems[0]?.unit_cost ?? '',
+            unit_cost: '',
         },
     ],
 });
@@ -51,12 +54,12 @@ function formatMoney(value) {
 
 function openCreateModal() {
     form.reset();
-    form.vendor_name = props.suppliers[0]?.name ?? '';
+    form.vendor_name = suppliers.value[0]?.name ?? '';
     form.lines = [
         {
-            inventory_item_id: props.inventoryItems[0]?.id ?? '',
+            inventory_item_id: inventoryItems.value[0]?.id ?? '',
             quantity: 1,
-            unit_cost: props.inventoryItems[0]?.unit_cost ?? '',
+            unit_cost: inventoryItems.value[0]?.unit_cost ?? '',
         },
     ];
     showCreateModal.value = true;
@@ -67,7 +70,7 @@ function closeCreateModal() {
 }
 
 function addLine() {
-    const item = props.inventoryItems[0];
+    const item = inventoryItems.value[0];
     form.lines.push({
         inventory_item_id: item?.id ?? '',
         quantity: 1,
@@ -86,7 +89,7 @@ function applySupplier(name) {
 }
 
 function onItemChange(line) {
-    const item = props.inventoryItems.find((i) => String(i.id) === String(line.inventory_item_id));
+    const item = inventoryItems.value.find((i) => String(i.id) === String(line.inventory_item_id));
     if (item) {
         line.unit_cost = item.unit_cost;
     }
@@ -111,6 +114,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <DataTable list-title="Purchase order list" selectable :columns="columns" :rows="purchaseOrders" empty-message="No purchase orders found.">
             <template #empty>
                 <p>No purchase orders found.</p>
@@ -126,6 +130,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 <Link :href="`/inventory/purchase-orders/${row.id}`" class="wh-btn-secondary text-xs">Open</Link>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showCreateModal"

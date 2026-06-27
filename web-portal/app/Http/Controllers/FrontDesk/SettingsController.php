@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -13,25 +15,31 @@ use Inertia\Response;
 
 class SettingsController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->roomTypes(false);
-            $rooms = $this->s3->rooms();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('FrontDesk/Settings/Index', [
-            'roomTypes' => $response['data'] ?? [],
-            'rooms' => $rooms['data'] ?? [],
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'roomTypes' => ['path' => '/s3/api/v1/room-types', 'query' => ['active_only' => false]],
+                    'rooms' => ['path' => '/s3/api/v1/rooms', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'roomTypes');
+                $rooms = $results['rooms'] ?? ['data' => []];
+
+                return [
+                    'roomTypes' => $response['data'] ?? [],
+                    'rooms' => $rooms['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

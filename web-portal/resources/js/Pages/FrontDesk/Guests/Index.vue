@@ -3,6 +3,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
@@ -59,6 +60,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             </template>
         </PageHeader>
 
+        <PageDataSection keys="guests">
         <DataTable list-title="Guests" :columns="columns" :rows="guests" empty-message="No guest profiles yet.">
             <template #empty>
                 <p>No guest profiles yet.</p>
@@ -73,6 +75,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
                 </Link>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal :open="showCreateModal" title="New guest profile" subtitle="Register a guest before check-in" @close="closeCreateModal">
             <form class="space-y-4" @submit.prevent="submitCreate">

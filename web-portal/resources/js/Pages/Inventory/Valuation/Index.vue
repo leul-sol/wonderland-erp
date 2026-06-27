@@ -1,13 +1,17 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
-    totalValue: { type: String, default: '0' },
-    lines: { type: Array, default: () => [] },
+const props = defineProps({
+    pageLoad: { type: Object, default: null },
 });
+
+const totalValue = computed(() => props.pageLoad?.totalValue ?? '0');
+const lines = computed(() => props.pageLoad?.lines ?? []);
 
 const columns = [
     { key: 'sku', label: 'SKU' },
@@ -31,6 +35,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <div class="wh-card mb-6 p-4">
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total inventory value</p>
             <p class="wh-money mt-1 text-3xl font-semibold text-teal-800">ETB {{ formatMoney(totalValue) }}</p>
@@ -54,5 +59,6 @@ function formatMoney(value) {
                 <span class="wh-money font-medium">{{ formatMoney(row.value) }}</span>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

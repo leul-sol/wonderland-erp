@@ -1,6 +1,7 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
@@ -55,6 +56,7 @@ async function toggleActive(category) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="categories">
         <form class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add category</h3>
             <div class="flex flex-wrap items-end gap-3">
@@ -80,5 +82,6 @@ async function toggleActive(category) {
                 </button>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

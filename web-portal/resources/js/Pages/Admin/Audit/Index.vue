@@ -1,19 +1,19 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
-import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    auditLogs: { type: Array, default: () => [] },
-    meta: { type: Object, default: null },
+    pageLoad: { type: Object, default: null },
     filters: { type: Object, default: () => ({}) },
     exportQuery: { type: String, default: '' },
-    loadError: { type: String, default: null },
-    loadErrorCode: { type: String, default: null },
 });
+
+const auditLogs = computed(() => props.pageLoad?.auditLogs ?? []);
+const meta = computed(() => props.pageLoad?.meta ?? null);
 
 const filterForm = reactive({
     event: props.filters.event ?? '',
@@ -67,7 +67,7 @@ const exportHref = `/admin/audit-logs/export${props.exportQuery ? `?${props.expo
             title="Audit log"
             subtitle="Platform security and permission change history"
             :breadcrumbs="breadcrumbs"
-            :show-export="!loadError"
+            show-export
             :export-href="exportHref"
         >
             <template #actions>
@@ -75,8 +75,7 @@ const exportHref = `/admin/audit-logs/export${props.exportQuery ? `?${props.expo
             </template>
         </PageHeader>
 
-        <LoadErrorBanner v-if="loadError" :message="loadError" :code="loadErrorCode" />
-
+        <PageDataSection keys="pageLoad">
         <DataTable
             list-title="Audit entries"
             :columns="columns"
@@ -119,5 +118,6 @@ const exportHref = `/admin/audit-logs/export${props.exportQuery ? `?${props.expo
                 {{ formatUser(row) }}
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

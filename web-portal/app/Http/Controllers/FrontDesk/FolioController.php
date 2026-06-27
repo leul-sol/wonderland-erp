@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FolioController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -21,19 +23,15 @@ class FolioController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->folios('open');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $paginator = $response['data'] ?? [];
-        $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
-
         return Inertia::render('FrontDesk/Folios/Index', [
-            'folios' => $folios,
+            'folios' => $this->deferApi(function () {
+                $response = $this->s3->folios('open');
+                $paginator = $response['data'] ?? [];
+
+                return is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
+            }),
         ]);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\FrontDesk;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class CashierShiftController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -20,22 +22,19 @@ class CashierShiftController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->cashierShifts();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $payload = $response['data'] ?? [];
-        $shifts = is_array($payload['data'] ?? null) ? $payload['data'] : (is_array($payload) ? $payload : []);
-
-        $openShift = collect($shifts)->firstWhere('status', 'open');
-
         return Inertia::render('FrontDesk/CashierShifts/Index', [
-            'shifts' => array_values($shifts),
-            'openShift' => $openShift,
+            'pageLoad' => $this->deferPageLoad(function () {
+                $response = $this->s3->cashierShifts();
+                $payload = $response['data'] ?? [];
+                $shifts = is_array($payload['data'] ?? null) ? $payload['data'] : (is_array($payload) ? $payload : []);
+
+                return [
+                    'shifts' => array_values($shifts),
+                    'openShift' => collect($shifts)->firstWhere('status', 'open'),
+                ];
+            }),
         ]);
     }
 

@@ -1,21 +1,24 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    reservations: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     filters: { type: Object, default: () => ({ status: '' }) },
-    roomTypes: { type: Array, default: () => [] },
-    guests: { type: Array, default: () => [] },
     defaultCheckIn: { type: String, default: '' },
     defaultCheckOut: { type: String, default: '' },
 });
+
+const reservations = computed(() => props.pageLoad?.reservations ?? []);
+const roomTypes = computed(() => props.pageLoad?.roomTypes ?? []);
+const guests = computed(() => props.pageLoad?.guests ?? []);
 
 const showBookModal = ref(false);
 
@@ -24,7 +27,7 @@ const form = useForm({
     guest_name: '',
     guest_email: '',
     guest_phone: '',
-    room_type_id: props.roomTypes[0]?.id ?? '',
+    room_type_id: '',
     check_in_date: props.defaultCheckIn,
     check_out_date: props.defaultCheckOut,
     adults: 1,
@@ -34,7 +37,7 @@ const form = useForm({
 watch(
     () => form.guest_id,
     (guestId) => {
-        const guest = props.guests.find((row) => String(row.id) === String(guestId));
+        const guest = guests.value.find((row) => String(row.id) === String(guestId));
         if (!guest) {
             return;
         }
@@ -69,7 +72,7 @@ function applyFilter(status) {
 
 function openBookModal() {
     form.reset();
-    form.room_type_id = props.roomTypes[0]?.id ?? '';
+    form.room_type_id = roomTypes.value[0]?.id ?? '';
     form.check_in_date = props.defaultCheckIn;
     form.check_out_date = props.defaultCheckOut;
     form.adults = 1;
@@ -90,7 +93,7 @@ function submitBooking() {
 useQueryModal(showBookModal, {
     onOpen() {
         form.reset();
-        form.room_type_id = props.roomTypes[0]?.id ?? '';
+        form.room_type_id = roomTypes.value[0]?.id ?? '';
         form.check_in_date = props.defaultCheckIn;
         form.check_out_date = props.defaultCheckOut;
         form.adults = 1;
@@ -107,6 +110,7 @@ useQueryModal(showBookModal, {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <div class="mb-4 flex flex-wrap gap-2">
             <button
                 v-for="filter in statusFilters"
@@ -201,5 +205,6 @@ useQueryModal(showBookModal, {
                 </div>
             </template>
         </FormModal>
+        </PageDataSection>
     </AppLayout>
 </template>

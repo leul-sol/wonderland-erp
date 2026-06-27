@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
@@ -29,6 +30,7 @@ function formatMoney(value) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="menuItems">
         <DataTable list-title="Menu item list" selectable :columns="columns" :rows="menuItems" empty-message="No menu items found.">
             <template #cell-category="{ row }">
                 {{ row.category ?? '—' }}
@@ -37,5 +39,6 @@ function formatMoney(value) {
                 <span class="wh-money">ETB {{ formatMoney(row.price) }}</span>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

@@ -57,8 +57,8 @@ class FinancePagesTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Finance/Reports/Index')
             ->where('reportType', 'trial_balance')
-            ->has('report.lines', 1)
         );
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('report.lines', 1));
     }
 
     public function test_journal_show_includes_approval_flags(): void
@@ -106,7 +106,8 @@ class FinancePagesTest extends TestCase
         $response = $this->get('/finance/fiscal-periods');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Finance/FiscalPeriods/Index')->has('fiscalPeriods', 1));
+        $response->assertInertia(fn ($page) => $page->component('Finance/FiscalPeriods/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('fiscalPeriods', 1));
     }
 
     public function test_executive_dashboard_renders_kpis(): void
@@ -152,5 +153,9 @@ class FinancePagesTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page->component('Finance/Budget/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page
+            ->has('variance')
+            ->has('fiscalPeriods')
+        );
     }
 }

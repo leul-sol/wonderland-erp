@@ -1,19 +1,23 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    offboardingRecords: { type: Array, default: () => [] },
-    eligibleEmployees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCreate: { type: Boolean, default: false },
     canUpdate: { type: Boolean, default: false },
 });
 
+const offboardingRecords = computed(() => props.pageLoad?.offboardingRecords ?? []);
+const eligibleEmployees = computed(() => props.pageLoad?.eligibleEmployees ?? []);
+
 const form = useForm({
-    employee_id: props.eligibleEmployees[0]?.id ?? '',
+    employee_id: '',
     reason: 'resignation',
     last_working_day: '',
     notes: '',
@@ -66,6 +70,7 @@ function submit() {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canCreate && eligibleEmployees.length" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Start offboarding</h3>
             <form class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" @submit.prevent="submit">
@@ -134,5 +139,6 @@ function submit() {
                 </Link>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

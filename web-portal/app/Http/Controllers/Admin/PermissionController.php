@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S1AdminClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class PermissionController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -28,32 +30,22 @@ class PermissionController extends Controller
             'page' => $request->input('page'),
         ], fn ($value) => $value !== null && $value !== '');
 
-        try {
-            $allResponse = $this->s1->permissions(['per_page' => 200]);
-            $domains = $this->extractDomains($allResponse['data'] ?? []);
-
-            $response = $domain
-                ? $this->s1->permissionsByDomain($domain, $query)
-                : $allResponse;
-        } catch (ApiException $e) {
-            return Inertia::render('Admin/Permissions/Index', [
-                'permissions' => [],
-                'meta' => null,
-                'domain' => $domain ?? '',
-                'domains' => [],
-                ...$this->apiLoadErrorProps($e),
-            ]);
-        }
-
-        $permissions = $response['data'] ?? [];
-
         return Inertia::render('Admin/Permissions/Index', [
-            'permissions' => $permissions,
-            'meta' => $response['meta'] ?? null,
             'domain' => $domain ?? '',
-            'domains' => $domains,
-            'loadError' => null,
-            'loadErrorCode' => null,
+            'pageLoad' => $this->deferPageLoad(function () use ($domain, $query) {
+                $allResponse = $this->s1->permissions(['per_page' => 200]);
+                $domains = $this->extractDomains($allResponse['data'] ?? []);
+
+                $response = $domain
+                    ? $this->s1->permissionsByDomain($domain, $query)
+                    : $allResponse;
+
+                return [
+                    'permissions' => $response['data'] ?? [],
+                    'meta' => $response['meta'] ?? null,
+                    'domains' => $domains,
+                ];
+            }),
         ]);
     }
 

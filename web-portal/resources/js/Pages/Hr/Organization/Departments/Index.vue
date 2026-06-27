@@ -1,17 +1,21 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
+import { computed } from 'vue';
 import DataTable from '../../../../Components/DataTable.vue';
+import PageDataSection from '../../../../Components/PageDataSection.vue';
 import PageHeader from '../../../../Components/PageHeader.vue';
 import RowActions from '../../../../Components/RowActions.vue';
 import { confirmAction } from '../../../../composables/useConfirm';
 import AppLayout from '../../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    departments: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canWrite: { type: Boolean, default: false },
 });
+
+const departments = computed(() => props.pageLoad?.departments ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
 
 const form = useForm({
     code: '',
@@ -37,7 +41,7 @@ function employeeName(id) {
         return '—';
     }
 
-    return props.employees.find((employee) => employee.id === id)?.full_name ?? `Employee #${id}`;
+    return employees.value.find((employee) => employee.id === id)?.full_name ?? `Employee #${id}`;
 }
 
 function submit() {
@@ -76,6 +80,7 @@ async function removeDepartment(department) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canWrite" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">New department</h3>
             <form class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="submit">
@@ -125,5 +130,6 @@ async function removeDepartment(department) {
                 />
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

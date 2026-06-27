@@ -56,10 +56,10 @@ class AdminPagesTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Users/Index')
-            ->has('users', 1)
             ->where('canCreate', true)
             ->where('canAssignRoles', true)
         );
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.users', 1));
     }
 
     public function test_user_show_includes_role_catalog(): void
@@ -193,7 +193,8 @@ class AdminPagesTest extends TestCase
         $response = $this->get('/admin/audit-logs');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Admin/Audit/Index')->has('auditLogs', 1));
+        $response->assertInertia(fn ($page) => $page->component('Admin/Audit/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.auditLogs', 1));
     }
 
     public function test_audit_log_export_returns_csv(): void
@@ -237,11 +238,11 @@ class AdminPagesTest extends TestCase
         $response = $this->get('/admin/audit-logs');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Admin/Audit/Index')
-            ->where('loadError', 'Identity service is unreachable.')
-            ->where('loadErrorCode', 'S1_UNAVAILABLE')
-            ->has('auditLogs', 0)
+        $response->assertInertia(fn ($page) => $page->component('Admin/Audit/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page
+            ->where('pageLoad.loadError', 'Identity service is unreachable.')
+            ->where('pageLoad.loadErrorCode', 'S1_UNAVAILABLE')
+            ->where('pageLoad.loadFailed', true)
         );
     }
 
@@ -314,9 +315,7 @@ class AdminPagesTest extends TestCase
         $response = $this->get('/admin/permissions');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('Admin/Permissions/Index')
-            ->has('permissions', 1)
-        );
+        $response->assertInertia(fn ($page) => $page->component('Admin/Permissions/Index'));
+        $this->assertDeferredInertia($response, fn ($page) => $page->has('pageLoad.permissions', 1));
     }
 }

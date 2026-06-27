@@ -1,22 +1,26 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import { confirmAction } from '../../../composables/useConfirm';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    leaveTypes: { type: Array, default: () => [] },
-    overtimeRates: { type: Array, default: () => [] },
-    assetTypes: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canReadLeaveTypes: { type: Boolean, default: false },
     canReadOvertimeRates: { type: Boolean, default: false },
     canUpdateOvertimeRates: { type: Boolean, default: false },
     canReadAssetTypes: { type: Boolean, default: false },
     canWriteAssetTypes: { type: Boolean, default: false },
 });
+
+const leaveTypes = computed(() => props.pageLoad?.leaveTypes ?? []);
+const overtimeRates = computed(() => props.pageLoad?.overtimeRates ?? []);
+const assetTypes = computed(() => props.pageLoad?.assetTypes ?? []);
 
 const assetForm = useForm({
     name: '',
@@ -87,6 +91,7 @@ function categoryLabel(category) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canReadLeaveTypes" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Leave types</h3>
             <p class="mb-4 text-sm text-slate-600">Read-only catalog seeded in S2. Balances accrue per type.</p>
@@ -162,5 +167,6 @@ function categoryLabel(category) {
                 </template>
             </DataTable>
         </section>
+        </PageDataSection>
     </AppLayout>
 </template>

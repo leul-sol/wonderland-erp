@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Exceptions\ApiException;
 use App\Services\Api\S1AuthClient;
+use App\Support\PortalNavigationCache;
 use Illuminate\Support\Facades\Session;
 
 class PortalAuthService
@@ -14,9 +15,11 @@ class PortalAuthService
 
     private const EXPIRES_AT = 'portal.expires_at';
 
+    private const PERMISSIONS = 'portal.permissions';
+
     private const USER = 'portal.user';
 
-    private const PERMISSIONS = 'portal.permissions';
+    private bool $tokenChecked = false;
 
     public function __construct(
         private readonly S1AuthClient $s1,
@@ -100,7 +103,16 @@ class PortalAuthService
     {
         $tokens = $this->s1->login($username, $password);
         $this->storeTokens($tokens);
-        $this->refreshProfile();
+
+        $user = $tokens['user'] ?? null;
+
+        if (is_array($user)) {
+            $this->storeUserFromPayload($user);
+        } else {
+            $this->refreshProfile();
+        }
+
+        PortalNavigationCache::forget();
     }
 
     public function logout(): void
@@ -115,12 +127,20 @@ class PortalAuthService
             }
         }
 
+        PortalNavigationCache::forget();
         Session::invalidate();
         Session::regenerateToken();
+        $this->tokenChecked = false;
     }
 
     public function ensureFreshToken(): void
     {
+        if ($this->tokenChecked) {
+            return;
+        }
+
+        $this->tokenChecked = true;
+
         if (! $this->isAuthenticated()) {
             return;
         }
@@ -192,6 +212,25 @@ class PortalAuthService
         ]);
 
         $permissions = $profile['permissions'] ?? [];
+        Session::put(self::PERMISSIONS, is_array($permissions) ? $permissions : []);
+    }
+
+    /**
+     * @param  array<string, mixed>  $user
+     */
+    private function storeUserFromPayload(array $user): void
+    {
+        Session::put(self::USER, [
+            'id' => $user['id'] ?? null,
+            'username' => $user['username'] ?? null,
+            'name' => $user['name'] ?? null,
+            'email' => $user['email'] ?? null,
+            'roles' => $user['roles'] ?? [],
+            'employee_id' => $user['employee_id'] ?? null,
+            'must_change_password' => (bool) ($user['must_change_password'] ?? false),
+        ]);
+
+        $permissions = $user['permissions'] ?? [];
         Session::put(self::PERMISSIONS, is_array($permissions) ? $permissions : []);
     }
 }

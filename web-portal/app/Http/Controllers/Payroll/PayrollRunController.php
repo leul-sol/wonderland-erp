@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payroll;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -16,6 +17,7 @@ use Inertia\Response;
 
 class PayrollRunController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -24,21 +26,15 @@ class PayrollRunController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s2->payrollRuns();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
         return Inertia::render('Payroll/Runs/Index', [
-            'payrollRuns' => $response['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.payroll_runs.create']),
             'defaultPeriodStart' => now()->startOfMonth()->toDateString(),
             'defaultPeriodEnd' => $this->defaultPayrollPeriodEnd(),
             'maxPeriodEnd' => $this->defaultPayrollPeriodEnd(),
             'canRecordAttendance' => $this->auth->hasAnyPermission(['S2.workforce.attendance.create']),
+            'payrollRuns' => $this->deferApi(fn () => ($this->s2->payrollRuns())['data'] ?? []),
         ]);
     }
 

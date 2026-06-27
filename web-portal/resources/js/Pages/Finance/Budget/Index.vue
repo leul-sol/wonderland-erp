@@ -1,5 +1,6 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
@@ -33,6 +34,7 @@ function exportUrl(format) {
             </template>
         </PageHeader>
 
+        <PageDataSection :keys="['variance', 'fiscalPeriods']">
         <section class="wh-card mb-6 p-4">
             <label class="mb-1 block text-xs font-medium text-slate-600">Fiscal period</label>
             <select
@@ -65,5 +67,6 @@ function exportUrl(format) {
                 <p class="wh-money mt-2 text-2xl font-semibold text-teal-800">ETB {{ variance.variance ?? '0.00' }}</p>
             </div>
         </section>
+        </PageDataSection>
     </AppLayout>
 </template>

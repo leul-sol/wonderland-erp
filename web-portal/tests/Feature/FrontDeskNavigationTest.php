@@ -34,13 +34,26 @@ class FrontDeskNavigationTest extends TestCase
     public function test_front_desk_index_pages_render(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('rooms')->andReturn(['data' => []]);
-            $mock->shouldReceive('reservations')->andReturn(['data' => []]);
+            $empty = ['data' => []];
+            $mock->shouldReceive('fetchMany')->andReturnUsing(function (array $requests) use ($empty): array {
+                $pool = [
+                    'reservations' => $empty,
+                    'roomTypes' => $empty,
+                    'guests' => ['data' => ['data' => []]],
+                    'rooms' => $empty,
+                ];
+                $results = [];
+                foreach (array_keys($requests) as $key) {
+                    $results[$key] = $pool[$key] ?? $empty;
+                }
+
+                return $results;
+            });
+            $mock->shouldReceive('rooms')->andReturn($empty);
+            $mock->shouldReceive('roomTypes')->andReturn($empty);
             $mock->shouldReceive('guestProfiles')->andReturn(['data' => ['data' => []]]);
-            $mock->shouldReceive('roomTypes')->andReturn(['data' => []]);
             $mock->shouldReceive('folios')->andReturn(['data' => ['data' => []]]);
             $mock->shouldReceive('cashierShifts')->andReturn(['data' => ['data' => []]]);
-            $mock->shouldReceive('roomTypes')->andReturn(['data' => []]);
         });
 
         $pages = [

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S4FinanceClient;
 use App\Services\Auth\PortalAuthService;
@@ -16,7 +18,9 @@ use Inertia\Response;
 
 class JournalController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S4FinanceClient $s4,
@@ -24,25 +28,29 @@ class JournalController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s4->journalEntries(['source_module' => 'manual', 'per_page' => 50]);
-            $accounts = $this->s4->accounts();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $entries = $response['data'] ?? [];
-        if (isset($entries['data']) && is_array($entries['data'])) {
-            $entries = $entries['data'];
-        }
-
         return Inertia::render('Finance/Journals/Index', [
-            'journalEntries' => is_array($entries) ? $entries : [],
             'canCreate' => $this->auth->hasAnyPermission(['S4.finance.journal_entries.create']),
-            'accounts' => $accounts['data'] ?? [],
             'defaultEntryDate' => now()->toDateString(),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s4, [
+                    'journalEntries' => ['path' => '/s4/api/v1/journal-entries', 'query' => ['source_module' => 'manual', 'per_page' => 50]],
+                    'accounts' => ['path' => '/s4/api/v1/accounts', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'journalEntries');
+                $accounts = $results['accounts'] ?? ['data' => []];
+
+                $entries = $response['data'] ?? [];
+                if (isset($entries['data']) && is_array($entries['data'])) {
+                    $entries = $entries['data'];
+                }
+
+                return [
+                    'journalEntries' => is_array($entries) ? $entries : [],
+                    'accounts' => $accounts['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

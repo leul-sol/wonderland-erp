@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class SettingsController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,31 +24,31 @@ class SettingsController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $leaveTypes = $this->auth->hasAnyPermission(['S2.workforce.leave_types.read'])
-                ? $this->s2->leaveTypes()
-                : ['data' => []];
-            $overtimeRates = $this->auth->hasAnyPermission(['S2.workforce.overtime.read'])
-                ? $this->s2->overtimeRates()
-                : ['data' => []];
-            $assetTypes = $this->auth->hasAnyPermission(['S2.hr.assets.read'])
-                ? $this->s2->assetTypes()
-                : ['data' => []];
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.employees.index');
-        }
-
         return Inertia::render('Hr/Settings/Index', [
-            'leaveTypes' => $leaveTypes['data'] ?? [],
-            'overtimeRates' => $overtimeRates['data'] ?? [],
-            'assetTypes' => $assetTypes['data'] ?? [],
             'canReadLeaveTypes' => $this->auth->hasAnyPermission(['S2.workforce.leave_types.read']),
             'canReadOvertimeRates' => $this->auth->hasAnyPermission(['S2.workforce.overtime.read']),
             'canUpdateOvertimeRates' => $this->auth->hasAnyPermission(['S2.workforce.overtime.update']),
             'canReadAssetTypes' => $this->auth->hasAnyPermission(['S2.hr.assets.read']),
             'canWriteAssetTypes' => $this->auth->hasAnyPermission(['S2.hr.assets.write']),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $leaveTypes = $this->auth->hasAnyPermission(['S2.workforce.leave_types.read'])
+                    ? $this->s2->leaveTypes()
+                    : ['data' => []];
+                $overtimeRates = $this->auth->hasAnyPermission(['S2.workforce.overtime.read'])
+                    ? $this->s2->overtimeRates()
+                    : ['data' => []];
+                $assetTypes = $this->auth->hasAnyPermission(['S2.hr.assets.read'])
+                    ? $this->s2->assetTypes()
+                    : ['data' => []];
+
+                return [
+                    'leaveTypes' => $leaveTypes['data'] ?? [],
+                    'overtimeRates' => $overtimeRates['data'] ?? [],
+                    'assetTypes' => $assetTypes['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

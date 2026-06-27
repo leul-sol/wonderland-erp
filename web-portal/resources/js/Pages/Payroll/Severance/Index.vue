@@ -1,19 +1,23 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    calculations: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     canCalculate: { type: Boolean, default: false },
     canPay: { type: Boolean, default: false },
 });
 
+const calculations = computed(() => props.pageLoad?.calculations ?? []);
+const employees = computed(() => props.pageLoad?.employees ?? []);
+
 const calculateForm = useForm({
-    employee_id: props.employees[0]?.id ?? '',
+    employee_id: '',
 });
 
 const columns = [
@@ -47,6 +51,7 @@ function pay(id) {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <section v-if="canCalculate" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Calculate severance</h3>
             <form class="flex flex-wrap items-end gap-3" @submit.prevent="calculate">
@@ -80,5 +85,6 @@ function pay(id) {
                 </button>
             </template>
         </DataTable>
+        </PageDataSection>
     </AppLayout>
 </template>

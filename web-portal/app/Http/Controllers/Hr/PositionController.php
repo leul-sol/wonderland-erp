@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class PositionController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,21 +24,21 @@ class PositionController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $positions = $this->s2->positions();
-            $departments = $this->s2->departments();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.employees.index');
-        }
-
         return Inertia::render('Hr/Organization/Positions/Index', [
-            'positions' => $positions['data'] ?? [],
-            'departments' => $departments['data'] ?? [],
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.positions.create']),
             'canUpdate' => $this->auth->hasAnyPermission(['S2.workforce.positions.update']),
             'canDelete' => $this->auth->hasAnyPermission(['S2.workforce.positions.delete']),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $positions = $this->s2->positions();
+                $departments = $this->s2->departments();
+
+                return [
+                    'positions' => $positions['data'] ?? [],
+                    'departments' => $departments['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

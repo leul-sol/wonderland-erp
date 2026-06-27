@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use App\Support\PurchaseOrderApprovalSteps;
@@ -15,32 +17,39 @@ use Inertia\Response;
 
 class PurchaseOrderController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use LoadsGatewayDataInParallel;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->purchaseOrders();
-            $items = $this->s3->inventoryItems();
-            $suppliers = $this->s3->suppliers();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $orders = $response['data'] ?? [];
-        if (isset($orders['data']) && is_array($orders['data'])) {
-            $orders = $orders['data'];
-        }
-
         return Inertia::render('Inventory/PurchaseOrders/Index', [
-            'purchaseOrders' => is_array($orders) ? $orders : [],
-            'inventoryItems' => $items['data'] ?? [],
-            'suppliers' => $suppliers['data'] ?? [],
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'purchaseOrders' => ['path' => '/s3/api/v1/purchase-orders', 'query' => ['per_page' => 50]],
+                    'items' => ['path' => '/s3/api/v1/items', 'query' => ['active_only' => true]],
+                    'suppliers' => ['path' => '/s3/api/v1/suppliers', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'purchaseOrders');
+                $items = $results['items'] ?? ['data' => []];
+                $suppliers = $results['suppliers'] ?? ['data' => []];
+
+                $orders = $response['data'] ?? [];
+                if (isset($orders['data']) && is_array($orders['data'])) {
+                    $orders = $orders['data'];
+                }
+
+                return [
+                    'purchaseOrders' => is_array($orders) ? $orders : [],
+                    'inventoryItems' => $items['data'] ?? [],
+                    'suppliers' => $suppliers['data'] ?? [],
+                ];
+            }),
         ]);
     }
 

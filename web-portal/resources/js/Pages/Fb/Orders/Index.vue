@@ -3,24 +3,27 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
-    orders: { type: Array, default: () => [] },
+    pageLoad: { type: Object, default: null },
     filters: { type: Object, default: () => ({ tab: 'open' }) },
-    folios: { type: Array, default: () => [] },
-    diningTables: { type: Array, default: () => [] },
     customerTypes: { type: Array, default: () => [] },
 });
+
+const orders = computed(() => props.pageLoad?.orders ?? []);
+const folios = computed(() => props.pageLoad?.folios ?? []);
+const diningTables = computed(() => props.pageLoad?.diningTables ?? []);
 
 const showCreateModal = ref(false);
 
 const form = useForm({
     customer_type: 'hotel_guest',
-    folio_id: props.folios[0]?.id ?? '',
+    folio_id: '',
     customer_ref_id: '',
     dining_table_id: '',
 });
@@ -33,8 +36,8 @@ const selectedType = computed(() => props.customerTypes.find((type) => type.valu
 watch(
     () => form.customer_type,
     (type) => {
-        if (type === 'hotel_guest' && !form.folio_id && props.folios[0]) {
-            form.folio_id = props.folios[0].id;
+        if (type === 'hotel_guest' && !form.folio_id && folios.value[0]) {
+            form.folio_id = folios.value[0].id;
         }
     },
 );
@@ -77,7 +80,7 @@ function customerLabel(type) {
 function openCreateModal() {
     form.reset();
     form.customer_type = 'hotel_guest';
-    form.folio_id = props.folios[0]?.id ?? '';
+    form.folio_id = folios.value[0]?.id ?? '';
     showCreateModal.value = true;
 }
 
@@ -97,7 +100,7 @@ useQueryModal(showCreateModal, {
         form.reset();
         form.customer_type = 'hotel_guest';
         const folioId = params.get('folio_id');
-        form.folio_id = folioId || props.folios[0]?.id || '';
+        form.folio_id = folioId || folios.value[0]?.id || '';
     },
 });
 </script>
@@ -111,6 +114,7 @@ useQueryModal(showCreateModal, {
             </template>
         </PageHeader>
 
+        <PageDataSection keys="pageLoad">
         <div class="mb-4 flex flex-wrap gap-2">
             <button
                 v-for="tab in tabs"
@@ -149,6 +153,7 @@ useQueryModal(showCreateModal, {
                 <span v-else class="text-slate-400">—</span>
             </template>
         </DataTable>
+        </PageDataSection>
 
         <FormModal
             :open="showCreateModal"

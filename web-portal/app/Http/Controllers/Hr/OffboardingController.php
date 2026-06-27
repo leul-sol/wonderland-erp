@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S2WorkforceClient;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class OffboardingController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -22,30 +24,30 @@ class OffboardingController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $records = $this->s2->offboardingRecords();
-            $employees = $this->s2->employees('active');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.employees.index');
-        }
-
-        $offboardingEmployeeIds = collect($records['data'] ?? [])
-            ->pluck('employee_id')
-            ->filter()
-            ->all();
-
-        $eligibleEmployees = collect($employees['data'] ?? [])
-            ->reject(fn (array $employee) => in_array($employee['id'] ?? 0, $offboardingEmployeeIds, true))
-            ->values()
-            ->all();
-
         return Inertia::render('Hr/Offboarding/Index', [
-            'offboardingRecords' => $records['data'] ?? [],
-            'eligibleEmployees' => $eligibleEmployees,
             'canCreate' => $this->auth->hasAnyPermission(['S2.workforce.offboarding.create']),
             'canUpdate' => $this->auth->hasAnyPermission(['S2.workforce.offboarding.update']),
+            'pageLoad' => $this->deferPageLoad(function () {
+                $records = $this->s2->offboardingRecords();
+                $employees = $this->s2->employees('active');
+
+                $offboardingEmployeeIds = collect($records['data'] ?? [])
+                    ->pluck('employee_id')
+                    ->filter()
+                    ->all();
+
+                $eligibleEmployees = collect($employees['data'] ?? [])
+                    ->reject(fn (array $employee) => in_array($employee['id'] ?? 0, $offboardingEmployeeIds, true))
+                    ->values()
+                    ->all();
+
+                return [
+                    'offboardingRecords' => $records['data'] ?? [],
+                    'eligibleEmployees' => $eligibleEmployees,
+                ];
+            }),
         ]);
     }
 

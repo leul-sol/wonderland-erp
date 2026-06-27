@@ -2,17 +2,18 @@ import '../css/app.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { useInertiaNavigation } from './composables/useInertiaNavigation.js';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - Wonderland ERP` : 'Wonderland ERP'),
     resolve: (name) =>
         resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
+        useInertiaNavigation();
+
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .mount(el);
     },
-    progress: {
-        color: '#0f766e',
-    },
+    progress: false,
 });

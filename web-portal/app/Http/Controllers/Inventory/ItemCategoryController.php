@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Exceptions\ApiException;
+use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class ItemCategoryController extends Controller
 {
+    use DefersGatewayPageData;
     use HandlesPortalApiErrors;
 
     public function __construct(
@@ -20,16 +22,10 @@ class ItemCategoryController extends Controller
     ) {
     }
 
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
-        try {
-            $response = $this->s3->itemCategories();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'inventory.items.index');
-        }
-
         return Inertia::render('Inventory/ItemCategories/Index', [
-            'categories' => $response['data'] ?? [],
+            'categories' => $this->deferApi(fn () => ($this->s3->itemCategories())['data'] ?? []),
         ]);
     }
 
