@@ -1,8 +1,8 @@
 <script setup>
 import { Eye, EyeOff } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-defineProps({
+const props = defineProps({
     id: { type: String, required: true },
     modelValue: { type: String, default: '' },
     required: { type: Boolean, default: false },
@@ -14,6 +14,11 @@ defineProps({
 defineEmits(['update:modelValue']);
 
 const showPassword = ref(false);
+
+const inputClass = computed(() => [
+    'wh-input pr-10',
+    props.invalid ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : '',
+]);
 </script>
 
 <template>
@@ -25,8 +30,7 @@ const showPassword = ref(false);
             :required="required"
             :minlength="minlength"
             :autocomplete="autocomplete"
-            class="wh-input pr-10"
-            :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': invalid }"
+            :class="inputClass"
             @input="$emit('update:modelValue', $event.target.value)"
         />
         <button

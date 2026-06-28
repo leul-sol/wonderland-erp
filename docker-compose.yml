@@ -394,6 +394,15 @@ services:
       retries: 10
       start_period: 90s
 
+  web-portal-build:
+    image: node:22-bookworm
+    working_dir: /build
+    volumes:
+      - ./web-portal:/build
+    command: ["bash", "-lc", "npm install --legacy-peer-deps && npm run build"]
+    profiles:
+      - assets
+
 networks:
   wh-internal:
     driver: bridge
