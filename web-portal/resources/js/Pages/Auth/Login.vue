@@ -1,5 +1,6 @@
 <script setup>
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import PasswordField from '../../Components/PasswordField.vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -44,7 +45,9 @@ function submit() {
 
         <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <label for="username" class="mb-1.5 block text-sm font-medium text-slate-700">Username</label>
+                <label for="username" class="mb-1.5 block text-sm font-medium text-slate-700">
+                    Username <span class="text-red-600">*</span>
+                </label>
                 <input
                     id="username"
                     v-model="form.username"
@@ -58,14 +61,14 @@ function submit() {
             </div>
 
             <div>
-                <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                <input
+                <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700">
+                    Password <span class="text-red-600">*</span>
+                </label>
+                <PasswordField
                     id="password"
                     v-model="form.password"
-                    type="password"
                     autocomplete="current-password"
-                    class="wh-input"
-                    :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': !!errorMessage }"
+                    :invalid="!!errorMessage"
                     required
                 />
                 <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">{{ form.errors.password }}</p>

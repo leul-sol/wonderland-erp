@@ -1,8 +1,9 @@
 <script setup>
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import PasswordField from '../../Components/PasswordField.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 
-const props = defineProps({
+defineProps({
     required: { type: Boolean, default: true },
     username: { type: String, default: '' },
 });
@@ -18,6 +19,10 @@ function submit() {
         preserveScroll: true,
         onSuccess: () => form.reset(),
     });
+}
+
+function fieldInvalid(key) {
+    return Boolean(form.errors[key]);
 }
 </script>
 
@@ -40,14 +45,13 @@ function submit() {
         <form class="space-y-5" @submit.prevent="submit">
             <div>
                 <label for="current_password" class="mb-1.5 block text-sm font-medium text-slate-700">
-                    Current password
+                    Current password <span class="text-red-600">*</span>
                 </label>
-                <input
+                <PasswordField
                     id="current_password"
                     v-model="form.current_password"
-                    type="password"
                     autocomplete="current-password"
-                    class="wh-input"
+                    :invalid="fieldInvalid('current_password')"
                     required
                 />
                 <p v-if="form.errors.current_password" class="mt-1 text-sm text-red-600">
@@ -57,15 +61,15 @@ function submit() {
 
             <div>
                 <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700">
-                    New password
+                    New password <span class="text-red-600">*</span>
                 </label>
-                <input
+                <PasswordField
                     id="password"
                     v-model="form.password"
-                    type="password"
                     autocomplete="new-password"
-                    class="wh-input"
+                    :invalid="fieldInvalid('password')"
                     required
+                    :minlength="10"
                 />
                 <p class="mt-1 text-xs text-slate-500">
                     At least 10 characters with uppercase, a number, and a symbol.
@@ -77,16 +81,19 @@ function submit() {
 
             <div>
                 <label for="password_confirmation" class="mb-1.5 block text-sm font-medium text-slate-700">
-                    Confirm new password
+                    Confirm new password <span class="text-red-600">*</span>
                 </label>
-                <input
+                <PasswordField
                     id="password_confirmation"
                     v-model="form.password_confirmation"
-                    type="password"
                     autocomplete="new-password"
-                    class="wh-input"
+                    :invalid="fieldInvalid('password_confirmation')"
                     required
+                    :minlength="10"
                 />
+                <p v-if="form.errors.password_confirmation" class="mt-1 text-sm text-red-600">
+                    {{ form.errors.password_confirmation }}
+                </p>
             </div>
 
             <button type="submit" class="wh-btn-primary w-full" :disabled="form.processing">

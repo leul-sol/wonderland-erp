@@ -1,11 +1,14 @@
 <script setup>
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormModal from '../../../Components/FormModal.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import PasswordField from '../../../Components/PasswordField.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
+import { useQueryModal } from '../../../composables/useQueryModal';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -41,6 +44,61 @@ const resetForm = useForm({
 });
 
 const showResetPassword = ref(false);
+const showEditModal = ref(false);
+
+const editForm = useForm({
+    email: props.user.email ?? '',
+    display_name: props.user.display_name ?? '',
+    employee_id: props.user.employee_id ?? '',
+    is_active: props.user.is_active ?? true,
+});
+
+function editFormValuesFromUser() {
+    return {
+        email: props.user.email ?? '',
+        display_name: props.user.display_name ?? '',
+        employee_id: props.user.employee_id ?? '',
+        is_active: props.user.is_active ?? true,
+    };
+}
+
+function openEditModal() {
+    editForm.defaults(editFormValuesFromUser());
+    editForm.reset();
+    editForm.clearErrors();
+    showEditModal.value = true;
+}
+
+function closeEditModal() {
+    showEditModal.value = false;
+    editForm.clearErrors();
+}
+
+function submitEdit() {
+    editForm.put(`/admin/users/${props.user.id}`, {
+        preserveScroll: true,
+        onSuccess: () => closeEditModal(),
+        onError: () => {
+            showEditModal.value = true;
+        },
+    });
+}
+
+function editFieldInvalid(key) {
+    return Boolean(editForm.errors[key]);
+}
+
+watch(
+    () => editForm.errors,
+    (errors) => {
+        if (Object.keys(errors).length > 0) {
+            showEditModal.value = true;
+        }
+    },
+    { deep: true },
+);
+
+useQueryModal(showEditModal, { expected: 'edit', onOpen: openEditModal });
 
 const breadcrumbs = computed(() => [
     { label: 'Dashboard', href: '/' },
@@ -158,9 +216,9 @@ function switchTab(tab) {
             :show-print="false"
         >
             <template #actions>
-                <Link v-if="canUpdate" :href="`/admin/users/${user.id}/edit`" class="wh-btn-secondary">
+                <button v-if="canUpdate" type="button" class="wh-btn-secondary" @click="openEditModal">
                     Edit user
-                </Link>
+                </button>
                 <Link href="/admin/users" class="wh-btn-secondary">All users</Link>
             </template>
         </PageHeader>
@@ -253,12 +311,23 @@ function switchTab(tab) {
                 >
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">New password</label>
-                        <input v-model="resetForm.password" type="password" class="wh-input" required />
+                        <PasswordField
+                            id="reset_password"
+                            v-model="resetForm.password"
+                            required
+                            :minlength="10"
+                            :invalid="Boolean(resetForm.errors.password)"
+                        />
                         <p v-if="resetForm.errors.password" class="mt-1 text-sm text-red-600">{{ resetForm.errors.password }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Confirm password</label>
-                        <input v-model="resetForm.password_confirmation" type="password" class="wh-input" required />
+                        <PasswordField
+                            id="reset_password_confirmation"
+                            v-model="resetForm.password_confirmation"
+                            required
+                            :minlength="10"
+                        />
                     </div>
                     <label class="flex items-center gap-2 text-sm text-slate-700">
                         <input v-model="resetForm.must_change_password" type="checkbox" class="rounded border-slate-300" />
@@ -329,5 +398,74 @@ function switchTab(tab) {
                 </template>
             </DataTable>
         </template>
+
+        <FormModal
+            :open="showEditModal"
+            title="Edit user"
+            :subtitle="user.username"
+            size="md"
+            :close-on-backdrop="false"
+            @close="closeEditModal"
+        >
+            <form class="space-y-4" @submit.prevent="submitEdit">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                    <input type="text" class="wh-input bg-slate-50" :value="user.username" disabled />
+                </div>
+
+                <div>
+                    <label for="edit_email" class="mb-1 block text-sm font-medium text-slate-700">
+                        Email <span class="text-red-600">*</span>
+                    </label>
+                    <input
+                        id="edit_email"
+                        v-model="editForm.email"
+                        type="email"
+                        required
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': editFieldInvalid('email') }"
+                    />
+                    <p v-if="editForm.errors.email" class="mt-1 text-sm text-red-600">{{ editForm.errors.email }}</p>
+                </div>
+
+                <div>
+                    <label for="edit_display_name" class="mb-1 block text-sm font-medium text-slate-700">Display name</label>
+                    <input
+                        id="edit_display_name"
+                        v-model="editForm.display_name"
+                        type="text"
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': editFieldInvalid('display_name') }"
+                    />
+                    <p v-if="editForm.errors.display_name" class="mt-1 text-sm text-red-600">{{ editForm.errors.display_name }}</p>
+                </div>
+
+                <div>
+                    <label for="edit_employee_id" class="mb-1 block text-sm font-medium text-slate-700">Employee ID</label>
+                    <input
+                        id="edit_employee_id"
+                        v-model="editForm.employee_id"
+                        type="number"
+                        min="1"
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': editFieldInvalid('employee_id') }"
+                    />
+                    <p v-if="editForm.errors.employee_id" class="mt-1 text-sm text-red-600">{{ editForm.errors.employee_id }}</p>
+                </div>
+
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <input v-model="editForm.is_active" type="checkbox" class="rounded border-slate-300" />
+                    Account is active
+                </label>
+            </form>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="wh-btn-secondary" @click="closeEditModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="editForm.processing" @click="submitEdit">
+                        {{ editForm.processing ? 'Saving...' : 'Save changes' }}
+                    </button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

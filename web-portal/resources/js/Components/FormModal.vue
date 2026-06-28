@@ -1,11 +1,12 @@
 <script setup>
 import { X } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     open: { type: Boolean, default: false },
     title: { type: String, required: true },
     subtitle: { type: String, default: '' },
     size: { type: String, default: 'lg' },
+    closeOnBackdrop: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['close']);
@@ -17,6 +18,10 @@ const sizeClass = {
 };
 
 function onBackdropClick(event) {
+    if (!props.closeOnBackdrop) {
+        return;
+    }
+
     if (event.target === event.currentTarget) {
         emit('close');
     }

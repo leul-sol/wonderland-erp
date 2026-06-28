@@ -99,17 +99,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function edit(int $user): Response|RedirectResponse
+    public function edit(int $user): RedirectResponse
     {
-        try {
-            $userResponse = $this->s1->user($user);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'admin.users.index');
-        }
-
-        return Inertia::render('Admin/Users/Edit', [
-            'user' => $userResponse['data'] ?? [],
-        ]);
+        return redirect()->route('admin.users.show', ['user' => $user, 'open' => 'edit']);
     }
 
     public function update(Request $request, int $user): RedirectResponse
@@ -207,7 +199,12 @@ class UserController extends Controller
                 'is_active' => true,
             ]);
         } catch (ApiException $e) {
-            return $this->redirectApiError($e);
+            $friendly = $e->userMessage();
+
+            return back()
+                ->withInput()
+                ->withErrors(['form' => $friendly['message']])
+                ->with('error_detail', $friendly);
         }
 
         return redirect()

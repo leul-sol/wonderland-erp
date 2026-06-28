@@ -6,7 +6,7 @@ return [
     'refresh_before_expiry_seconds' => (int) env('PORTAL_TOKEN_REFRESH_BUFFER', 120),
 
     // Bump when sidebar structure changes to invalidate cached shell navigation.
-    'nav_revision' => '2026-06-27-dashboards-v2',
+    'nav_revision' => '2026-06-27-home-dashboard-nav',
 
     'module_icons' => [
         'dashboard' => 'layout-grid',
@@ -32,7 +32,8 @@ return [
             'label' => 'Dashboard',
             'icon' => 'layout-grid',
             'route' => 'dashboard',
-            'permissions' => ['S4.bi.dashboards.read', 'S4.bi.reports.read'],
+            // Home role dashboard at `/` — visible to every signed-in user (not Finance BI).
+            'permissions' => [],
             'phase' => 0,
         ],
         [

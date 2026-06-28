@@ -267,8 +267,7 @@ class AdminPagesTest extends TestCase
 
         $response = $this->get('/admin/users/3/edit');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Admin/Users/Edit'));
+        $response->assertRedirect(route('admin.users.show', ['user' => 3, 'open' => 'edit']));
     }
 
     public function test_role_create_redirects_to_index(): void

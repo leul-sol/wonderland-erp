@@ -1,11 +1,12 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import PasswordField from '../../../Components/PasswordField.vue';
 import RowActions from '../../../Components/RowActions.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
@@ -24,13 +25,23 @@ const meta = computed(() => props.pageLoad?.meta ?? null);
 
 const showCreateModal = ref(false);
 
-const createForm = useForm({
+const emptyCreateForm = {
     username: '',
     email: '',
     password: '',
     display_name: '',
     employee_id: '',
-});
+};
+
+const createForm = useForm({ ...emptyCreateForm });
+
+const createFormError = computed(() => createForm.errors.form ?? null);
+
+function resetCreateForm() {
+    createForm.defaults({ ...emptyCreateForm });
+    createForm.reset();
+    createForm.clearErrors();
+}
 
 const columns = [
     { key: 'username', label: 'ID', sortable: true },
@@ -81,20 +92,38 @@ function rowActions(row) {
 }
 
 function openCreateModal() {
-    createForm.reset();
+    resetCreateForm();
     showCreateModal.value = true;
 }
 
 function closeCreateModal() {
     showCreateModal.value = false;
+    resetCreateForm();
 }
 
 function submitCreate() {
     createForm.post('/admin/users', {
         preserveScroll: true,
         onSuccess: () => closeCreateModal(),
+        onError: () => {
+            showCreateModal.value = true;
+        },
     });
 }
+
+function fieldInvalid(key) {
+    return Boolean(createForm.errors[key]);
+}
+
+watch(
+    () => createForm.errors,
+    (errors) => {
+        if (Object.keys(errors).length > 0) {
+            showCreateModal.value = true;
+        }
+    },
+    { deep: true },
+);
 
 useQueryModal(showCreateModal, { onOpen: openCreateModal });
 </script>
@@ -122,7 +151,6 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
             :columns="columns"
             :rows="users"
             empty-message="No users found."
-            selectable
             searchable
             :search="search"
             search-placeholder="Search"
@@ -146,33 +174,97 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         </DataTable>
         </PageDataSection>
 
-        <FormModal :open="showCreateModal" title="Create platform user" subtitle="User must change password on first login" @close="closeCreateModal">
+        <FormModal
+            :open="showCreateModal"
+            title="Create platform user"
+            subtitle="User must change password on first login"
+            :close-on-backdrop="false"
+            @close="closeCreateModal"
+        >
             <form class="space-y-4" @submit.prevent="submitCreate">
-                <div>
-                    <label for="username" class="mb-1 block text-sm font-medium text-slate-700">Username</label>
-                    <input id="username" v-model="createForm.username" type="text" required class="wh-input" />
+                <div
+                    v-if="createFormError"
+                    class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                    role="alert"
+                >
+                    {{ createFormError }}
                 </div>
+
                 <div>
-                    <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-                    <input id="email" v-model="createForm.email" type="email" required class="wh-input" />
+                    <label for="username" class="mb-1 block text-sm font-medium text-slate-700">
+                        Username <span class="text-red-600">*</span>
+                    </label>
+                    <input
+                        id="username"
+                        v-model="createForm.username"
+                        type="text"
+                        required
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': fieldInvalid('username') }"
+                    />
+                    <p v-if="createForm.errors.username" class="mt-1 text-sm text-red-600">{{ createForm.errors.username }}</p>
                 </div>
+
                 <div>
-                    <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Temporary password</label>
-                    <input id="password" v-model="createForm.password" type="password" required minlength="10" class="wh-input" />
+                    <label for="email" class="mb-1 block text-sm font-medium text-slate-700">
+                        Email <span class="text-red-600">*</span>
+                    </label>
+                    <input
+                        id="email"
+                        v-model="createForm.email"
+                        type="email"
+                        required
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': fieldInvalid('email') }"
+                    />
+                    <p v-if="createForm.errors.email" class="mt-1 text-sm text-red-600">{{ createForm.errors.email }}</p>
                 </div>
+
+                <div>
+                    <label for="password" class="mb-1 block text-sm font-medium text-slate-700">
+                        Temporary password <span class="text-red-600">*</span>
+                    </label>
+                    <PasswordField
+                        id="password"
+                        v-model="createForm.password"
+                        required
+                        :minlength="10"
+                        :invalid="fieldInvalid('password')"
+                    />
+                    <p v-if="createForm.errors.password" class="mt-1 text-sm text-red-600">{{ createForm.errors.password }}</p>
+                </div>
+
                 <div>
                     <label for="display_name" class="mb-1 block text-sm font-medium text-slate-700">Display name</label>
-                    <input id="display_name" v-model="createForm.display_name" type="text" class="wh-input" />
+                    <input
+                        id="display_name"
+                        v-model="createForm.display_name"
+                        type="text"
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': fieldInvalid('display_name') }"
+                    />
+                    <p v-if="createForm.errors.display_name" class="mt-1 text-sm text-red-600">{{ createForm.errors.display_name }}</p>
                 </div>
+
                 <div>
                     <label for="employee_id" class="mb-1 block text-sm font-medium text-slate-700">Employee ID (optional)</label>
-                    <input id="employee_id" v-model="createForm.employee_id" type="number" min="1" class="wh-input" />
+                    <input
+                        id="employee_id"
+                        v-model="createForm.employee_id"
+                        type="number"
+                        min="1"
+                        class="wh-input"
+                        :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-100': fieldInvalid('employee_id') }"
+                    />
+                    <p v-if="createForm.errors.employee_id" class="mt-1 text-sm text-red-600">{{ createForm.errors.employee_id }}</p>
                 </div>
             </form>
             <template #footer>
                 <div class="flex justify-end gap-3">
                     <button type="button" class="wh-btn-secondary" @click="closeCreateModal">Cancel</button>
-                    <button type="button" class="wh-btn-primary" :disabled="createForm.processing" @click="submitCreate">Create user</button>
+                    <button type="button" class="wh-btn-primary" :disabled="createForm.processing" @click="submitCreate">
+                        {{ createForm.processing ? 'Creating...' : 'Create user' }}
+                    </button>
                 </div>
             </template>
         </FormModal>

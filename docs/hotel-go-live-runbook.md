@@ -63,6 +63,66 @@ Twelve seeded roles drive sidebar navigation and quick tasks. Assign roles in **
 
 **Home dashboard (`/`):** Role-based KPIs and pending approvals — not the finance BI dashboards (those live under **Finance → Dashboards**).
 
+### 2.1 Examples by role
+
+Use these as templates when creating users in **Administration → Users**. Usernames are examples only — your hotel chooses its own naming (e.g. `firstname.lastname`).
+
+| Role | Example staff | Example username | What they see in the portal | Example task today |
+|------|---------------|------------------|----------------------------|-------------------|
+| **Super administrator** | IT lead or owner (technical) | `admin.tekalign` | All modules including **Administration** | Create account for new receptionist; review audit log after password reset |
+| **General manager** | Hotel GM | `gm.sara` | Home dashboard, **Finance → Dashboards**, read-only across ops, approval notifications | Approve a 120,000 ETB purchase order (tier 3); approve a large manual journal |
+| **Finance manager** | Finance & accounts lead | `finance.helina` | **Finance** (full), **Inventory → Purchase orders** (approve tier 2) | Settle supplier payable from last week’s goods receipt; close fiscal period P06 |
+| **Accountant** | Junior accountant / bookkeeper | `accounts.yonas` | **Finance → Journals**, **Reports**, **Receivables/Payables** (no user admin) | Post trial balance review; create draft journal for bank charges; settle a receivable |
+| **HR manager** | HR & training manager | `hr.meron` | **HR** (employees, leave, attendance, org, settings) | Onboard new housekeeper employee record; approve annual leave for front desk |
+| **Payroll officer** | Payroll clerk | `payroll.dawit` | **Payroll → Payroll runs**, **Severance** | Run June payroll → submit for approval → lock after GM/finance sign-off |
+| **Department head** | F&B head chef or HK supervisor | `fb.head.tigist` | **HR → Leave** (approve), **Inventory → POs** (approve tier 1), dept-related read | Approve leave for waiter; approve kitchen’s weekly vegetable PO |
+| **Inventory manager** | Stores / procurement officer | `stores.biniam` | **Inventory** (items, suppliers, POs, alerts, valuation) | Create PO for linen; receive goods when delivery arrives; act on low-stock alert |
+| **Restaurant manager** | Restaurant outlet manager | `restaurant.amen` | **Restaurant and F&B**, **Staff meals** | Update menu price; post dinner order to room 201 folio; open staff meal period |
+| **Receptionist** | Front desk agent (day shift) | `frontdesk.hanna` | **Front desk** (rooms, reservations, guests, folios) | Check in walk-in guest → assign room 102 → add minibar charge to folio |
+| **Cashier** | Front desk cashier / F&B cashier | `cashier.solomon` | **Front desk** (folios, cashier shifts), **F&B → Orders** | Settle folio for checkout in cash; close cashier shift; take walk-in restaurant payment |
+| **Report viewer** | Owner’s rep or auditor (read-only) | `reports.audit` | **Finance → Dashboards**, **Reports**, read-only KPIs on home dashboard | Review executive dashboard occupancy and revenue; export trial balance PDF — no edits |
+
+### 2.2 Example: one purchase order through three roles
+
+A kitchen manager needs ingredients. The same PO moves through different people: 
+
+1. **Inventory manager** (`stores.biniam`) — creates PO #PO-00045 for ETB 18,000 → status `pending_dept_head`  
+2. **Department head** (`fb.head.tigist`) — sees bell notification → approves → `pending_finance`  
+3. **Finance manager** (`finance.helina`) — approves → `pending_gm` (if amount/tier requires GM) or `approved`  
+4. **General manager** (`gm.sara`) — only if tier 3 → final approve  
+5. **Inventory manager** — goods receipt → stock updated  
+6. **Finance manager** — **Payables** → settle when invoice is paid  
+
+### 2.3 Example: one guest stay (reception + restaurant + cashier)
+
+| Step | Who | Action |
+|------|-----|--------|
+| 1 | **Receptionist** `frontdesk.hanna` | Reservation for Mr. Bekele, 2 nights |
+| 2 | **Receptionist** | Check in → room 201, folio opened |
+| 3 | **Restaurant manager** `restaurant.amen` | Dinner order posted to folio room 201 |
+| 4 | **Cashier** `cashier.solomon` | Guest settles folio (room + F&B + tax) at checkout |
+| 5 | **Receptionist** | Check out → room 201 available |
+
+### 2.4 Example: month-end (finance + GM)
+
+| Who | Action |
+|-----|--------|
+| **Accountant** | Review trial balance; post adjusting journals |
+| **Finance manager** | Notification: fiscal period ending in 3 days → prepare close |
+| **Finance manager** | **Fiscal periods** → close June → lock period |
+| **General manager** | **Finance → Dashboards → Executive** — review occupancy, revenue, payroll cost |
+
+### 2.5 Who should **not** get which role
+
+| Avoid | Why |
+|-------|-----|
+| Giving every staff **Super administrator** | They could change roles, reset passwords, see audit — security risk |
+| Giving receptionists **Finance manager** | They don’t need GL; increases error and fraud risk |
+| Using **Report viewer** for daily ops staff | Read-only — they cannot check in guests or approve POs |
+| One shared login for whole front desk | Audit cannot show who checked in a guest; create one user per person |
+
+**Tip:** A person can hold **one primary role**. If someone wears two hats (e.g. GM + finance), assign the role that matches their **approval** duties; use **Super administrator** only for IT, not for daily GM work.
+
 ---
 
 ## 3. Phase A — One-time setup (go-live)
