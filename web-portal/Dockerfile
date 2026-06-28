@@ -35,7 +35,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV COMPOSER_DISABLE_HTTP2=1
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --prefer-dist --no-interaction
+RUN composer install --no-dev --no-scripts --prefer-source --no-interaction
 
 COPY . .
 COPY --from=frontend /build/public/build ./public/build
@@ -47,7 +47,7 @@ RUN composer dump-autoload --optimize \
         'set -e' \
         'cd /var/www/html' \
         'if [ ! -f vendor/autoload.php ]; then' \
-        '  composer install --no-interaction --prefer-dist' \
+        '  composer install --no-interaction --prefer-source' \
         'fi' \
         'if [ -f .env ] && grep -q "^APP_KEY=$" .env 2>/dev/null; then' \
         '  php artisan key:generate --force --no-interaction || true' \
