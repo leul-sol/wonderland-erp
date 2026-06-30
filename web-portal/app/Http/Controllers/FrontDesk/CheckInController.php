@@ -8,8 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class CheckInController extends Controller
 {
@@ -20,27 +18,17 @@ class CheckInController extends Controller
     ) {
     }
 
-    public function create(): Response|RedirectResponse
+    public function create(Request $request): RedirectResponse
     {
-        try {
-            $roomTypes = $this->s3->roomTypes();
-            $rooms = $this->s3->rooms('available');
-            $guestsResponse = $this->s3->guestProfiles();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'dashboard');
-        }
-
-        $paginator = $guestsResponse['data'] ?? [];
-        $guests = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
-
-        $selectedGuestId = request()->integer('guest_id') ?: null;
-
-        return Inertia::render('FrontDesk/CheckIn/Create', [
-            'roomTypes' => $roomTypes['data'] ?? [],
-            'availableRooms' => $rooms['data'] ?? [],
-            'guests' => $guests,
-            'selectedGuestId' => $selectedGuestId,
+        $params = array_filter([
+            'open' => 'check-in',
+            'guest_id' => $request->integer('guest_id') ?: null,
         ]);
+
+        $from = $request->string('from')->toString();
+        $route = $from === 'guests' ? 'front-desk.guests.index' : 'front-desk.rooms.index';
+
+        return redirect()->route($route, $params);
     }
 
     public function store(Request $request): RedirectResponse

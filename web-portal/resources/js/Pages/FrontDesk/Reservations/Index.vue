@@ -6,14 +6,19 @@ import FormModal from '../../../Components/FormModal.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import CheckInModal from '../../../Components/FrontDesk/CheckInModal.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useCheckInModal } from '../../../composables/useCheckInModal';
 import { useQueryModal } from '../../../composables/useQueryModal';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
     filters: { type: Object, default: () => ({ status: '' }) },
     defaultCheckIn: { type: String, default: '' },
     defaultCheckOut: { type: String, default: '' },
+    checkInLoad: { type: Object, default: null },
+    checkInGuestId: { type: Number, default: null },
 });
 
 const reservations = computed(() => props.pageLoad?.reservations ?? []);
@@ -21,6 +26,9 @@ const roomTypes = computed(() => props.pageLoad?.roomTypes ?? []);
 const guests = computed(() => props.pageLoad?.guests ?? []);
 
 const showBookModal = ref(false);
+
+const { canCheckInGuest, canBookReservation } = usePortalPermission();
+const { showCheckInModal, checkInGuestId, openCheckInModal, closeCheckInModal } = useCheckInModal(props.checkInGuestId);
 
 const form = useForm({
     guest_id: '',
@@ -91,6 +99,7 @@ function submitBooking() {
 }
 
 useQueryModal(showBookModal, {
+    when: () => canBookReservation(),
     onOpen() {
         form.reset();
         form.room_type_id = roomTypes.value[0]?.id ?? '';
@@ -105,8 +114,12 @@ useQueryModal(showBookModal, {
     <AppLayout title="Reservations">
         <PageHeader title="Reservations" subtitle="Arrivals, in-house guests, and history">
             <template #actions>
-                <button type="button" class="wh-btn-secondary" @click="openBookModal">Book reservation</button>
-                <Link href="/front-desk/check-in" class="wh-btn-primary">Check in guest</Link>
+                <button v-if="canBookReservation()" type="button" class="wh-btn-secondary" @click="openBookModal">
+                    Book reservation
+                </button>
+                <button v-if="canCheckInGuest()" type="button" class="wh-btn-primary" @click="openCheckInModal()">
+                    Check in guest
+                </button>
             </template>
         </PageHeader>
 
@@ -141,6 +154,7 @@ useQueryModal(showBookModal, {
         </DataTable>
 
         <FormModal
+            v-if="canBookReservation()"
             :open="showBookModal"
             title="Book reservation"
             subtitle="Create a future stay — check in when the guest arrives"
@@ -206,5 +220,13 @@ useQueryModal(showBookModal, {
             </template>
         </FormModal>
         </PageDataSection>
+
+        <CheckInModal
+            v-if="canCheckInGuest()"
+            :open="showCheckInModal"
+            :page-load="checkInLoad"
+            :initial-guest-id="checkInGuestId"
+            @close="closeCheckInModal"
+        />
     </AppLayout>
 </template>

@@ -50,7 +50,7 @@ function submit() {
         >
             <template #actions>
                 <Link href="/front-desk/reservations" class="wh-btn-secondary">All reservations</Link>
-                <Link href="/front-desk/check-in" class="wh-btn-secondary">Walk-in check-in</Link>
+                <Link href="/front-desk/rooms?open=check-in" class="wh-btn-secondary">Walk-in check-in</Link>
             </template>
         </PageHeader>
 

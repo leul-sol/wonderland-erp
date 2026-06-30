@@ -5,11 +5,14 @@ import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
 });
+
+const { canManageMenuCatalog } = usePortalPermission();
 
 const createForm = useForm({
     name: '',
@@ -52,12 +55,12 @@ async function toggleActive(category) {
     <AppLayout title="Menu categories">
         <PageHeader title="Menu categories" subtitle="Organize items for service and reporting">
             <template #actions>
-                <Link href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
+                <Link v-if="canManageMenuCatalog()" href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
             </template>
         </PageHeader>
 
         <PageDataSection keys="categories">
-        <form class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
+        <form v-if="canManageMenuCatalog()" class="wh-card mb-6 p-4" @submit.prevent="submitCreate">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Add category</h3>
             <div class="flex flex-wrap items-end gap-3">
                 <div class="min-w-[200px] flex-1">
@@ -77,7 +80,12 @@ async function toggleActive(category) {
                 <StatusBadge :status="row.is_active === false ? 'inactive' : 'active'" />
             </template>
             <template #cell-actions="{ row }">
-                <button type="button" class="wh-btn-secondary text-xs" @click="toggleActive(row)">
+                <button
+                    v-if="canManageMenuCatalog()"
+                    type="button"
+                    class="wh-btn-secondary text-xs"
+                    @click="toggleActive(row)"
+                >
                     {{ row.is_active === false ? 'Activate' : 'Deactivate' }}
                 </button>
             </template>

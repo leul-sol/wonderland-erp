@@ -92,29 +92,19 @@ class SupplierController extends Controller
         ]);
 
         try {
-            $response = $this->s3->createSupplier($data);
+            $this->s3->createSupplier($data);
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }
 
-        $supplierId = (int) ($response['data']['id'] ?? 0);
-
         return redirect()
-            ->route('inventory.suppliers.show', $supplierId > 0 ? $supplierId : 0)
+            ->route('inventory.suppliers.index')
             ->with('success', 'Supplier created.');
     }
 
-    public function edit(int $supplier): Response|RedirectResponse
+    public function edit(int $supplier): RedirectResponse
     {
-        try {
-            $response = $this->s3->supplier($supplier);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'inventory.suppliers.index');
-        }
-
-        return Inertia::render('Inventory/Suppliers/Edit', [
-            'supplier' => $response['data'] ?? [],
-        ]);
+        return redirect()->route('inventory.suppliers.index', ['open' => 'edit', 'id' => $supplier]);
     }
 
     public function update(Request $request, int $supplier): RedirectResponse
@@ -136,7 +126,7 @@ class SupplierController extends Controller
         }
 
         return redirect()
-            ->route('inventory.suppliers.show', $supplier)
+            ->route('inventory.suppliers.index')
             ->with('success', 'Supplier updated.');
     }
 }

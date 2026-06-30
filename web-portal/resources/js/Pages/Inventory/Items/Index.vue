@@ -2,19 +2,25 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import FormLabel from '../../../Components/FormLabel.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import MoneyField from '../../../Components/MoneyField.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
-import AppLayout from '../../../Layouts/AppLayout.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import { useQueryModal } from '../../../composables/useQueryModal';
+import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
+    canCreate: { type: Boolean, default: false },
 });
 
 const items = computed(() => props.pageLoad?.items ?? []);
 const categories = computed(() => props.pageLoad?.categories ?? []);
+
+const { canManageInventoryItems, canReadPurchaseOrders, canCreatePurchaseOrders } = usePortalPermission();
+const allowCreate = computed(() => props.canCreate && canManageInventoryItems());
 
 const showCreateModal = ref(false);
 
@@ -58,6 +64,7 @@ function submitCreate() {
 }
 
 useQueryModal(showCreateModal, {
+    when: () => allowCreate.value,
     onOpen() {
         openCreateModal();
     },
@@ -69,10 +76,16 @@ useQueryModal(showCreateModal, {
         <PageHeader title="Inventory items" subtitle="Stock on hand and reorder levels">
             <template #actions>
                 <Link href="/inventory/item-categories" class="wh-btn-secondary">Categories</Link>
-                <button type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
+                <button v-if="allowCreate" type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
                 <Link href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
-                <Link href="/inventory/purchase-orders" class="wh-btn-secondary">Purchase orders</Link>
-                <Link href="/inventory/purchase-orders?open=create" class="wh-btn-secondary">Create PO</Link>
+                <Link v-if="canReadPurchaseOrders()" href="/inventory/purchase-orders" class="wh-btn-secondary">Purchase orders</Link>
+                <Link
+                    v-if="canCreatePurchaseOrders()"
+                    href="/inventory/purchase-orders?open=create"
+                    class="wh-btn-secondary"
+                >
+                    Create PO
+                </Link>
             </template>
         </PageHeader>
 
@@ -97,50 +110,54 @@ useQueryModal(showCreateModal, {
         </PageDataSection>
 
         <FormModal
+            v-if="allowCreate"
             :open="showCreateModal"
             title="New inventory item"
             subtitle="SKU master for stock, POs, and recipes"
+            size="lg"
             @close="closeCreateModal"
         >
             <form class="space-y-4" @submit.prevent="submitCreate">
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid items-end gap-4 sm:grid-cols-2">
                     <div>
-                        <label for="sku" class="mb-1 block text-sm font-medium text-slate-700">SKU</label>
-                        <input id="sku" v-model="form.sku" type="text" required class="wh-input" />
+                        <FormLabel for="sku" required>SKU</FormLabel>
+                        <input id="sku" v-model="form.sku" type="text" required class="wh-input" placeholder="LINEN-SET" />
                     </div>
                     <div>
-                        <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Name</label>
-                        <input id="name" v-model="form.name" type="text" required class="wh-input" />
+                        <FormLabel for="name" required>Name</FormLabel>
+                        <input id="name" v-model="form.name" type="text" required class="wh-input" placeholder="Bed linen set" />
                     </div>
                     <div>
-                        <label for="unit" class="mb-1 block text-sm font-medium text-slate-700">Unit</label>
-                        <input id="unit" v-model="form.unit" type="text" class="wh-input" />
+                        <FormLabel for="unit">Unit</FormLabel>
+                        <input id="unit" v-model="form.unit" type="text" class="wh-input" placeholder="each, kg, box" />
                     </div>
                     <div>
-                        <label for="unit_cost" class="mb-1 block text-sm font-medium text-slate-700">Unit cost (ETB)</label>
-                        <MoneyField id="unit_cost" v-model="form.unit_cost" />
+                        <FormLabel for="unit_cost">Unit cost</FormLabel>
+                        <MoneyField id="unit_cost" v-model="form.unit_cost" hide-label />
                     </div>
                     <div>
-                        <label for="category_id" class="mb-1 block text-sm font-medium text-slate-700">Category</label>
+                        <FormLabel for="category_id">Category</FormLabel>
                         <select id="category_id" v-model="form.category_id" class="wh-input">
                             <option value="">None</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
+                        <p class="mt-1 text-xs text-slate-500">Group items for reporting (e.g. Linen, Food, Beverage).</p>
                     </div>
                     <div>
-                        <label for="reorder_level" class="mb-1 block text-sm font-medium text-slate-700">Reorder level</label>
-                        <input id="reorder_level" v-model="form.reorder_level" type="number" min="0" step="0.001" class="wh-input" />
+                        <FormLabel for="reorder_level">Reorder level</FormLabel>
+                        <input id="reorder_level" v-model="form.reorder_level" type="number" min="0" step="0.001" class="wh-input" placeholder="20" />
+                        <p class="mt-1 text-xs text-slate-500">Minimum stock before a low-stock alert fires.</p>
                     </div>
                     <div>
-                        <label for="rotation_strategy" class="mb-1 block text-sm font-medium text-slate-700">Rotation</label>
+                        <FormLabel for="rotation_strategy">Rotation</FormLabel>
                         <select id="rotation_strategy" v-model="form.rotation_strategy" class="wh-input">
-                            <option value="fifo">FIFO</option>
-                            <option value="fefo">FEFO</option>
+                            <option value="fifo">FIFO — first in, first out</option>
+                            <option value="fefo">FEFO — first expiring, first out</option>
                         </select>
                     </div>
-                    <div class="flex items-center gap-2 pt-6">
+                    <div class="flex items-center gap-2 pb-1">
                         <input id="is_perishable" v-model="form.is_perishable" type="checkbox" class="rounded border-slate-300" />
-                        <label for="is_perishable" class="text-sm text-slate-700">Perishable (expiry tracking)</label>
+                        <label for="is_perishable" class="text-sm text-slate-700">Perishable (track expiry dates)</label>
                     </div>
                 </div>
             </form>

@@ -2,16 +2,20 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import EmptyState from '../../../Components/EmptyState.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
 });
+
+const { canCreatePurchaseOrders, canReadInventoryItems } = usePortalPermission();
 
 const purchaseOrders = computed(() => props.pageLoad?.purchaseOrders ?? []);
 const inventoryItems = computed(() => props.pageLoad?.inventoryItems ?? []);
@@ -102,23 +106,35 @@ function submitCreate() {
     });
 }
 
-useQueryModal(showCreateModal, { onOpen: openCreateModal });
+useQueryModal(showCreateModal, {
+    when: () => canCreatePurchaseOrders(),
+    onOpen: openCreateModal,
+});
 </script>
 
 <template>
     <AppLayout title="Purchase orders">
         <PageHeader title="Purchase orders" subtitle="Create, approve, and receive goods">
             <template #actions>
-                <Link href="/inventory/items" class="wh-btn-secondary">Inventory</Link>
-                <button type="button" class="wh-btn-primary" @click="openCreateModal">Create PO</button>
+                <Link v-if="canReadInventoryItems()" href="/inventory/items" class="wh-btn-secondary">Inventory</Link>
+                <button v-if="canCreatePurchaseOrders()" type="button" class="wh-btn-primary" @click="openCreateModal">Create PO</button>
             </template>
         </PageHeader>
 
         <PageDataSection keys="pageLoad">
         <DataTable list-title="Purchase order list" selectable :columns="columns" :rows="purchaseOrders" empty-message="No purchase orders found.">
             <template #empty>
-                <p>No purchase orders found.</p>
-                <button type="button" class="wh-btn-primary mt-3" @click="openCreateModal">Create your first PO</button>
+                <EmptyState
+                    title="No purchase orders yet"
+                    description="Create a draft PO when stores need to order goods. It will route through department, finance, and GM approval before receiving."
+                    variant="table"
+                >
+                    <template #action>
+                        <button v-if="canCreatePurchaseOrders()" type="button" class="wh-btn-primary" @click="openCreateModal">
+                            Create your first PO
+                        </button>
+                    </template>
+                </EmptyState>
             </template>
             <template #cell-status="{ row }">
                 <StatusBadge :status="row.status" />
@@ -133,6 +149,7 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         </PageDataSection>
 
         <FormModal
+            v-if="canCreatePurchaseOrders()"
             :open="showCreateModal"
             title="Create purchase order"
             subtitle="Draft PO — submit for tiered approval when ready"

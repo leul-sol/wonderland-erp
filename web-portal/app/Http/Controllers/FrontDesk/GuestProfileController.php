@@ -5,6 +5,7 @@ namespace App\Http\Controllers\FrontDesk;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\ProvidesCheckInModalData;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -16,13 +17,14 @@ class GuestProfileController extends Controller
 {
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use ProvidesCheckInModalData;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('FrontDesk/Guests/Index', [
             'guests' => $this->deferApi(function () {
@@ -31,6 +33,7 @@ class GuestProfileController extends Controller
 
                 return is_array($paginator['data'] ?? null) ? $paginator['data'] : (is_array($paginator) ? $paginator : []);
             }),
+            ...$this->checkInModalProps($request),
         ]);
     }
 
@@ -52,29 +55,19 @@ class GuestProfileController extends Controller
         ]);
 
         try {
-            $guest = $this->s3->createGuestProfile($data);
+            $this->s3->createGuestProfile($data);
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }
 
-        $guestId = (int) ($guest['data']['id'] ?? 0);
-
         return redirect()
-            ->route('front-desk.guests.edit', $guestId)
+            ->route('front-desk.guests.index')
             ->with('success', 'Guest profile created.');
     }
 
-    public function edit(int $guest): Response|RedirectResponse
+    public function edit(int $guest): RedirectResponse
     {
-        try {
-            $response = $this->s3->guestProfile($guest);
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'front-desk.guests.index');
-        }
-
-        return Inertia::render('FrontDesk/Guests/Edit', [
-            'guest' => $response['data'] ?? null,
-        ]);
+        return redirect()->route('front-desk.guests.index', ['open' => 'edit', 'id' => $guest]);
     }
 
     public function update(Request $request, int $guest): RedirectResponse
@@ -95,6 +88,8 @@ class GuestProfileController extends Controller
             return $this->redirectApiError($e);
         }
 
-        return back()->with('success', 'Guest profile updated.');
+        return redirect()
+            ->route('front-desk.guests.index')
+            ->with('success', 'Guest profile updated.');
     }
 }

@@ -63,7 +63,7 @@ class InventoryBackOfficePagesTest extends TestCase
             'unit' => 'kg',
         ]);
 
-        $response->assertRedirect(route('inventory.items.show', 9));
+        $response->assertRedirect(route('inventory.items.index'));
     }
 
     public function test_stock_adjustment_posts_to_s3(): void
@@ -110,7 +110,14 @@ class InventoryBackOfficePagesTest extends TestCase
             'name' => 'Acme Supplies',
         ]);
 
-        $response->assertRedirect(route('inventory.suppliers.show', 4));
+        $response->assertRedirect(route('inventory.suppliers.index'));
+    }
+
+    public function test_supplier_edit_redirects_to_index_modal(): void
+    {
+        $response = $this->get('/inventory/suppliers/4/edit');
+
+        $response->assertRedirect(route('inventory.suppliers.index', ['open' => 'edit', 'id' => 4]));
     }
 
     public function test_goods_receipt_show_renders(): void

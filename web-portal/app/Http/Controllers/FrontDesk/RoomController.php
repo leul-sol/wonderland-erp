@@ -5,6 +5,7 @@ namespace App\Http\Controllers\FrontDesk;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\ProvidesCheckInModalData;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use App\Services\Auth\PortalAuthService;
@@ -17,6 +18,7 @@ class RoomController extends Controller
 {
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use ProvidesCheckInModalData;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
@@ -34,6 +36,7 @@ class RoomController extends Controller
             ],
             'canUpdateStatus' => $this->auth->hasAnyPermission(['S3.hotel.rooms.write']),
             'rooms' => $this->deferApi(fn () => ($this->s3->rooms($status))['data'] ?? []),
+            ...$this->checkInModalProps($request),
         ]);
     }
 

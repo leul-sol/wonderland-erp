@@ -35,26 +35,11 @@ class HrEmployeeHubPagesTest extends TestCase
         ]);
     }
 
-    public function test_employee_edit_page_renders(): void
+    public function test_employee_edit_redirects_to_show_modal(): void
     {
-        $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('employee')->once()->with(3)->andReturn([
-                'data' => [
-                    'id' => 3,
-                    'employee_number' => 'EMP-0003',
-                    'full_name' => 'Hana Bekele',
-                    'base_salary' => '18000.00',
-                    'pension_category' => 'covered',
-                ],
-            ]);
-            $mock->shouldReceive('departments')->once()->andReturn(['data' => []]);
-            $mock->shouldReceive('positions')->once()->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/hr/employees/3/edit');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Hr/Employees/Edit'));
+        $response->assertRedirect(route('hr.employees.show', ['employee' => 3, 'open' => 'edit']));
     }
 
     public function test_employee_show_hub_includes_tabs_data(): void
@@ -73,6 +58,8 @@ class HrEmployeeHubPagesTest extends TestCase
                 'leaveBalances' => ['data' => [['id' => 1, 'days_remaining' => '10.00']]],
                 'employeeLeaveRequests' => ['data' => []],
             ]);
+            $mock->shouldReceive('departments')->once()->andReturn(['data' => []]);
+            $mock->shouldReceive('positions')->once()->andReturn(['data' => []]);
         });
 
         $this->mock(S1AdminClient::class, function (MockInterface $mock): void {

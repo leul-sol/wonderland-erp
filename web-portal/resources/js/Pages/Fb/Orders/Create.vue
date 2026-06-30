@@ -74,7 +74,7 @@ function formatMoney(value) {
                     </select>
                     <p v-if="folios.length === 0" class="mt-2 text-sm text-amber-800">
                         No open folios.
-                        <Link href="/front-desk/check-in" class="wh-table-link">Check in a guest</Link>
+                        <Link href="/front-desk/rooms?open=check-in" class="wh-table-link">Check in a guest</Link>
                         first.
                     </p>
                 </div>

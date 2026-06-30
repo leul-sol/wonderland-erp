@@ -1,11 +1,14 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import EmployeeFormFields from '../../../Components/Hr/EmployeeFormFields.vue';
+import FormModal from '../../../Components/FormModal.vue';
 import LoadErrorBanner from '../../../Components/LoadErrorBanner.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { useQueryModal } from '../../../composables/useQueryModal';
 
 const props = defineProps({
     employee: { type: Object, required: true },
@@ -20,6 +23,8 @@ const props = defineProps({
     loans: { type: Array, default: () => [] },
     payslipRuns: { type: Array, default: () => [] },
     assetTypes: { type: Array, default: () => [] },
+    departments: { type: Array, default: () => [] },
+    positions: { type: Array, default: () => [] },
     canUpdate: { type: Boolean, default: false },
     canViewLeave: { type: Boolean, default: false },
     canWriteDisciplinary: { type: Boolean, default: false },
@@ -133,6 +138,49 @@ function submitLoan() {
 function formatActionType(value) {
     return (value ?? '').replaceAll('_', ' ');
 }
+
+const showEditModal = ref(false);
+
+const editForm = useForm({
+    full_name: props.employee.full_name ?? '',
+    email: props.employee.email ?? '',
+    department_id: props.employee.department?.id ?? '',
+    position_id: props.employee.position?.id ?? '',
+    job_title: props.employee.job_title ?? '',
+    base_salary: props.employee.base_salary ?? '',
+    pension_category: props.employee.pension_category ?? 'covered',
+    default_role: props.employee.default_role ?? 'report_viewer',
+});
+
+function openEditModal() {
+    editForm.full_name = props.employee.full_name ?? '';
+    editForm.email = props.employee.email ?? '';
+    editForm.department_id = props.employee.department?.id ?? '';
+    editForm.position_id = props.employee.position?.id ?? '';
+    editForm.job_title = props.employee.job_title ?? '';
+    editForm.base_salary = props.employee.base_salary ?? '';
+    editForm.pension_category = props.employee.pension_category ?? 'covered';
+    editForm.default_role = props.employee.default_role ?? 'report_viewer';
+    editForm.clearErrors();
+    showEditModal.value = true;
+}
+
+function closeEditModal() {
+    showEditModal.value = false;
+}
+
+function submitEdit() {
+    editForm.patch(`/hr/employees/${props.employee.id}`, {
+        preserveScroll: true,
+        onSuccess: () => closeEditModal(),
+    });
+}
+
+useQueryModal(showEditModal, {
+    expected: 'edit',
+    when: () => props.canUpdate,
+    onOpen: openEditModal,
+});
 </script>
 
 <template>
@@ -143,7 +191,7 @@ function formatActionType(value) {
         >
             <template #actions>
                 <StatusBadge :status="employee.status" />
-                <Link v-if="canUpdate" :href="`/hr/employees/${employee.id}/edit`" class="wh-btn-outline">Edit</Link>
+                <button v-if="canUpdate" type="button" class="wh-btn-outline" @click="openEditModal">Edit</button>
                 <Link href="/hr/employees" class="wh-btn-secondary">Back to list</Link>
             </template>
         </PageHeader>
@@ -477,5 +525,28 @@ function formatActionType(value) {
                 No platform user linked yet. Provisioning runs via the employee-created event — refresh in a moment.
             </p>
         </div>
+
+        <FormModal
+            v-if="canUpdate"
+            :open="showEditModal"
+            :title="`Edit ${employee.full_name}`"
+            :subtitle="employee.employee_number"
+            size="lg"
+            @close="closeEditModal"
+        >
+            <form @submit.prevent="submitEdit">
+                <EmployeeFormFields
+                    :form="editForm"
+                    :departments="departments"
+                    :positions="positions"
+                />
+            </form>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="wh-btn-secondary" @click="closeEditModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="editForm.processing" @click="submitEdit">Save changes</button>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>

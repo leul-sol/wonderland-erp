@@ -4,10 +4,13 @@ import DataTable from '../../../Components/DataTable.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 
 defineProps({
     menuItems: { type: Array, default: () => [] },
 });
+
+const { canManageMenuCatalog } = usePortalPermission();
 
 const columns = [
     { key: 'code', label: 'Code' },
@@ -26,7 +29,7 @@ function formatMoney(value) {
     <AppLayout title="Menu">
         <PageHeader title="Restaurant menu" subtitle="Active items available for folio and cashier orders">
             <template #actions>
-                <Link href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
+                <Link v-if="canManageMenuCatalog()" href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
             </template>
         </PageHeader>
 

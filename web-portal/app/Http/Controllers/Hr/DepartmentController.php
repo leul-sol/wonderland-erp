@@ -63,19 +63,9 @@ class DepartmentController extends Controller
             ->with('success', 'Department created.');
     }
 
-    public function edit(int $department): Response|RedirectResponse
+    public function edit(int $department): RedirectResponse
     {
-        try {
-            $response = $this->s2->department($department);
-            $employees = $this->s2->employees('active');
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.departments.index');
-        }
-
-        return Inertia::render('Hr/Organization/Departments/Edit', [
-            'department' => $response['data'] ?? [],
-            'employees' => $employees['data'] ?? [],
-        ]);
+        return redirect()->route('hr.departments.index', ['open' => 'edit', 'id' => $department]);
     }
 
     public function update(Request $request, int $department): RedirectResponse

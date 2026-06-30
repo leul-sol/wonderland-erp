@@ -8,6 +8,7 @@ import PageHeader from '../../Components/PageHeader.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../composables/useQueryModal';
+import { usePortalPermission } from '../../composables/usePortalPermission';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
@@ -20,6 +21,8 @@ const groupBookings = computed(() => props.pageLoad?.groupBookings ?? []);
 const roomTypes = computed(() => props.pageLoad?.roomTypes ?? []);
 
 const showCreateModal = ref(false);
+
+const { canCreateGroupBooking } = usePortalPermission();
 
 const form = useForm({
     group_name: '',
@@ -88,6 +91,7 @@ function submitCreate() {
 }
 
 useQueryModal(showCreateModal, {
+    when: () => canCreateGroupBooking(),
     onOpen() {
         openCreateModal();
     },
@@ -98,7 +102,9 @@ useQueryModal(showCreateModal, {
     <AppLayout title="Group bookings">
         <PageHeader title="Group bookings" subtitle="Rooming lists, bulk check-in, and group check-out">
             <template #actions>
-                <button type="button" class="wh-btn-primary" @click="openCreateModal">Create group</button>
+                <button v-if="canCreateGroupBooking()" type="button" class="wh-btn-primary" @click="openCreateModal">
+                    Create group
+                </button>
             </template>
         </PageHeader>
 
@@ -134,6 +140,7 @@ useQueryModal(showCreateModal, {
         </PageDataSection>
 
         <FormModal
+            v-if="canCreateGroupBooking()"
             :open="showCreateModal"
             title="Create group booking"
             subtitle="Rooming list with one reservation per room"

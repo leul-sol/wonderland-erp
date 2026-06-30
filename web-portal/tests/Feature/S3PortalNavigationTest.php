@@ -113,7 +113,6 @@ class S3PortalNavigationTest extends TestCase
             ['/front-desk/rooms', 'FrontDesk/Rooms/Index'],
             ['/front-desk/reservations', 'FrontDesk/Reservations/Index'],
             ['/front-desk/guests', 'FrontDesk/Guests/Index'],
-            ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
             ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
             ['/front-desk/settings', 'FrontDesk/Settings/Index'],
@@ -131,6 +130,7 @@ class S3PortalNavigationTest extends TestCase
             ['/inventory/purchase-orders', 'Inventory/PurchaseOrders/Index'],
             ['/consumption/periods', 'Consumption/Periods/Index'],
             ['/group-bookings', 'GroupBookings/Index'],
+            ['/front-desk/settings/rooms', 'FrontDesk/Settings/Rooms'],
         ];
 
         foreach ($pages as [$path, $component]) {
@@ -140,9 +140,9 @@ class S3PortalNavigationTest extends TestCase
         }
 
         $redirects = [
+            '/front-desk/check-in' => '/front-desk/rooms?open=check-in',
             '/front-desk/reservations/create' => '/front-desk/reservations?open=create',
             '/front-desk/guests/create' => '/front-desk/guests?open=create',
-            '/front-desk/settings/rooms' => '/front-desk/settings',
             '/fb/orders/create' => '/fb/orders?open=create',
             '/fb/menu-items/create' => '/fb/menu-items?open=create',
             '/inventory/items/create' => '/inventory/items?open=create',

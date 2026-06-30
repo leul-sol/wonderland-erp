@@ -67,19 +67,11 @@ class HrOrganizationPagesTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    public function test_department_edit_page_renders(): void
+    public function test_department_edit_redirects_to_index_modal(): void
     {
-        $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('department')->once()->with(2)->andReturn([
-                'data' => ['id' => 2, 'code' => 'FN', 'name' => 'Finance', 'head_employee_id' => null],
-            ]);
-            $mock->shouldReceive('employees')->once()->with('active')->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/hr/departments/2/edit');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Hr/Organization/Departments/Edit'));
+        $response->assertRedirect(route('hr.departments.index', ['open' => 'edit', 'id' => 2]));
     }
 
     public function test_positions_index_renders(): void
@@ -137,25 +129,10 @@ class HrOrganizationPagesTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    public function test_position_edit_page_renders(): void
+    public function test_position_edit_redirects_to_index_modal(): void
     {
-        $this->mock(S2WorkforceClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('position')->once()->with(4)->andReturn([
-                'data' => [
-                    'id' => 4,
-                    'title' => 'Accountant',
-                    'department_id' => 2,
-                    'grade' => 'G4',
-                    'transport_allowance' => '600.00',
-                    'housing_allowance' => '1000.00',
-                ],
-            ]);
-            $mock->shouldReceive('departments')->once()->andReturn(['data' => []]);
-        });
-
         $response = $this->get('/hr/positions/4/edit');
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('Hr/Organization/Positions/Edit'));
+        $response->assertRedirect(route('hr.positions.index', ['open' => 'edit', 'id' => 4]));
     }
 }

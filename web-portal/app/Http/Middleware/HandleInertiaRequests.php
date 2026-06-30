@@ -60,6 +60,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => session('portal.user'),
                 'must_change_password' => (bool) data_get(session('portal.user'), 'must_change_password', false),
+                'permissions' => session('portal.permissions', []),
             ],
             'menu' => fn () => $this->shell->menu(),
             'tasks' => fn () => $this->shell->tasks(),

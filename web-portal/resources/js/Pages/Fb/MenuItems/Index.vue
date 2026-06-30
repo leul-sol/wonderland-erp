@@ -9,6 +9,7 @@ import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
@@ -18,6 +19,8 @@ const menuItems = computed(() => props.pageLoad?.menuItems ?? []);
 const categories = computed(() => props.pageLoad?.categories ?? []);
 
 const showCreateModal = ref(false);
+
+const { canManageMenuCatalog } = usePortalPermission();
 
 const form = useForm({
     code: '',
@@ -62,15 +65,18 @@ function submitCreate() {
     });
 }
 
-useQueryModal(showCreateModal, { onOpen: openCreateModal });
+useQueryModal(showCreateModal, {
+    when: () => canManageMenuCatalog(),
+    onOpen: openCreateModal,
+});
 </script>
 
 <template>
     <AppLayout title="Menu items">
         <PageHeader title="Menu items" subtitle="Catalog admin — prices, availability, and recipes">
             <template #actions>
-                <Link href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
-                <button type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
+                <Link v-if="canManageMenuCatalog()" href="/fb/settings" class="wh-btn-secondary">Catalog admin</Link>
+                <button v-if="canManageMenuCatalog()" type="button" class="wh-btn-primary" @click="openCreateModal">New item</button>
             </template>
         </PageHeader>
 
@@ -78,13 +84,17 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         <DataTable list-title="All menu items" :columns="columns" :rows="menuItems" empty-message="No menu items found.">
             <template #empty>
                 <p>No menu items found.</p>
-                <button type="button" class="wh-btn-primary mt-3" @click="openCreateModal">Add your first menu item</button>
+                <button v-if="canManageMenuCatalog()" type="button" class="wh-btn-primary mt-3" @click="openCreateModal">
+                    Add your first menu item
+                </button>
             </template>
             <template #cell-code="{ row }">
-                <Link :href="`/fb/menu-items/${row.id}/edit`" class="wh-table-link">{{ row.code }}</Link>
+                <Link v-if="canManageMenuCatalog()" :href="`/fb/menu-items/${row.id}/edit`" class="wh-table-link">{{ row.code }}</Link>
+                <span v-else>{{ row.code }}</span>
             </template>
             <template #cell-name="{ row }">
-                <Link :href="`/fb/menu-items/${row.id}/edit`" class="wh-table-link">{{ row.name }}</Link>
+                <Link v-if="canManageMenuCatalog()" :href="`/fb/menu-items/${row.id}/edit`" class="wh-table-link">{{ row.name }}</Link>
+                <span v-else>{{ row.name }}</span>
             </template>
             <template #cell-category="{ row }">
                 {{ row.category ?? '—' }}
@@ -104,7 +114,13 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         </DataTable>
         </PageDataSection>
 
-        <FormModal :open="showCreateModal" title="New menu item" subtitle="Add a sellable item to the restaurant catalog" @close="closeCreateModal">
+        <FormModal
+            v-if="canManageMenuCatalog()"
+            :open="showCreateModal"
+            title="New menu item"
+            subtitle="Add a sellable item to the restaurant catalog"
+            @close="closeCreateModal"
+        >
             <form class="space-y-4" @submit.prevent="submitCreate">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>

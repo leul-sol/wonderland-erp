@@ -1,7 +1,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import PageHeader from '../../../Components/PageHeader.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
+
+const { canManageMenuCatalog } = usePortalPermission();
 
 const sections = [
     {
@@ -34,7 +37,11 @@ const sections = [
             </template>
         </PageHeader>
 
-        <div class="grid gap-4 md:grid-cols-3">
+        <p v-if="!canManageMenuCatalog()" class="wh-card mb-4 p-4 text-sm text-slate-600">
+            View-only access. Menu setup is managed by the restaurant manager.
+        </p>
+
+        <div v-if="canManageMenuCatalog()" class="grid gap-4 md:grid-cols-3">
             <section v-for="section in sections" :key="section.href" class="wh-card flex flex-col p-5">
                 <h3 class="text-base font-semibold text-slate-900">{{ section.title }}</h3>
                 <p class="mt-2 flex-1 text-sm text-slate-600">{{ section.description }}</p>

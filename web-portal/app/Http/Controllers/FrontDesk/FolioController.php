@@ -5,6 +5,7 @@ namespace App\Http\Controllers\FrontDesk;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\ProvidesCheckInModalData;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -17,13 +18,14 @@ class FolioController extends Controller
 {
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
+    use ProvidesCheckInModalData;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('FrontDesk/Folios/Index', [
             'folios' => $this->deferApi(function () {
@@ -32,6 +34,7 @@ class FolioController extends Controller
 
                 return is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
             }),
+            ...$this->checkInModalProps($request),
         ]);
     }
 

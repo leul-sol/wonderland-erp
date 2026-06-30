@@ -69,19 +69,9 @@ class PositionController extends Controller
             ->with('success', 'Position created.');
     }
 
-    public function edit(int $position): Response|RedirectResponse
+    public function edit(int $position): RedirectResponse
     {
-        try {
-            $response = $this->s2->position($position);
-            $departments = $this->s2->departments();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.positions.index');
-        }
-
-        return Inertia::render('Hr/Organization/Positions/Edit', [
-            'position' => $response['data'] ?? [],
-            'departments' => $departments['data'] ?? [],
-        ]);
+        return redirect()->route('hr.positions.index', ['open' => 'edit', 'id' => $position]);
     }
 
     public function update(Request $request, int $position): RedirectResponse

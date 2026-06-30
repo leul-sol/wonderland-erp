@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
+use App\Http\Controllers\Concerns\ProvidesCheckInModalData;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class ReservationController extends Controller
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
     use LoadsGatewayDataInParallel;
+    use ProvidesCheckInModalData;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
@@ -52,6 +54,7 @@ class ReservationController extends Controller
                     'guests' => $guests,
                 ];
             }),
+            ...$this->checkInModalProps($request),
         ]);
     }
 

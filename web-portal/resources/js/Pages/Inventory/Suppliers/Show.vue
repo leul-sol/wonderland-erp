@@ -4,12 +4,15 @@ import MoneyField from '../../../Components/MoneyField.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
     canPay: { type: Boolean, default: false },
 });
+
+const { canManageSuppliers } = usePortalPermission();
 
 const payForm = useForm({
     amount: props.supplier.outstanding_balance ?? '',
@@ -52,7 +55,13 @@ async function recordPayment() {
         <PageHeader :title="supplier.name" :subtitle="supplier.payment_terms ?? 'Supplier account'">
             <template #actions>
                 <StatusBadge :status="supplier.is_active === false ? 'inactive' : 'active'" />
-                <Link :href="`/inventory/suppliers/${supplier.id}/edit`" class="wh-btn-secondary text-xs">Edit</Link>
+                <Link
+                    v-if="canManageSuppliers()"
+                    :href="`/inventory/suppliers?open=edit&id=${supplier.id}`"
+                    class="wh-btn-secondary text-xs"
+                >
+                    Edit
+                </Link>
                 <Link href="/inventory/suppliers" class="wh-btn-secondary text-xs">All suppliers</Link>
             </template>
         </PageHeader>

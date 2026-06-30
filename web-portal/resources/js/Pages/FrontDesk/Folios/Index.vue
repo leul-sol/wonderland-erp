@@ -1,14 +1,22 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import CheckInModal from '../../../Components/FrontDesk/CheckInModal.vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
+import { useCheckInModal } from '../../../composables/useCheckInModal';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     folios: { type: Array, default: () => [] },
+    checkInLoad: { type: Object, default: null },
+    checkInGuestId: { type: Number, default: null },
 });
+
+const { showCheckInModal, checkInGuestId, openCheckInModal, closeCheckInModal, canCheckInGuest } = useCheckInModal(
+    props.checkInGuestId,
+);
 
 const columns = [
     { key: 'id', label: 'Folio #' },
@@ -28,7 +36,9 @@ function formatMoney(value) {
     <AppLayout title="Open folios">
         <PageHeader title="Open folios" subtitle="Select a folio to post charges, settle, and check out">
             <template #actions>
-                <Link href="/front-desk/check-in" class="wh-btn-primary">Check in guest</Link>
+                <button v-if="canCheckInGuest()" type="button" class="wh-btn-primary" @click="openCheckInModal()">
+                    Check in guest
+                </button>
             </template>
         </PageHeader>
 
@@ -45,5 +55,13 @@ function formatMoney(value) {
             </template>
         </DataTable>
         </PageDataSection>
+
+        <CheckInModal
+            v-if="canCheckInGuest()"
+            :open="showCheckInModal"
+            :page-load="checkInLoad"
+            :initial-guest-id="checkInGuestId"
+            @close="closeCheckInModal"
+        />
     </AppLayout>
 </template>

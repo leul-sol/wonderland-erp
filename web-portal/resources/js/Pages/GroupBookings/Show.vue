@@ -6,6 +6,7 @@ import DataTable from '../../Components/DataTable.vue';
 import PageHeader from '../../Components/PageHeader.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
 import { confirmAction } from '../../composables/useConfirm';
+import { usePortalPermission } from '../../composables/usePortalPermission';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -20,6 +21,8 @@ const props = defineProps({
 const checkInForm = useForm({ assignments: [] });
 const settleForm = useForm({ amount: '', payment_method: 'cash' });
 const checkoutForm = useForm({});
+
+const { canGroupCheckIn, canSettleFolios, canGroupCheckOut } = usePortalPermission();
 
 const isConfirmed = computed(() => props.groupBooking.status === 'confirmed');
 const isCheckedIn = computed(() => props.groupBooking.status === 'checked_in');
@@ -105,7 +108,7 @@ async function checkOutGroup() {
             <ApprovalStepper :steps="lifecycleSteps" :current-key="lifecycleCurrentStep" />
         </section>
 
-        <section v-if="isConfirmed" class="wh-card mb-6 p-4">
+        <section v-if="isConfirmed && canGroupCheckIn()" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Bulk check-in</h3>
             <p class="mb-4 text-sm text-slate-600">Assign an available room to each guest, then check in the group.</p>
             <div class="space-y-3">
@@ -164,7 +167,7 @@ async function checkOutGroup() {
             </DataTable>
         </section>
 
-        <section v-if="isCheckedIn" class="wh-card mb-6 p-4">
+        <section v-if="isCheckedIn && canSettleFolios()" class="wh-card mb-6 p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Settle folios</h3>
             <div class="space-y-4">
                 <div
@@ -202,7 +205,7 @@ async function checkOutGroup() {
             </div>
         </section>
 
-        <section v-if="isCheckedIn" class="wh-card p-4">
+        <section v-if="isCheckedIn && canGroupCheckOut()" class="wh-card p-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Group check-out</h3>
             <p v-if="!allFoliosSettled" class="mb-3 text-sm text-amber-800">
                 Settle all guest folios before releasing the group.

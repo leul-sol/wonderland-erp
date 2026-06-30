@@ -3,6 +3,8 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
+import EmptyState from '../../../Components/EmptyState.vue';
+import EmployeeFormFields from '../../../Components/Hr/EmployeeFormFields.vue';
 import FormModal from '../../../Components/FormModal.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
@@ -71,7 +73,10 @@ function submitCreate() {
     });
 }
 
-useQueryModal(showCreateModal, { onOpen: openCreateModal });
+useQueryModal(showCreateModal, {
+    when: () => props.canCreate,
+    onOpen: openCreateModal,
+});
 </script>
 
 <template>
@@ -91,8 +96,17 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         <PageDataSection keys="pageLoad">
         <DataTable list-title="Employee list" :columns="columns" :rows="employees" empty-message="No employees yet." selectable>
             <template #empty>
-                <p>No employees yet.</p>
-                <button v-if="canCreate" type="button" class="wh-btn-primary mt-3" @click="openCreateModal">Add your first employee</button>
+                <EmptyState
+                    title="No employees yet"
+                    description="Add workforce records here. When an email is provided, the system provisions a portal login with the default role you choose."
+                    variant="table"
+                >
+                    <template #action>
+                        <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openCreateModal">
+                            Add your first employee
+                        </button>
+                    </template>
+                </EmptyState>
             </template>
             <template #cell-employee_number="{ row }">
                 <Link :href="`/hr/employees/${row.id}`" class="wh-table-link">{{ row.employee_number }}</Link>
@@ -112,55 +126,21 @@ useQueryModal(showCreateModal, { onOpen: openCreateModal });
         </DataTable>
         </PageDataSection>
 
-        <FormModal :open="showCreateModal" title="Add employee" subtitle="Creates workforce record; S1 user is provisioned asynchronously" size="lg" @close="closeCreateModal">
-            <form class="space-y-4" @submit.prevent="submitCreate">
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label for="full_name" class="mb-1 block text-sm font-medium text-slate-700">Full name</label>
-                        <input id="full_name" v-model="form.full_name" type="text" required class="wh-input" />
-                    </div>
-                    <div>
-                        <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-                        <input id="email" v-model="form.email" type="email" class="wh-input" />
-                    </div>
-                    <div>
-                        <label for="hire_date" class="mb-1 block text-sm font-medium text-slate-700">Hire date</label>
-                        <input id="hire_date" v-model="form.hire_date" type="date" class="wh-input" />
-                    </div>
-                    <div>
-                        <label for="department_id" class="mb-1 block text-sm font-medium text-slate-700">Department</label>
-                        <select id="department_id" v-model="form.department_id" class="wh-input">
-                            <option value="">None</option>
-                            <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="position_id" class="mb-1 block text-sm font-medium text-slate-700">Position</label>
-                        <select id="position_id" v-model="form.position_id" class="wh-input">
-                            <option value="">None</option>
-                            <option v-for="position in positions" :key="position.id" :value="position.id">{{ position.title }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="job_title" class="mb-1 block text-sm font-medium text-slate-700">Job title</label>
-                        <input id="job_title" v-model="form.job_title" type="text" class="wh-input" />
-                    </div>
-                    <div>
-                        <label for="base_salary" class="mb-1 block text-sm font-medium text-slate-700">Base salary (ETB)</label>
-                        <input id="base_salary" v-model="form.base_salary" type="number" step="0.01" min="0" required class="wh-input" />
-                    </div>
-                    <div>
-                        <label for="pension_category" class="mb-1 block text-sm font-medium text-slate-700">Pension</label>
-                        <select id="pension_category" v-model="form.pension_category" class="wh-input">
-                            <option value="covered">Covered</option>
-                            <option value="not_covered">Not covered</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="default_role" class="mb-1 block text-sm font-medium text-slate-700">Default portal role</label>
-                        <input id="default_role" v-model="form.default_role" type="text" class="wh-input" />
-                    </div>
-                </div>
+        <FormModal
+            v-if="canCreate"
+            :open="showCreateModal"
+            title="Add employee"
+            subtitle="Creates workforce record; S1 user is provisioned asynchronously"
+            size="lg"
+            @close="closeCreateModal"
+        >
+            <form @submit.prevent="submitCreate">
+                <EmployeeFormFields
+                    :form="form"
+                    :departments="departments"
+                    :positions="positions"
+                    show-hire-date
+                />
             </form>
             <template #footer>
                 <div class="flex justify-end gap-3">

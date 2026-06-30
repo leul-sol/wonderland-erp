@@ -8,6 +8,7 @@ import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import { useQueryModal } from '../../../composables/useQueryModal';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
@@ -20,6 +21,8 @@ const folios = computed(() => props.pageLoad?.folios ?? []);
 const diningTables = computed(() => props.pageLoad?.diningTables ?? []);
 
 const showCreateModal = ref(false);
+
+const { canCheckInGuest } = usePortalPermission();
 
 const form = useForm({
     customer_type: 'hotel_guest',
@@ -183,7 +186,8 @@ useQueryModal(showCreateModal, {
                     </select>
                     <p v-if="folios.length === 0" class="mt-2 text-sm text-amber-800">
                         No open folios.
-                        <Link href="/front-desk/check-in" class="wh-table-link">Check in a guest</Link>
+                        <Link v-if="canCheckInGuest()" href="/front-desk/rooms?open=check-in" class="wh-table-link">Check in a guest</Link>
+                        <template v-else>Ask reception to check in a guest</template>
                         first.
                     </p>
                 </div>

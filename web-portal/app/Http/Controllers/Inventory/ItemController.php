@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,12 +22,14 @@ class ItemController extends Controller
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
     public function index(): Response
     {
         return Inertia::render('Inventory/Items/Index', [
+            'canCreate' => $this->auth->hasAnyPermission(['S3.inventory.items.write']),
             'pageLoad' => $this->deferPageLoad(function () {
                 $results = $this->fetchGatewayInParallel($this->s3, [
                     'items' => ['path' => '/s3/api/v1/items', 'query' => ['active_only' => false]],
@@ -81,7 +84,7 @@ class ItemController extends Controller
         $itemId = (int) ($response['data']['id'] ?? 0);
 
         return redirect()
-            ->route('inventory.items.show', $itemId > 0 ? $itemId : 0)
+            ->route('inventory.items.index')
             ->with('success', 'Inventory item created.');
     }
 

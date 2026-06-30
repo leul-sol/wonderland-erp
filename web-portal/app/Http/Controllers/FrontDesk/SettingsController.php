@@ -30,14 +30,11 @@ class SettingsController extends Controller
             'pageLoad' => $this->deferPageLoad(function () {
                 $results = $this->fetchGatewayInParallel($this->s3, [
                     'roomTypes' => ['path' => '/s3/api/v1/room-types', 'query' => ['active_only' => false]],
-                    'rooms' => ['path' => '/s3/api/v1/rooms', 'query' => []],
                 ]);
                 $response = $this->requireParallelResult($results, 'roomTypes');
-                $rooms = $results['rooms'] ?? ['data' => []];
 
                 return [
                     'roomTypes' => $response['data'] ?? [],
-                    'rooms' => $rooms['data'] ?? [],
                 ];
             }),
         ]);
@@ -84,9 +81,23 @@ class SettingsController extends Controller
         return back()->with('success', 'Room type updated.');
     }
 
-    public function rooms(): RedirectResponse
+    public function rooms(): Response
     {
-        return redirect()->route('front-desk.settings.index');
+        return Inertia::render('FrontDesk/Settings/Rooms', [
+            'pageLoad' => $this->deferPageLoad(function () {
+                $results = $this->fetchGatewayInParallel($this->s3, [
+                    'roomTypes' => ['path' => '/s3/api/v1/room-types', 'query' => ['active_only' => false]],
+                    'rooms' => ['path' => '/s3/api/v1/rooms', 'query' => []],
+                ]);
+                $response = $this->requireParallelResult($results, 'roomTypes');
+                $rooms = $results['rooms'] ?? ['data' => []];
+
+                return [
+                    'roomTypes' => $response['data'] ?? [],
+                    'rooms' => $rooms['data'] ?? [],
+                ];
+            }),
+        ]);
     }
 
     public function storeRoom(Request $request): RedirectResponse

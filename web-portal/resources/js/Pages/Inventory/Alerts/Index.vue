@@ -4,11 +4,14 @@ import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
 });
+
+const { canReadInventoryReports } = usePortalPermission();
 
 const lowStockAlerts = computed(() => props.pageLoad?.lowStockAlerts ?? []);
 const expiryAlerts = computed(() => props.pageLoad?.expiryAlerts ?? []);
@@ -34,7 +37,7 @@ const expiryColumns = [
         <PageHeader title="Stock alerts" subtitle="Low stock and approaching expiry (read-only)">
             <template #actions>
                 <Link href="/inventory/items" class="wh-btn-secondary">Items</Link>
-                <Link href="/inventory/valuation" class="wh-btn-secondary">Valuation</Link>
+                <Link v-if="canReadInventoryReports()" href="/inventory/valuation" class="wh-btn-secondary">Valuation</Link>
             </template>
         </PageHeader>
 

@@ -52,11 +52,19 @@ class S3BackOfficePagesTest extends TestCase
         $response->assertRedirect(route('front-desk.reservations.show', 12));
     }
 
-    public function test_physical_rooms_settings_redirects_to_hotel_settings(): void
+    public function test_physical_rooms_settings_page_renders(): void
     {
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('fetchMany')->once()->andReturn([
+                'roomTypes' => ['data' => [['id' => 1, 'code' => 'STD', 'name' => 'Standard']]],
+                'rooms' => ['data' => [['id' => 1, 'room_number' => '101']]],
+            ]);
+        });
+
         $response = $this->get('/front-desk/settings/rooms');
 
-        $response->assertRedirect(route('front-desk.settings.index'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('FrontDesk/Settings/Rooms'));
     }
 
     public function test_cancel_order_posts_to_s3(): void

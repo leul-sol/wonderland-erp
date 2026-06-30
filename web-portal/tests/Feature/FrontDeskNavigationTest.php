@@ -60,7 +60,6 @@ class FrontDeskNavigationTest extends TestCase
             ['/front-desk/rooms', 'FrontDesk/Rooms/Index'],
             ['/front-desk/reservations', 'FrontDesk/Reservations/Index'],
             ['/front-desk/guests', 'FrontDesk/Guests/Index'],
-            ['/front-desk/check-in', 'FrontDesk/CheckIn/Create'],
             ['/front-desk/folios', 'FrontDesk/Folios/Index'],
             ['/front-desk/cashier-shifts', 'FrontDesk/CashierShifts/Index'],
             ['/front-desk/settings', 'FrontDesk/Settings/Index'],
@@ -72,6 +71,7 @@ class FrontDeskNavigationTest extends TestCase
             $response->assertInertia(fn ($page) => $page->component($component));
         }
 
+        $this->get('/front-desk/check-in')->assertRedirect(route('front-desk.rooms.index', ['open' => 'check-in']));
         $this->get('/front-desk/guests/create')->assertRedirect(route('front-desk.guests.index', ['open' => 'create']));
     }
 }

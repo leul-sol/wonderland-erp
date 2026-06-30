@@ -145,6 +145,8 @@ class EmployeeController extends Controller
             'loans' => $hub['loans'],
             'payslipRuns' => $hub['payslipRuns'],
             'assetTypes' => $assetTypes,
+            'departments' => $this->loadEmployeeFormCatalog()['departments'],
+            'positions' => $this->loadEmployeeFormCatalog()['positions'],
             'canUpdate' => $this->auth->hasAnyPermission(['S2.workforce.employees.update']),
             'canViewLeave' => $this->auth->hasAnyPermission(['S2.workforce.leave_balances.read', 'S2.workforce.leave_requests.read']),
             'canWriteDisciplinary' => $this->auth->hasAnyPermission(['S2.hr.disciplinary.write']),
@@ -159,21 +161,9 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function edit(int $employee): Response|RedirectResponse
+    public function edit(int $employee): RedirectResponse
     {
-        try {
-            $response = $this->s2->employee($employee);
-            $departments = $this->s2->departments();
-            $positions = $this->s2->positions();
-        } catch (ApiException $e) {
-            return $this->redirectApiError($e, 'hr.employees.index');
-        }
-
-        return Inertia::render('Hr/Employees/Edit', [
-            'employee' => $response['data'] ?? [],
-            'departments' => $departments['data'] ?? [],
-            'positions' => $positions['data'] ?? [],
-        ]);
+        return redirect()->route('hr.employees.show', ['employee' => $employee, 'open' => 'edit']);
     }
 
     public function update(Request $request, int $employee): RedirectResponse
@@ -328,6 +318,28 @@ class EmployeeController extends Controller
             'loans' => $results['loans']['data'] ?? [],
             'payslipRuns' => $payslipRuns,
             'tabLoadError' => $tabLoadError,
+        ];
+    }
+
+    /**
+     * @return array{departments: list<mixed>, positions: list<mixed>}
+     */
+    private function loadEmployeeFormCatalog(): array
+    {
+        if (! $this->auth->hasAnyPermission(['S2.workforce.employees.update'])) {
+            return ['departments' => [], 'positions' => []];
+        }
+
+        try {
+            $departments = $this->s2->departments();
+            $positions = $this->s2->positions();
+        } catch (ApiException) {
+            return ['departments' => [], 'positions' => []];
+        }
+
+        return [
+            'departments' => $departments['data'] ?? [],
+            'positions' => $positions['data'] ?? [],
         ];
     }
 }

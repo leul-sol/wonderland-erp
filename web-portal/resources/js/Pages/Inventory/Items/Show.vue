@@ -4,6 +4,7 @@ import DataTable from '../../../Components/DataTable.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -11,6 +12,8 @@ const props = defineProps({
     stock: { type: Object, default: () => ({}) },
     movements: { type: Array, default: () => [] },
 });
+
+const { canManageInventoryItems, canAdjustStock } = usePortalPermission();
 
 const adjustForm = useForm({
     quantity: '',
@@ -90,7 +93,7 @@ async function submitWriteOff() {
         <PageHeader :title="item.name" :subtitle="`${item.sku} · ${item.unit ?? 'unit'}`">
             <template #actions>
                 <StatusBadge v-if="isLowStock(item)" status="open" />
-                <Link :href="`/inventory/items/${item.id}/edit`" class="wh-btn-secondary text-xs">Edit</Link>
+                <Link v-if="canManageInventoryItems()" :href="`/inventory/items/${item.id}/edit`" class="wh-btn-secondary text-xs">Edit</Link>
                 <Link href="/inventory/items" class="wh-btn-secondary text-xs">All items</Link>
                 <Link href="/inventory/alerts" class="wh-btn-secondary text-xs">Alerts</Link>
             </template>
@@ -123,7 +126,7 @@ async function submitWriteOff() {
             </DataTable>
         </section>
 
-        <div class="mb-6 grid gap-4 lg:grid-cols-2">
+        <div v-if="canAdjustStock()" class="mb-6 grid gap-4 lg:grid-cols-2">
             <form class="wh-card p-4" @submit.prevent="submitAdjust">
                 <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Stock adjustment</h3>
                 <p class="mb-3 text-xs text-slate-500">Positive adds stock; negative reduces (cycle count correction).</p>
