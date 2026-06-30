@@ -62,6 +62,8 @@ class ReservationController extends Controller
             $reservation = $this->reservations->checkIn($reservation, (int) $request->validated('room_id'));
         } catch (InvalidArgumentException $e) {
             return $this->error('VALIDATION_ERROR', $e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            return $this->error('UPSTREAM_ERROR', $e->getMessage(), 502);
         }
 
         return response()->json(['data' => $this->reservationPayload($reservation)]);

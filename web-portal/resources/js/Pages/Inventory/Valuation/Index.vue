@@ -4,11 +4,14 @@ import { computed } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     pageLoad: { type: Object, default: null },
 });
+
+const { canReadInventoryItems } = usePortalPermission();
 
 const totalValue = computed(() => props.pageLoad?.totalValue ?? '0');
 const lines = computed(() => props.pageLoad?.lines ?? []);
@@ -30,8 +33,8 @@ function formatMoney(value) {
     <AppLayout title="Inventory valuation">
         <PageHeader title="Inventory valuation" subtitle="FIFO/FEFO batch valuation (read-only)">
             <template #actions>
-                <Link href="/inventory/items" class="wh-btn-secondary">Items</Link>
-                <Link href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
+                <Link v-if="canReadInventoryItems()" href="/inventory/items" class="wh-btn-secondary">Items</Link>
+                <Link v-if="canReadInventoryItems()" href="/inventory/alerts" class="wh-btn-secondary">Alerts</Link>
             </template>
         </PageHeader>
 
@@ -44,7 +47,7 @@ function formatMoney(value) {
         <DataTable list-title="Valuation by batch" :columns="columns" :rows="lines" empty-message="No active stock batches.">
             <template #cell-sku="{ row }">
                 <Link
-                    v-if="row.item_id"
+                    v-if="row.item_id && canReadInventoryItems()"
                     :href="`/inventory/items/${row.item_id}`"
                     class="wh-table-link"
                 >

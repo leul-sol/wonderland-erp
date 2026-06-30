@@ -42,6 +42,8 @@ class JournalController extends Controller
             return $this->error('IDEMPOTENCY_KEY_CONFLICT', $e->getMessage(), 409);
         } catch (\InvalidArgumentException $e) {
             return $this->error('VALIDATION_ERROR', $e->getMessage(), 400);
+        } catch (\RuntimeException $e) {
+            return $this->error('UNPROCESSABLE', $e->getMessage(), 422);
         }
 
         return response()->json(['data' => $this->journalPayload($entry)], $status);

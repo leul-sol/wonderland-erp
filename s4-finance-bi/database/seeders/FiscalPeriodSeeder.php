@@ -12,8 +12,17 @@ class FiscalPeriodSeeder extends Seeder
     {
         $startMonth = (int) config('fiscal.year_start_month', 7);
         $today = Carbon::today();
-        $fyStartYear = $today->month >= $startMonth ? $today->year : $today->year - 1;
+        $currentFyStartYear = $today->month >= $startMonth ? $today->year : $today->year - 1;
 
+        // Seed the current fiscal year and the next one so reservations/journals
+        // a few months ahead (e.g. July check-ins while still in June) always have a period.
+        foreach ([$currentFyStartYear, $currentFyStartYear + 1] as $fyStartYear) {
+            $this->seedFiscalYear($fyStartYear, $startMonth);
+        }
+    }
+
+    private function seedFiscalYear(int $fyStartYear, int $startMonth): void
+    {
         for ($period = 1; $period <= 12; $period++) {
             $month = (($startMonth - 1 + $period - 1) % 12) + 1;
             $year = $fyStartYear + intdiv($startMonth - 1 + $period - 1, 12);

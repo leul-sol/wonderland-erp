@@ -90,6 +90,31 @@ class JournalTest extends TestCase
             ->assertJsonPath('data.id', $entryId);
     }
 
+    public function test_journal_outside_fiscal_calendar_returns_422(): void
+    {
+        $response = $this->postJson('/api/v1/journal-entries', [
+            'description' => 'Future charge',
+            'source_module' => 's3',
+            'source_reference' => 'FOLIO-9999',
+            'entry_date' => now()->addYears(3)->toDateString(),
+            'lines' => [
+                ['account_code' => '1100', 'debit' => 1000, 'credit' => 0],
+                ['account_code' => '4001', 'debit' => 0, 'credit' => 1000],
+            ],
+        ], [
+            'X-Service-Key' => 'test-service-key',
+            'Idempotency-Key' => 'folio-future-charge',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error.code', 'UNPROCESSABLE');
+
+        $this->assertStringContainsString(
+            'No fiscal period exists',
+            (string) $response->json('error.message'),
+        );
+    }
+
     public function test_automated_entry_requires_idempotency_key(): void
     {
         $response = $this->postJson('/api/v1/journal-entries', [

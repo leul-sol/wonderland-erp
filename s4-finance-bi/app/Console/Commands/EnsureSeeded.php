@@ -38,6 +38,10 @@ class EnsureSeeded extends Command
             $this->call(\Database\Seeders\UatSeeder::class);
         }
 
+        if (Schema::hasTable('fiscal_periods')) {
+            $this->call(\Database\Seeders\FiscalPeriodSeeder::class);
+        }
+
         $this->comment('S4 seed data present.');
 
         return self::SUCCESS;

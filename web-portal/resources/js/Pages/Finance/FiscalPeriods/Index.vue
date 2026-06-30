@@ -14,8 +14,8 @@ defineProps({
 });
 
 const columns = [
-    { key: 'year', label: 'Year' },
-    { key: 'period_number', label: 'Period' },
+    { key: 'year', label: 'Fiscal year' },
+    { key: 'period_number', label: 'Period #' },
     { key: 'start_date', label: 'Start' },
     { key: 'end_date', label: 'End' },
     { key: 'status', label: 'Status' },
@@ -37,7 +37,7 @@ function openNextPeriod() {
 
 <template>
     <AppLayout title="Fiscal periods">
-        <PageHeader title="Fiscal periods" subtitle="Two-step close (open → closing → closed) then lock">
+        <PageHeader title="Fiscal periods" subtitle="Fiscal year (FY) starts in July — period dates are calendar months. FY 2025 period 12 is June 2026.">
             <template #actions>
                 <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openNextPeriod">Open next period</button>
                 <Link href="/finance/reports" class="wh-btn-secondary">Reports</Link>
@@ -46,7 +46,8 @@ function openNextPeriod() {
 
         <PageDataSection keys="fiscalPeriods">
         <p class="mb-4 text-sm text-slate-600">
-            Click close twice on an open period: first moves to closing, second completes close. Lock only after closed.
+            The fiscal year column is the FY label (e.g. FY 2025 runs Jul 2025–Jun 2026). Start/end dates are the actual calendar month for that period.
+            Close twice on an open period: first moves to closing, second completes close. Lock only after closed.
         </p>
 
         <DataTable list-title="Fiscal period list" selectable :columns="columns" :rows="fiscalPeriods" empty-message="No fiscal periods configured.">

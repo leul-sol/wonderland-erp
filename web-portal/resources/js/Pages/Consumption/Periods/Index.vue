@@ -6,6 +6,7 @@ import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import { confirmAction } from '../../../composables/useConfirm';
+import { usePortalPermission } from '../../../composables/usePortalPermission';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -14,6 +15,8 @@ const props = defineProps({
     defaultPeriodStart: { type: String, required: true },
     defaultPeriodEnd: { type: String, required: true },
 });
+
+const { canReadRestaurantMenu } = usePortalPermission();
 
 const periods = computed(() => props.pageLoad?.periods ?? []);
 const employees = computed(() => props.pageLoad?.employees ?? []);
@@ -81,7 +84,7 @@ function startMealOrder(periodId) {
     <AppLayout title="Staff meals">
         <PageHeader title="Employee meal consumption" subtitle="Open period → meal orders → close period (payroll deduction)">
             <template #actions>
-                <Link href="/fb/menu" class="wh-btn-secondary">View menu</Link>
+                <Link v-if="canReadRestaurantMenu()" href="/fb/menu" class="wh-btn-secondary">View menu</Link>
             </template>
         </PageHeader>
 

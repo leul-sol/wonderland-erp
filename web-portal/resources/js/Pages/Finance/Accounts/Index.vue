@@ -3,19 +3,21 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import DataTable from '../../../Components/DataTable.vue';
 import FormModal from '../../../Components/FormModal.vue';
+import FormLabel from '../../../Components/FormLabel.vue';
 import PageDataSection from '../../../Components/PageDataSection.vue';
 import PageHeader from '../../../Components/PageHeader.vue';
 import StatusBadge from '../../../Components/StatusBadge.vue';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     accounts: { type: Array, default: () => [] },
     canCreate: { type: Boolean, default: false },
     canUpdate: { type: Boolean, default: false },
 });
 
-const showCreate = ref(false);
-const editingId = ref(null);
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const editingAccount = ref(null);
 
 const createForm = useForm({
     code: '',
@@ -42,33 +44,49 @@ const columns = [
     { key: 'actions', label: '', class: 'text-right' },
 ];
 
-function openEdit(account) {
-    editingId.value = account.id;
+function openCreateModal() {
+    createForm.reset();
+    createForm.type = 'expense';
+    createForm.normal_balance = 'debit';
+    createForm.clearErrors();
+    showCreateModal.value = true;
+}
+
+function closeCreateModal() {
+    showCreateModal.value = false;
+}
+
+function openEditModal(account) {
+    editingAccount.value = account;
     editForm.name = account.name;
     editForm.type = account.type;
     editForm.sub_type = account.sub_type ?? '';
     editForm.normal_balance = account.normal_balance;
     editForm.is_active = account.is_active !== false;
+    editForm.clearErrors();
+    showEditModal.value = true;
 }
 
-function closeEdit() {
-    editingId.value = null;
+function closeEditModal() {
+    showEditModal.value = false;
+    editingAccount.value = null;
 }
 
 function submitCreate() {
     createForm.post('/finance/accounts', {
         preserveScroll: true,
-        onSuccess: () => {
-            createForm.reset();
-            showCreate.value = false;
-        },
+        onSuccess: () => closeCreateModal(),
     });
 }
 
 function submitEdit() {
-    editForm.put(`/finance/accounts/${editingId.value}`, {
+    if (!editingAccount.value) {
+        return;
+    }
+
+    editForm.put(`/finance/accounts/${editingAccount.value.id}`, {
         preserveScroll: true,
-        onSuccess: () => closeEdit(),
+        onSuccess: () => closeEditModal(),
     });
 }
 </script>
@@ -78,7 +96,7 @@ function submitEdit() {
         <PageHeader title="Chart of accounts" subtitle="General ledger account codes used across the hotel">
             <template #actions>
                 <Link href="/finance/journals" class="wh-btn-secondary">Journals</Link>
-                <button v-if="canCreate" type="button" class="wh-btn-primary" @click="showCreate = true">New account</button>
+                <button v-if="canCreate" type="button" class="wh-btn-primary" @click="openCreateModal">New account</button>
             </template>
         </PageHeader>
 
@@ -92,7 +110,7 @@ function submitEdit() {
                         v-if="canUpdate"
                         type="button"
                         class="wh-btn-secondary text-xs"
-                        @click="openEdit(row)"
+                        @click="openEditModal(row)"
                     >
                         Edit
                     </button>
@@ -100,20 +118,26 @@ function submitEdit() {
             </DataTable>
         </PageDataSection>
 
-        <FormModal v-if="showCreate" title="New account" @close="showCreate = false">
+        <FormModal
+            v-if="canCreate"
+            :open="showCreateModal"
+            title="New account"
+            subtitle="Add a GL account code for journals and reporting"
+            @close="closeCreateModal"
+        >
             <form class="space-y-4" @submit.prevent="submitCreate">
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700" for="code">Code</label>
-                    <input id="code" v-model="createForm.code" class="wh-input w-full" required maxlength="20" />
+                    <FormLabel for="account_code" required>Code</FormLabel>
+                    <input id="account_code" v-model="createForm.code" class="wh-input w-full" required maxlength="20" placeholder="6100" />
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700" for="name">Name</label>
-                    <input id="name" v-model="createForm.name" class="wh-input w-full" required />
+                    <FormLabel for="account_name" required>Name</FormLabel>
+                    <input id="account_name" v-model="createForm.name" class="wh-input w-full" required placeholder="Utilities expense" />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700" for="type">Type</label>
-                        <select id="type" v-model="createForm.type" class="wh-input w-full">
+                        <FormLabel for="account_type" required>Type</FormLabel>
+                        <select id="account_type" v-model="createForm.type" class="wh-input w-full">
                             <option value="asset">Asset</option>
                             <option value="liability">Liability</option>
                             <option value="equity">Equity</option>
@@ -122,30 +146,38 @@ function submitEdit() {
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700" for="normal_balance">Normal balance</label>
-                        <select id="normal_balance" v-model="createForm.normal_balance" class="wh-input w-full">
+                        <FormLabel for="account_normal_balance" required>Normal balance</FormLabel>
+                        <select id="account_normal_balance" v-model="createForm.normal_balance" class="wh-input w-full">
                             <option value="debit">Debit</option>
                             <option value="credit">Credit</option>
                         </select>
                     </div>
                 </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="wh-btn-secondary" @click="showCreate = false">Cancel</button>
-                    <button type="submit" class="wh-btn-primary" :disabled="createForm.processing">Save</button>
-                </div>
             </form>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="wh-btn-secondary" @click="closeCreateModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="createForm.processing" @click="submitCreate">Save</button>
+                </div>
+            </template>
         </FormModal>
 
-        <FormModal v-if="editingId" title="Edit account" @close="closeEdit">
+        <FormModal
+            v-if="canUpdate"
+            :open="showEditModal"
+            :title="`Edit ${editingAccount?.code ?? 'account'}`"
+            subtitle="Update account name, type, or active status"
+            @close="closeEditModal"
+        >
             <form class="space-y-4" @submit.prevent="submitEdit">
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700" for="edit-name">Name</label>
-                    <input id="edit-name" v-model="editForm.name" class="wh-input w-full" required />
+                    <FormLabel for="edit_account_name" required>Name</FormLabel>
+                    <input id="edit_account_name" v-model="editForm.name" class="wh-input w-full" required />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700" for="edit-type">Type</label>
-                        <select id="edit-type" v-model="editForm.type" class="wh-input w-full">
+                        <FormLabel for="edit_account_type" required>Type</FormLabel>
+                        <select id="edit_account_type" v-model="editForm.type" class="wh-input w-full">
                             <option value="asset">Asset</option>
                             <option value="liability">Liability</option>
                             <option value="equity">Equity</option>
@@ -154,8 +186,8 @@ function submitEdit() {
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700" for="edit-normal">Normal balance</label>
-                        <select id="edit-normal" v-model="editForm.normal_balance" class="wh-input w-full">
+                        <FormLabel for="edit_account_normal_balance" required>Normal balance</FormLabel>
+                        <select id="edit_account_normal_balance" v-model="editForm.normal_balance" class="wh-input w-full">
                             <option value="debit">Debit</option>
                             <option value="credit">Credit</option>
                         </select>
@@ -165,11 +197,13 @@ function submitEdit() {
                     <input v-model="editForm.is_active" type="checkbox" class="rounded border-slate-300" />
                     Active account
                 </label>
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="wh-btn-secondary" @click="closeEdit">Cancel</button>
-                    <button type="submit" class="wh-btn-primary" :disabled="editForm.processing">Update</button>
-                </div>
             </form>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="wh-btn-secondary" @click="closeEditModal">Cancel</button>
+                    <button type="button" class="wh-btn-primary" :disabled="editForm.processing" @click="submitEdit">Update</button>
+                </div>
+            </template>
         </FormModal>
     </AppLayout>
 </template>
