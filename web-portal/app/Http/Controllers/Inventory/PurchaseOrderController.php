@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
 use App\Support\PurchaseOrderApprovalSteps;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class PurchaseOrderController extends Controller
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
@@ -110,9 +112,13 @@ class PurchaseOrderController extends Controller
             'approvalSteps' => PurchaseOrderApprovalSteps::forPo($po),
             'approvalCurrentStep' => PurchaseOrderApprovalSteps::currentStepKey($po),
             'approvalTierLabel' => PurchaseOrderApprovalSteps::tierLabel($po),
-            'canSubmit' => $status === 'draft',
-            'canApprove' => in_array($status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true),
-            'canReceive' => in_array($status, ['approved', 'partially_received'], true),
+            'canSubmit' => $status === 'draft'
+                && $this->auth->hasAnyPermission(['S3.inventory.purchase_orders.write']),
+            'canApprove' => in_array($status, ['pending_dept_head', 'pending_finance', 'pending_gm'], true)
+                && $this->auth->hasAnyPermission(['S3.inventory.purchase_orders.approve'])
+                && PurchaseOrderApprovalSteps::userCanApproveCurrentStep($po, $this->auth->roleSlugs()),
+            'canReceive' => in_array($status, ['approved', 'partially_received'], true)
+                && $this->auth->hasAnyPermission(['S3.inventory.stock.write']),
         ]);
     }
 

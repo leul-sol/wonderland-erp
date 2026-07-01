@@ -18,6 +18,7 @@ const props = defineProps({
 
 const orders = computed(() => props.pageLoad?.orders ?? []);
 const folios = computed(() => props.pageLoad?.folios ?? []);
+const foliosLoadFailed = computed(() => props.pageLoad?.foliosLoadFailed === true);
 const diningTables = computed(() => props.pageLoad?.diningTables ?? []);
 
 const showCreateModal = ref(false);
@@ -184,7 +185,10 @@ useQueryModal(showCreateModal, {
                             {{ formatMoney(folio.balance) }}
                         </option>
                     </select>
-                    <p v-if="folios.length === 0" class="mt-2 text-sm text-amber-800">
+                    <p v-if="foliosLoadFailed" class="mt-2 text-sm text-amber-800">
+                        Could not load guest folios. Log out and back in after IT updates your role, or ask reception to post the meal to the room.
+                    </p>
+                    <p v-else-if="folios.length === 0" class="mt-2 text-sm text-amber-800">
                         No open folios.
                         <Link v-if="canCheckInGuest()" href="/front-desk/rooms?open=check-in" class="wh-table-link">Check in a guest</Link>
                         <template v-else>Ask reception to check in a guest</template>
@@ -214,7 +218,7 @@ useQueryModal(showCreateModal, {
                     <button
                         type="button"
                         class="wh-btn-primary"
-                        :disabled="form.processing || (isHotelGuest && folios.length === 0)"
+                        :disabled="form.processing || (isHotelGuest && (foliosLoadFailed || folios.length === 0))"
                         @click="submitCreate"
                     >
                         Open order

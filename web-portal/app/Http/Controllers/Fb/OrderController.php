@@ -6,10 +6,14 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
+use App\Http\Controllers\Concerns\ResolvesCashierShiftPayments;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
+use App\Services\FrontDesk\CashierShiftResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,9 +22,11 @@ class OrderController extends Controller
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
     use LoadsGatewayDataInParallel;
+    use ResolvesCashierShiftPayments;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
@@ -43,10 +49,10 @@ class OrderController extends Controller
                     'tables' => ['path' => '/s3/api/v1/dining-tables', 'query' => ['active_only' => true]],
                 ]);
                 $response = $this->requireParallelResult($results, 'orders');
-                $foliosResponse = $results['folios'] ?? ['data' => ['data' => []]];
+                $foliosResponse = $results['folios'] ?? null;
                 $tablesResponse = $results['tables'] ?? ['data' => []];
 
-                $paginator = $foliosResponse['data'] ?? [];
+                $paginator = is_array($foliosResponse) ? ($foliosResponse['data'] ?? []) : [];
                 $folios = is_array($paginator['data'] ?? null) ? $paginator['data'] : [];
 
                 $orders = collect($response['data'] ?? []);
@@ -68,6 +74,7 @@ class OrderController extends Controller
                 return [
                     'orders' => $orders->values()->all(),
                     'folios' => $folios,
+                    'foliosLoadFailed' => $foliosResponse === null,
                     'diningTables' => $tablesResponse['data'] ?? [],
                 ];
             }),
@@ -135,6 +142,7 @@ class OrderController extends Controller
             $orderData = $orderResponse['data'] ?? [];
             $folioId = (int) ($orderData['folio_id'] ?? 0);
             $folio = $folioId > 0 ? $this->s3->folio($folioId) : ['data' => null];
+            $openCashierShift = app(CashierShiftResolver::class)->openShiftForDisplay();
         } catch (ApiException $e) {
             return $this->redirectApiError($e, 'fb.orders.index');
         }
@@ -145,6 +153,8 @@ class OrderController extends Controller
             'folio' => $folio['data'] ?? null,
             'routingHint' => $this->routingHint($orderData['customer_type'] ?? 'outside_cash'),
             'canPayBill' => $this->canPayBill($orderData),
+            'openCashierShift' => $openCashierShift,
+            'canViewCashierShifts' => $this->auth->hasAnyPermission(['S3.hotel.cashier.read']),
         ]);
     }
 
@@ -170,7 +180,27 @@ class OrderController extends Controller
     public function finalize(int $order): RedirectResponse
     {
         try {
-            $this->s3->finalizeOrder($order);
+            $orderResponse = $this->s3->order($order);
+            $orderData = $orderResponse['data'] ?? [];
+            $payload = [];
+
+            if (($orderData['customer_type'] ?? '') === 'outside_cash') {
+                $payload['cashier_shift_id'] = $this->requireOpenCashierShiftIdForCash();
+            }
+
+            $this->s3->finalizeOrder($order, $payload);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first();
+
+            return back()->with([
+                'error' => is_string($message) ? $message : 'Open a cashier shift before collecting walk-in cash.',
+                'error_detail' => [
+                    'title' => 'Cashier shift required',
+                    'message' => is_string($message) ? $message : 'Open a cashier shift before collecting walk-in cash.',
+                    'recommendation' => 'Go to Front desk → Cashier shifts and open your drawer, then finalize again.',
+                    'code' => 'VALIDATION_ERROR',
+                ],
+            ]);
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }

@@ -57,11 +57,11 @@ permissions:
   - action: S3.hotel.checkinout.write
     default_roles: [super_admin, receptionist]
   - action: S3.hotel.folios.read
-    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, report_viewer]
+    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, restaurant_manager, report_viewer]
   - action: S3.hotel.folios.write
     default_roles: [super_admin, receptionist, cashier]
   - action: S3.hotel.cashier.read
-    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, report_viewer]
+    default_roles: [super_admin, general_manager, receptionist, cashier, finance_manager, restaurant_manager, report_viewer]
   - action: S3.hotel.cashier.write
     default_roles: [super_admin, receptionist, cashier]
   - action: S3.hotel.group_bookings.read

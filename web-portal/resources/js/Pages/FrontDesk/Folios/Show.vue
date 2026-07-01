@@ -11,6 +11,11 @@ import AppLayout from '../../../Layouts/AppLayout.vue';
 const props = defineProps({
     folio: { type: Object, required: true },
     reservation: { type: Object, default: null },
+    canAddCharge: { type: Boolean, default: false },
+    canSettle: { type: Boolean, default: false },
+    canCheckout: { type: Boolean, default: false },
+    openCashierShift: { type: Object, default: null },
+    canViewCashierShifts: { type: Boolean, default: false },
 });
 
 const chargeForm = useForm({
@@ -27,12 +32,18 @@ const settleForm = useForm({
 const checkoutForm = useForm({});
 
 const balance = computed(() => Number.parseFloat(props.folio.balance ?? 0));
-const canSettle = computed(() => props.folio.status === 'open' && balance.value > 0);
-const canCheckout = computed(() => props.folio.status === 'settled' && props.reservation?.status === 'checked_in');
+const showSettleForm = computed(() => props.canSettle && props.folio.status === 'open' && balance.value > 0);
+const readyForCheckout = computed(
+    () => props.folio.status === 'settled' && props.reservation?.status === 'checked_in',
+);
+const showCheckoutButton = computed(() => props.canCheckout && readyForCheckout.value);
 const isPartialPayment = computed(() => {
     const amount = Number.parseFloat(settleForm.amount ?? 0);
     return amount > 0 && amount < balance.value;
 });
+const needsCashierShift = computed(
+    () => settleForm.payment_method === 'cash' && !props.openCashierShift,
+);
 
 const taxSummary = computed(() => {
     const lines = (props.folio.lines ?? []).filter((line) => line.line_type === 'charge');
@@ -180,7 +191,7 @@ function payFullBalance() {
                     </DataTable>
                 </section>
 
-                <section v-if="folio.status === 'open'" class="wh-card p-4">
+                <section v-if="canAddCharge && folio.status === 'open'" class="wh-card p-4">
                     <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Post incidental charge</h3>
                     <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="postCharge">
                         <div class="sm:col-span-2">
@@ -224,8 +235,23 @@ function payFullBalance() {
                     </dl>
                 </section>
 
-                <section v-if="canSettle" class="wh-card p-4">
+                <section v-if="showSettleForm" class="wh-card p-4">
                     <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Record payment</h3>
+                    <p v-if="openCashierShift" class="mb-3 text-xs text-slate-600">
+                        Cash payments post to
+                        <Link :href="`/front-desk/cashier-shifts/${openCashierShift.id}`" class="wh-table-link">
+                            cashier shift #{{ openCashierShift.id }}
+                        </Link>.
+                    </p>
+                    <p v-else-if="needsCashierShift" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        <template v-if="canViewCashierShifts">
+                            Open a cashier shift before taking cash
+                            (<Link href="/front-desk/cashier-shifts" class="wh-table-link">Front desk → Cashier shifts</Link>).
+                        </template>
+                        <template v-else>
+                            No cashier shift is open. Ask front desk or the cashier to open one before taking cash payment.
+                        </template>
+                    </p>
                     <form class="space-y-4" @submit.prevent="settleFolio">
                         <MoneyField
                             id="settle_amount"
@@ -244,26 +270,38 @@ function payFullBalance() {
                                 <option value="bank_transfer">Bank transfer</option>
                                 <option value="mobile_money">Mobile money</option>
                             </select>
+                            <p v-if="settleForm.errors.payment_method" class="mt-1 text-sm text-red-600">
+                                {{ settleForm.errors.payment_method }}
+                            </p>
                         </div>
-                        <button type="submit" class="wh-btn-primary w-full" :disabled="settleForm.processing">
+                        <button
+                            type="submit"
+                            class="wh-btn-primary w-full"
+                            :disabled="settleForm.processing || needsCashierShift"
+                        >
                             {{ isPartialPayment ? 'Record partial payment' : 'Settle folio' }}
                         </button>
                     </form>
                 </section>
 
-                <section v-else-if="folio.status === 'settled'" class="wh-card p-4">
+                <section v-else-if="folio.status === 'settled' && !canCheckout && readyForCheckout" class="wh-card p-4">
+                    <p class="text-sm text-emerald-800">Folio settled. Ask reception to check out the guest.</p>
+                </section>
+
+                <section v-else-if="folio.status === 'settled' && canCheckout" class="wh-card p-4">
                     <p class="text-sm text-emerald-800">Folio settled. Ready for check-out.</p>
                 </section>
 
-                <section class="wh-card p-4">
+                <section v-if="canCheckout" class="wh-card p-4">
                     <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Check-out</h3>
-                    <p v-if="!canCheckout" class="mb-3 text-xs text-slate-500">
+                    <p v-if="!readyForCheckout" class="mb-3 text-xs text-slate-500">
                         Settle the folio balance before releasing the room.
                     </p>
                     <button
+                        v-if="showCheckoutButton"
                         type="button"
                         class="wh-btn-primary w-full"
-                        :disabled="!canCheckout || checkoutForm.processing"
+                        :disabled="checkoutForm.processing"
                         @click="checkOut"
                     >
                         Check out guest

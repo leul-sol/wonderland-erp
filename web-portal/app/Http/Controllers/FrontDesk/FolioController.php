@@ -6,10 +6,14 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\ProvidesCheckInModalData;
+use App\Http\Controllers\Concerns\ResolvesCashierShiftPayments;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\Auth\PortalAuthService;
+use App\Services\FrontDesk\CashierShiftResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,9 +23,11 @@ class FolioController extends Controller
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
     use ProvidesCheckInModalData;
+    use ResolvesCashierShiftPayments;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
+        private readonly PortalAuthService $auth,
     ) {
     }
 
@@ -52,6 +58,11 @@ class FolioController extends Controller
         return Inertia::render('FrontDesk/Folios/Show', [
             'folio' => $folioData,
             'reservation' => $reservation['data'] ?? null,
+            'canAddCharge' => $this->auth->hasAnyPermission(['S3.hotel.folios.write']),
+            'canSettle' => $this->auth->hasAnyPermission(['S3.hotel.folios.write']),
+            'canCheckout' => $this->auth->hasAnyPermission(['S3.hotel.checkinout.write']),
+            'openCashierShift' => app(CashierShiftResolver::class)->openShiftForDisplay(),
+            'canViewCashierShifts' => $this->auth->hasAnyPermission(['S3.hotel.cashier.read']),
         ]);
     }
 
@@ -60,7 +71,7 @@ class FolioController extends Controller
         $data = $request->validate([
             'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'gt:0'],
-            'charge_category' => ['nullable', 'string', 'max:50'],
+            'charge_category' => ['nullable', 'string', 'in:room,fb,minibar,laundry,event,other'],
         ]);
 
         try {
@@ -84,10 +95,8 @@ class FolioController extends Controller
         ]);
 
         try {
-            $this->s3->settleFolio($folio, [
-                'amount' => (float) $data['amount'],
-                'payment_method' => $data['payment_method'],
-            ]);
+            $payload = $this->folioPaymentPayload($data);
+            $this->s3->recordFolioPayment($folio, $payload, (string) Str::uuid());
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }

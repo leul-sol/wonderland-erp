@@ -239,6 +239,87 @@ class InventoryPagesTest extends TestCase
         );
     }
 
+    public function test_purchase_order_show_hides_approve_for_inventory_manager_on_dept_step(): void
+    {
+        Session::put('portal.user', [
+            'username' => 'stores.biniam',
+            'name' => 'Biniam',
+            'roles' => [['name' => 'inventory_manager']],
+        ]);
+        Session::put('portal.permissions', [
+            'S3.inventory.purchase_orders.read',
+            'S3.inventory.purchase_orders.write',
+            'S3.inventory.purchase_orders.approve',
+            'S3.inventory.stock.write',
+        ]);
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('purchaseOrder')->once()->with(8)->andReturn([
+                'data' => [
+                    'id' => 8,
+                    'po_number' => 'PO-0008',
+                    'vendor_name' => 'Kitchen Supply',
+                    'status' => 'pending_dept_head',
+                    'approval_tier' => 2,
+                    'total_amount' => '15000.00',
+                    'lines' => [],
+                ],
+            ]);
+        });
+
+        $response = $this->get('/inventory/purchase-orders/8');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Inventory/PurchaseOrders/Show')
+            ->where('canApprove', false)
+        );
+    }
+
+    public function test_purchase_order_show_hides_receive_without_stock_write(): void
+    {
+        Session::put('portal.user', [
+            'username' => 'fbhead.tigist',
+            'name' => 'Tigist',
+            'roles' => [['name' => 'department_head']],
+        ]);
+        Session::put('portal.permissions', [
+            'S3.inventory.purchase_orders.read',
+            'S3.inventory.purchase_orders.write',
+            'S3.inventory.purchase_orders.approve',
+        ]);
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('purchaseOrder')->once()->with(9)->andReturn([
+                'data' => [
+                    'id' => 9,
+                    'po_number' => 'PO-0009',
+                    'vendor_name' => 'Kitchen Supply',
+                    'status' => 'approved',
+                    'approval_tier' => 1,
+                    'total_amount' => '1500.00',
+                    'lines' => [[
+                        'id' => 12,
+                        'sku' => 'BUN-001',
+                        'name' => 'Burger Bun',
+                        'quantity' => '100.000',
+                        'quantity_received' => '0.000',
+                        'unit_cost' => '15.00',
+                        'line_total' => '1500.00',
+                    ]],
+                ],
+            ]);
+        });
+
+        $response = $this->get('/inventory/purchase-orders/9');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Inventory/PurchaseOrders/Show')
+            ->where('canReceive', false)
+        );
+    }
+
     public function test_purchase_order_receive_posts_line_quantities(): void
     {
         $this->withoutMiddleware();

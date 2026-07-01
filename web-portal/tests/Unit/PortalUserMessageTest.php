@@ -33,4 +33,16 @@ class PortalUserMessageTest extends TestCase
         $this->assertSame('Please fix the form', $message['title']);
         $this->assertStringContainsString('check-in', strtolower($message['message']));
     }
+
+    public function test_insufficient_stock_points_to_stores_not_it(): void
+    {
+        $exception = new ApiException('INVALID_STATE', 'Insufficient stock for Beef (kg).', 422);
+
+        $message = PortalUserMessage::fromApiException($exception);
+
+        $this->assertSame('Not enough inventory', $message['title']);
+        $this->assertStringContainsString('Beef', $message['message']);
+        $this->assertStringContainsString('Inventory', $message['recommendation']);
+        $this->assertStringNotContainsString('IT support', $message['recommendation']);
+    }
 }

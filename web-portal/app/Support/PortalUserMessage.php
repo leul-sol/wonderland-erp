@@ -33,6 +33,7 @@ class PortalUserMessage
                 'code' => $code,
             ],
             'VALIDATION_ERROR', 'INVALID_REQUEST' => self::validation($raw, $exception->details),
+            'INVALID_STATE' => self::invalidState($raw, $code),
             'NOT_FOUND' => [
                 'title' => 'Not found',
                 'message' => self::sanitize($raw) ?: 'The record you requested could not be found.',
@@ -72,7 +73,39 @@ class PortalUserMessage
     }
 
     /**
-     * @param  array<string, mixed>  $details
+     * @return array{title: string, message: string, recommendation: string, code: string}
+     */
+    private static function invalidState(string $raw, string $code): array
+    {
+        $sanitized = self::sanitize($raw);
+
+        if (stripos($raw, 'Insufficient stock') !== false) {
+            return [
+                'title' => 'Not enough inventory',
+                'message' => $sanitized ?: 'There is not enough stock to complete this order.',
+                'recommendation' => 'Ask stores to receive goods or adjust stock in Inventory → Items. When stock is available, finalize the order again.',
+                'code' => $code,
+            ];
+        }
+
+        if (stripos($raw, 'cashier_shift_id') !== false || stripos($raw, 'cashier shift') !== false) {
+            return [
+                'title' => 'Cashier shift required',
+                'message' => 'Open a cashier shift before recording cash payments.',
+                'recommendation' => 'Go to Front desk → Cashier shifts and open your drawer, then try again.',
+                'code' => $code,
+            ];
+        }
+
+        return [
+            'title' => 'Action not allowed',
+            'message' => $sanitized ?: 'This action cannot be done in the current state.',
+            'recommendation' => 'Check the record status and use the correct next step for this screen.',
+            'code' => $code,
+        ];
+    }
+
+    /**
      * @return array{title: string, message: string, recommendation: string, code: string}
      */
     private static function validation(string $raw, array $details): array

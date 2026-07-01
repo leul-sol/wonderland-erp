@@ -14,7 +14,7 @@ class FrontDeskPagesTest extends TestCase
         parent::setUp();
 
         Session::put('portal.access_token', 'test-token');
-        Session::put('portal.user', ['username' => 'receptionist', 'name' => 'Reception']);
+        Session::put('portal.user', ['id' => 5, 'username' => 'receptionist', 'name' => 'Reception']);
         Session::put('portal.permissions', [
             'S3.hotel.rooms.read',
             'S3.hotel.reservations.read',
@@ -225,6 +225,7 @@ class FrontDeskPagesTest extends TestCase
                     'room' => ['room_number' => '101'],
                 ],
             ]);
+            $mock->shouldReceive('cashierShifts')->once()->andReturn(['data' => ['data' => []]]);
         });
 
         $response = $this->get('/front-desk/folios/5');
@@ -234,6 +235,48 @@ class FrontDeskPagesTest extends TestCase
             ->component('FrontDesk/Folios/Show')
             ->where('folio.id', 5)
             ->where('reservation.guest_name', 'Jane Guest')
+            ->where('canCheckout', true)
+        );
+    }
+
+    public function test_folio_show_hides_checkout_for_cashier(): void
+    {
+        Session::put('portal.user', ['id' => 6, 'username' => 'cashier.mulatu', 'name' => 'Mulatu', 'roles' => [['name' => 'cashier']]]);
+        Session::put('portal.permissions', [
+            'S3.hotel.folios.read',
+            'S3.hotel.folios.write',
+            'S3.hotel.reservations.read',
+        ]);
+
+        $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('folio')->once()->with(6)->andReturn([
+                'data' => [
+                    'id' => 6,
+                    'status' => 'settled',
+                    'balance' => '0.00',
+                    'total_charges' => '3000.00',
+                    'total_payments' => '3000.00',
+                    'lines' => [],
+                    'reservation_id' => 10,
+                ],
+            ]);
+            $mock->shouldReceive('reservation')->once()->with(10)->andReturn([
+                'data' => [
+                    'id' => 10,
+                    'guest_name' => 'Jane Guest',
+                    'status' => 'checked_in',
+                ],
+            ]);
+            $mock->shouldReceive('cashierShifts')->once()->andReturn(['data' => ['data' => []]]);
+        });
+
+        $response = $this->get('/front-desk/folios/6');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('FrontDesk/Folios/Show')
+            ->where('canSettle', true)
+            ->where('canCheckout', false)
         );
     }
 

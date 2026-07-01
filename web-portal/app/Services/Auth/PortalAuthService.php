@@ -76,6 +76,46 @@ class PortalAuthService
         return false;
     }
 
+    /**
+     * @return list<string>
+     */
+    public function roleSlugs(): array
+    {
+        $user = $this->user();
+
+        if ($user === null) {
+            return [];
+        }
+
+        $roles = $user['roles'] ?? [];
+
+        if (! is_array($roles)) {
+            return [];
+        }
+
+        $slugs = [];
+
+        foreach ($roles as $role) {
+            if (is_string($role) && $role !== '') {
+                $slugs[] = $role;
+
+                continue;
+            }
+
+            if (! is_array($role)) {
+                continue;
+            }
+
+            $name = $role['name'] ?? $role['slug'] ?? null;
+
+            if (is_string($name) && $name !== '') {
+                $slugs[] = $name;
+            }
+        }
+
+        return array_values(array_unique($slugs));
+    }
+
     public function mustChangePassword(): bool
     {
         $user = $this->user();
