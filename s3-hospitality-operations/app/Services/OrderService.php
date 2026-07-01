@@ -139,7 +139,7 @@ class OrderService
         return $order->fresh(['lines.menuItem', 'folio']);
     }
 
-    public function finalize(RestaurantOrder $order): RestaurantOrder
+    public function finalize(RestaurantOrder $order, ?int $cashierId = null, ?int $cashierShiftId = null): RestaurantOrder
     {
         if ($order->status !== 'open') {
             throw new InvalidArgumentException('Order is already finalized.');
@@ -155,7 +155,7 @@ class OrderService
         $subtotal = round((float) $order->subtotal, 2);
         $breakdown = $this->tax->compute($subtotal);
 
-        return DB::transaction(function () use ($order, $accounts, $subtotal, $breakdown) {
+        return DB::transaction(function () use ($order, $accounts, $subtotal, $breakdown, $cashierId, $cashierShiftId) {
             $cogsTotal = 0.0;
 
             foreach ($order->lines as $line) {
@@ -248,7 +248,7 @@ class OrderService
                 'status' => 'unpaid',
             ]);
 
-            $this->billing->settleFromFinalize($bill, $order->fresh());
+            $this->billing->settleFromFinalize($bill, $order->fresh(), $cashierId, $cashierShiftId);
 
             if ($order->employee_consumption_period_id !== null) {
                 $this->syncConsumptionPeriodTotal((int) $order->employee_consumption_period_id);

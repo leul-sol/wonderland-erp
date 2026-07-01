@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Fb;
 
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
+use App\Http\Controllers\Concerns\ResolvesCashierShiftPayments;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Support\HospitalityPaymentMethods;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -15,6 +17,7 @@ use Inertia\Response;
 class BillController extends Controller
 {
     use HandlesPortalApiErrors;
+    use ResolvesCashierShiftPayments;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
@@ -30,11 +33,15 @@ class BillController extends Controller
         ]);
 
         $payload = [
-            'payment_method' => $data['payment_method'],
+            'payment_method' => HospitalityPaymentMethods::toS3($data['payment_method']),
         ];
 
         if (isset($data['amount'])) {
             $payload['amount'] = (float) $data['amount'];
+        }
+
+        if (HospitalityPaymentMethods::requiresCashierShift($data['payment_method'])) {
+            $payload['cashier_shift_id'] = $this->requireOpenCashierShiftIdForCash();
         }
 
         try {

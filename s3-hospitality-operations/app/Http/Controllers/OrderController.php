@@ -93,10 +93,17 @@ class OrderController extends Controller
         return response()->json(['data' => $this->orderPayload($order)]);
     }
 
-    public function finalize(RestaurantOrder $order): JsonResponse
+    public function finalize(Request $request, RestaurantOrder $order): JsonResponse
     {
+        $data = $request->validate([
+            'cashier_shift_id' => ['nullable', 'integer', 'exists:cashier_shifts,id'],
+        ]);
+
+        $cashierId = (int) $request->attributes->get('auth_user_id', 0);
+        $cashierShiftId = isset($data['cashier_shift_id']) ? (int) $data['cashier_shift_id'] : null;
+
         try {
-            $order = $this->orders->finalize($order);
+            $order = $this->orders->finalize($order, $cashierId > 0 ? $cashierId : null, $cashierShiftId);
         } catch (\InvalidArgumentException $e) {
             return $this->error('INVALID_STATE', $e->getMessage(), 422);
         } catch (\RuntimeException $e) {

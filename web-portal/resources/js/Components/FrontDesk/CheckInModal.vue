@@ -34,6 +34,30 @@ const roomsForType = computed(() =>
     availableRooms.value.filter((room) => String(room.room_type?.id) === String(form.room_type_id)),
 );
 
+const selectedRoomType = computed(() =>
+    roomTypes.value.find((type) => String(type.id) === String(form.room_type_id)) ?? null,
+);
+
+const canSubmit = computed(() => roomsForType.value.length > 0 && Boolean(form.room_id));
+
+const roomAssignHelp = computed(() => {
+    if (!form.room_type_id || isLoading.value) {
+        return '';
+    }
+
+    if (roomsForType.value.length === 0) {
+        const typeName = selectedRoomType.value?.name ?? 'this room type';
+
+        return `No available ${typeName} rooms right now. Check Front desk → Room status to free a room, or choose another room type.`;
+    }
+
+    if (!form.room_id) {
+        return 'Select an available room before checking in.';
+    }
+
+    return '';
+});
+
 const selectedGuest = computed(() =>
     guests.value.find((guest) => String(guest.id) === String(form.guest_id)) ?? null,
 );
@@ -111,6 +135,15 @@ watch(
 );
 
 function submit() {
+    if (!form.room_id) {
+        form.setError(
+            'room_id',
+            roomAssignHelp.value || 'Select an available room before checking in.',
+        );
+
+        return;
+    }
+
     form.post('/front-desk/check-in', {
         preserveScroll: true,
         onSuccess: () => emit('close'),
@@ -134,6 +167,16 @@ function formatRate(value) {
         <div v-if="isLoading" class="py-8 text-center text-sm text-slate-500">Loading rooms and guests…</div>
 
         <form v-else class="space-y-4" @submit.prevent="submit">
+            <div
+                v-if="form.errors.room_id || form.errors.guest_name || form.errors.room_type_id"
+                class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                role="alert"
+            >
+                <p v-if="form.errors.room_id">{{ form.errors.room_id }}</p>
+                <p v-if="form.errors.room_type_id">{{ form.errors.room_type_id }}</p>
+                <p v-if="form.errors.guest_name">{{ form.errors.guest_name }}</p>
+            </div>
+
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label for="checkin_guest_id" class="mb-1 block text-sm font-medium text-slate-700">Existing guest (optional)</label>
@@ -175,12 +218,21 @@ function formatRate(value) {
 
                 <div>
                     <label for="checkin_room_id" class="mb-1 block text-sm font-medium text-slate-700">Assign room</label>
-                    <select id="checkin_room_id" v-model="form.room_id" required class="wh-input">
+                    <select
+                        id="checkin_room_id"
+                        v-model="form.room_id"
+                        required
+                        class="wh-input"
+                        :class="form.errors.room_id ? 'border-red-300 ring-red-100' : ''"
+                        :disabled="roomsForType.length === 0"
+                    >
                         <option value="" disabled>Select available room</option>
                         <option v-for="room in roomsForType" :key="room.id" :value="room.id">
                             {{ room.room_number }} — floor {{ room.floor }}
                         </option>
                     </select>
+                    <p v-if="form.errors.room_id" class="mt-1 text-sm text-red-600">{{ form.errors.room_id }}</p>
+                    <p v-else-if="roomAssignHelp" class="mt-1 text-sm text-amber-800">{{ roomAssignHelp }}</p>
                 </div>
 
                 <div>
@@ -201,7 +253,7 @@ function formatRate(value) {
                 <button
                     type="button"
                     class="wh-btn-primary"
-                    :disabled="form.processing || isLoading"
+                    :disabled="form.processing || isLoading || !canSubmit"
                     @click="submit"
                 >
                     Check in and open folio

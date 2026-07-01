@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
+use App\Services\FrontDesk\CashierShiftResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,7 +33,8 @@ class CashierShiftController extends Controller
 
                 return [
                     'shifts' => array_values($shifts),
-                    'openShift' => collect($shifts)->firstWhere('status', 'open'),
+                    'openShift' => app(CashierShiftResolver::class)->openShiftForCurrentUser()
+                        ?? collect($shifts)->firstWhere('status', 'open'),
                 ];
             }),
         ]);

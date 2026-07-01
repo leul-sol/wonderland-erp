@@ -66,7 +66,7 @@ class BillingService
         });
     }
 
-    public function settleFromFinalize(Bill $bill, RestaurantOrder $order): void
+    public function settleFromFinalize(Bill $bill, RestaurantOrder $order, ?int $cashierId = null, ?int $cashierShiftId = null): void
     {
         if ($order->employee_consumption_period_id !== null) {
             $this->markBillPaid($bill);
@@ -87,6 +87,23 @@ class BillingService
 
         if ($customerType !== 'outside_credit') {
             $this->markBillPaid($bill);
+
+            if (
+                $customerType === 'outside_cash'
+                && $cashierShiftId !== null
+                && $cashierShiftId > 0
+            ) {
+                BillPayment::query()->create([
+                    'bill_id' => $bill->id,
+                    'amount' => $bill->total_amount,
+                    'payment_method' => 'cash',
+                    'cashier_id' => $cashierId,
+                    'cashier_shift_id' => $cashierShiftId,
+                    'paid_at' => now(),
+                    'reference_number' => null,
+                    'idempotency_key' => 'bill-'.$bill->id.'-finalize-cash',
+                ]);
+            }
         }
     }
 

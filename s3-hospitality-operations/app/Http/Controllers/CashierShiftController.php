@@ -25,6 +25,10 @@ class CashierShiftController extends Controller
             $query->where('cashier_id', (int) $request->input('cashier_id'));
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
         return response()->json(['data' => $query->paginate(25)]);
     }
 

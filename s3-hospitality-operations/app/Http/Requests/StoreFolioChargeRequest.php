@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FolioChargeCategories;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreFolioChargeRequest extends FormRequest
@@ -16,7 +17,7 @@ class StoreFolioChargeRequest extends FormRequest
         return [
             'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'charge_category' => ['nullable', 'in:room,fb,other'],
+            'charge_category' => ['nullable', FolioChargeCategories::validationRule()],
         ];
     }
 }

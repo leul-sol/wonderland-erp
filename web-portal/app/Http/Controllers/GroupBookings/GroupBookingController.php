@@ -6,11 +6,13 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Concerns\DefersGatewayPageData;
 use App\Http\Controllers\Concerns\HandlesPortalApiErrors;
 use App\Http\Controllers\Concerns\LoadsGatewayDataInParallel;
+use App\Http\Controllers\Concerns\ResolvesCashierShiftPayments;
 use App\Http\Controllers\Controller;
 use App\Services\Api\S3HospitalityClient;
 use App\Support\GroupBookingLifecycleSteps;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,6 +21,7 @@ class GroupBookingController extends Controller
     use DefersGatewayPageData;
     use HandlesPortalApiErrors;
     use LoadsGatewayDataInParallel;
+    use ResolvesCashierShiftPayments;
 
     public function __construct(
         private readonly S3HospitalityClient $s3,
@@ -167,10 +170,8 @@ class GroupBookingController extends Controller
         ]);
 
         try {
-            $this->s3->settleFolio($folio, [
-                'amount' => (float) $data['amount'],
-                'payment_method' => $data['payment_method'],
-            ]);
+            $payload = $this->folioPaymentPayload($data);
+            $this->s3->recordFolioPayment($folio, $payload, (string) Str::uuid());
         } catch (ApiException $e) {
             return $this->redirectApiError($e);
         }

@@ -14,6 +14,8 @@ const props = defineProps({
     folio: { type: Object, default: null },
     routingHint: { type: String, default: '' },
     canPayBill: { type: Boolean, default: false },
+    openCashierShift: { type: Object, default: null },
+    canViewCashierShifts: { type: Boolean, default: false },
 });
 
 const lineForm = useForm({
@@ -30,6 +32,9 @@ const payForm = useForm({
 
 const isOpen = computed(() => props.order.status === 'open');
 const canFinalize = computed(() => isOpen.value && (props.order.lines?.length ?? 0) > 0);
+const needsCashierShift = computed(
+    () => props.order.customer_type === 'outside_cash' && !props.openCashierShift,
+);
 const bill = computed(() => props.order.bill ?? null);
 const outstanding = computed(() => Number.parseFloat(bill.value?.outstanding_balance ?? 0));
 
@@ -43,18 +48,6 @@ const finalizeLabel = computed(() => {
     }
 
     return 'Finalize order';
-});
-
-const finalizeMessage = computed(() => {
-    const total = formatMoney(props.order.total_amount);
-    if (props.order.customer_type === 'hotel_guest') {
-        return `Post ETB ${total} (incl. SC/VAT) to the guest folio?`;
-    }
-    if (props.order.customer_type === 'outside_cash') {
-        return `Finalize this order for ETB ${total} and mark the bill as paid?`;
-    }
-
-    return `Finalize order ${props.order.order_number} for ETB ${total}?`;
 });
 
 const customerLabel = computed(() => ({
@@ -84,6 +77,66 @@ function formatMoney(value) {
     const amount = Number.parseFloat(value ?? 0);
     return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
+
+const lineSubtotal = computed(() =>
+    (props.order.lines ?? []).reduce(
+        (sum, line) => sum + Number.parseFloat(line.line_total ?? 0),
+        0,
+    ),
+);
+
+const estimatedTotal = computed(() => {
+    const finalizedTotal = Number.parseFloat(bill.value?.total_amount ?? props.order.total_amount ?? 0);
+    if (finalizedTotal > 0) {
+        return finalizedTotal;
+    }
+
+    const subtotal = Number.parseFloat(bill.value?.subtotal ?? props.order.subtotal ?? lineSubtotal.value);
+    if (subtotal <= 0) {
+        return 0;
+    }
+
+    const serviceCharge = subtotal * 0.1;
+    const vat = (subtotal + serviceCharge) * 0.15;
+
+    return subtotal + serviceCharge + vat;
+});
+
+const estimatedServiceCharge = computed(() => {
+    const amount = Number.parseFloat(bill.value?.service_charge_amount ?? props.order.service_charge_amount ?? 0);
+    if (amount > 0) {
+        return amount;
+    }
+
+    const subtotal = Number.parseFloat(bill.value?.subtotal ?? props.order.subtotal ?? lineSubtotal.value);
+    return subtotal > 0 ? subtotal * 0.1 : 0;
+});
+
+const estimatedVat = computed(() => {
+    const amount = Number.parseFloat(bill.value?.vat_amount ?? props.order.vat_amount ?? 0);
+    if (amount > 0) {
+        return amount;
+    }
+
+    const subtotal = Number.parseFloat(bill.value?.subtotal ?? props.order.subtotal ?? lineSubtotal.value);
+    if (subtotal <= 0) {
+        return 0;
+    }
+
+    return (subtotal + estimatedServiceCharge.value) * 0.15;
+});
+
+const finalizeMessage = computed(() => {
+    const total = formatMoney(estimatedTotal.value);
+    if (props.order.customer_type === 'hotel_guest') {
+        return `Post ETB ${total} (incl. SC/VAT) to the guest folio?`;
+    }
+    if (props.order.customer_type === 'outside_cash') {
+        return `Finalize this order for ETB ${total} and mark the bill as paid?`;
+    }
+
+    return `Finalize order ${props.order.order_number} for ETB ${total}?`;
+});
 
 function addLine(menuItemId) {
     lineForm.menu_item_id = menuItemId;
@@ -251,25 +304,25 @@ async function removeLine(line) {
                         <div class="flex justify-between">
                             <dt class="text-slate-500">Subtotal</dt>
                             <dd class="wh-money">
-                                ETB {{ formatMoney(bill?.subtotal ?? order.subtotal) }}
+                                ETB {{ formatMoney(bill?.subtotal ?? order.subtotal ?? lineSubtotal) }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-slate-500">Service charge</dt>
                             <dd class="wh-money">
-                                ETB {{ formatMoney(bill?.service_charge_amount ?? order.service_charge_amount) }}
+                                ETB {{ formatMoney(estimatedServiceCharge) }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-slate-500">VAT</dt>
                             <dd class="wh-money">
-                                ETB {{ formatMoney(bill?.vat_amount ?? order.vat_amount) }}
+                                ETB {{ formatMoney(estimatedVat) }}
                             </dd>
                         </div>
                         <div class="flex justify-between border-t border-slate-200 pt-2 font-semibold">
                             <dt>Total</dt>
                             <dd class="wh-money text-teal-800">
-                                ETB {{ formatMoney(bill?.total_amount ?? order.total_amount) }}
+                                ETB {{ formatMoney(estimatedTotal) }}
                             </dd>
                         </div>
                         <template v-if="bill">
@@ -288,11 +341,30 @@ async function removeLine(line) {
                         </template>
                     </dl>
 
+                    <p v-if="openCashierShift && order.customer_type === 'outside_cash'" class="mb-3 text-xs text-slate-600">
+                        Cash collection posts to
+                        <Link :href="`/front-desk/cashier-shifts/${openCashierShift.id}`" class="wh-table-link">
+                            cashier shift #{{ openCashierShift.id }}
+                        </Link>.
+                    </p>
+                    <p
+                        v-else-if="needsCashierShift"
+                        class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+                    >
+                        <template v-if="canViewCashierShifts">
+                            Open a cashier shift before finalizing walk-in cash, or ask front desk to open one
+                            (<Link href="/front-desk/cashier-shifts" class="wh-table-link">Front desk → Cashier shifts</Link>).
+                        </template>
+                        <template v-else>
+                            No cashier shift is open. Ask front desk or the cashier to open one before you finalize this walk-in order.
+                        </template>
+                    </p>
+
                     <button
                         v-if="isOpen"
                         type="button"
                         class="wh-btn-primary mt-4 w-full"
-                        :disabled="!canFinalize || finalizeForm.processing"
+                        :disabled="!canFinalize || finalizeForm.processing || needsCashierShift"
                         @click="finalize"
                     >
                         {{ finalizeLabel }}

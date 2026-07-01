@@ -1,27 +1,28 @@
 <script setup>
+import { router, usePage } from '@inertiajs/vue3';
 import { CheckCircle2, X, XCircle } from 'lucide-vue-next';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps({
-    error: { type: String, default: null },
-    errorDetail: { type: Object, default: null },
-    success: { type: String, default: null },
     successDuration: { type: Number, default: 5000 },
     errorDuration: { type: Number, default: 8000 },
 });
 
+const page = usePage();
+
 const visible = ref(false);
 const progress = ref(100);
+const message = ref('');
+const errorDetail = ref(null);
+const variant = ref(null);
 
 let hideTimer;
 let progressTimer;
 let startedAt = 0;
 let activeDuration = 0;
 
-const title = computed(() => props.errorDetail?.title ?? 'Something went wrong');
-const recommendation = computed(() => props.errorDetail?.recommendation ?? '');
-const activeMessage = computed(() => props.error || props.success || '');
-const variant = computed(() => (props.error ? 'error' : 'success'));
+const title = computed(() => errorDetail.value?.title ?? 'Something went wrong');
+const recommendation = computed(() => errorDetail.value?.recommendation ?? '');
 
 function clearTimers() {
     clearTimeout(hideTimer);
@@ -55,21 +56,58 @@ function startAutoHide(duration) {
     }, duration);
 }
 
-watch(
-    () => [props.error, props.success],
-    () => {
-        if (!props.error && !props.success) {
-            dismiss();
-            return;
-        }
+function clearPageFlash() {
+    const flash = page.props.flash;
 
-        startAutoHide(props.error ? props.errorDuration : props.successDuration);
-    },
-    { immediate: true },
-);
+    if (!flash) {
+        return;
+    }
+
+    flash.success = null;
+    flash.error = null;
+    flash.error_detail = null;
+}
+
+function consumeFlash(flash) {
+    if (!flash?.error && !flash?.success) {
+        return;
+    }
+
+    if (flash.error) {
+        message.value = flash.error;
+        errorDetail.value = flash.error_detail ?? null;
+        variant.value = 'error';
+        startAutoHide(props.errorDuration);
+        clearPageFlash();
+
+        return;
+    }
+
+    message.value = flash.success;
+    errorDetail.value = null;
+    variant.value = 'success';
+    startAutoHide(props.successDuration);
+    clearPageFlash();
+}
+
+onMounted(() => {
+    consumeFlash(page.props.flash);
+});
+
+const removeSuccessListener = router.on('success', (event) => {
+    const visit = event.detail.visit;
+
+    // Notification polling reloads shared props only; flash is stale in client state.
+    if (visit.only?.length > 0) {
+        return;
+    }
+
+    consumeFlash(event.detail.page.props.flash);
+});
 
 onBeforeUnmount(() => {
     clearTimers();
+    removeSuccessListener();
 });
 </script>
 
@@ -84,7 +122,7 @@ onBeforeUnmount(() => {
             leave-to-class="-translate-y-1 opacity-0"
         >
             <div
-                v-if="visible && activeMessage"
+                v-if="visible && message"
                 class="fixed right-4 top-4 z-[90] w-full max-w-md"
                 role="alert"
                 aria-live="assertive"
@@ -110,7 +148,7 @@ onBeforeUnmount(() => {
                                 class="mt-1 text-sm"
                                 :class="variant === 'error' ? 'text-red-800' : 'text-emerald-800'"
                             >
-                                {{ activeMessage }}
+                                {{ message }}
                             </p>
                             <p v-if="recommendation" class="mt-2 text-sm text-red-700">
                                 <span class="font-medium">What to do:</span>

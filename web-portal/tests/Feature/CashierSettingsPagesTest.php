@@ -15,6 +15,7 @@ class CashierSettingsPagesTest extends TestCase
         parent::setUp();
 
         Session::put('portal.access_token', 'test-token');
+        Session::put('portal.user', ['id' => 9, 'username' => 'cashier.mulatu']);
         Session::put('portal.permissions', [
             'S3.hotel.cashier.read',
             'S3.hotel.cashier.write',
@@ -26,16 +27,19 @@ class CashierSettingsPagesTest extends TestCase
     public function test_cashier_shifts_index_renders(): void
     {
         $this->mock(S3HospitalityClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('cashierShifts')->once()->andReturn([
-                'data' => [
-                    'data' => [[
-                        'id' => 2,
-                        'status' => 'open',
-                        'opened_at' => '2026-06-21T08:00:00Z',
-                        'opening_cash_float' => '500.00',
-                    ]],
-                ],
-            ]);
+            $mock->shouldReceive('cashierShifts')
+                ->twice()
+                ->andReturn([
+                    'data' => [
+                        'data' => [[
+                            'id' => 2,
+                            'status' => 'open',
+                            'cashier_id' => 9,
+                            'opened_at' => '2026-06-21T08:00:00Z',
+                            'opening_cash_float' => '500.00',
+                        ]],
+                    ],
+                ]);
         });
 
         $response = $this->get('/front-desk/cashier-shifts');

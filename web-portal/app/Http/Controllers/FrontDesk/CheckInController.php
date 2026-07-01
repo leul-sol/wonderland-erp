@@ -42,6 +42,11 @@ class CheckInController extends Controller
             'room_id' => ['required', 'integer'],
             'check_in_date' => ['required', 'date'],
             'check_out_date' => ['required', 'date', 'after:check_in_date'],
+        ], [
+            'room_id.required' => 'Select an available room before checking in.',
+            'room_id.integer' => 'Select an available room before checking in.',
+            'room_type_id.required' => 'Select a room type.',
+            'guest_name.required' => 'Enter the guest name.',
         ]);
 
         try {

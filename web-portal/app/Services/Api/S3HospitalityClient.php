@@ -69,9 +69,9 @@ class S3HospitalityClient extends GatewayClient
     /**
      * @return array<string, mixed>
      */
-    public function cashierShifts(): array
+    public function cashierShifts(array $query = []): array
     {
-        return $this->json('GET', '/s3/api/v1/cashier-shifts');
+        return $this->json('GET', '/s3/api/v1/cashier-shifts', $query);
     }
 
     /**
@@ -253,6 +253,17 @@ class S3HospitalityClient extends GatewayClient
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
+    public function recordFolioPayment(int $folioId, array $payload, string $idempotencyKey): array
+    {
+        return $this->json('POST', "/s3/api/v1/folios/{$folioId}/payments", $payload, [
+            'Idempotency-Key' => $idempotencyKey,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
     public function settleFolio(int $folioId, array $payload): array
     {
         return $this->json('POST', "/s3/api/v1/folios/{$folioId}/settle", $payload);
@@ -422,11 +433,12 @@ class S3HospitalityClient extends GatewayClient
     }
 
     /**
+     * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function finalizeOrder(int $orderId): array
+    public function finalizeOrder(int $orderId, array $payload = []): array
     {
-        return $this->json('POST', "/s3/api/v1/orders/{$orderId}/finalize");
+        return $this->json('POST', "/s3/api/v1/orders/{$orderId}/finalize", $payload);
     }
 
     /**
